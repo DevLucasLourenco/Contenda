@@ -129,6 +129,13 @@ encurtam a duração — é o trade-off central.
 
 ## 4. Formas do MVP
 
+> ⚠️ **Os valores desta seção foram substituídos.** As duas formas foram
+> redefinidas na [spec 16 §7](16-mobilidade-criticos-e-combate-aereo.md):
+> Berserker passa a conceder **crítico alto e pulo duplo**, e Overdrive passa a
+> **trocar a arma** por um braço-canhão com dano em área. `TransformationDefinition`
+> ganhou `WeaponOverride`, `CritChanceBonus` e `ExtraAirJumps`.
+> O que segue abaixo é o desenho original, mantido como referência histórica.
+
 ### Berserker — Swordsman
 
 | Campo | Valor |

@@ -220,13 +220,22 @@ simultâneos não disparem `Died` duas vezes.
 
 ## 7. Autoloads
 
-| Autoload | Responsabilidade | Estado |
-|---|---|---|
-| `GameBootstrap` | inicializa settings, áudio, input map | sem estado de partida |
-| `GameSession` | modo escolhido, personagem escolhido, resultado da última partida | limpo ao voltar ao menu |
-| `SceneRouter` | `GoTo(scenePath)` assíncrono com tela de loading | — |
-| `GameEvents` | barramento de eventos por valor | — |
-| `AudioDirector` | buses, pooling de `AudioStreamPlayer3D` | — |
+Registrados **nesta ordem** em Project Settings → Autoload. A ordem é a de
+dependência, não a de importância: autoloads recebem `_Ready` na ordem de
+registro, e `GameBootstrap` é o único que usa os outros — por isso vem por
+último. Registrá-lo primeiro faz o `ServiceLocator` devolver nulo no boot.
+
+| # | Autoload | Responsabilidade | Estado |
+|---|---|---|---|
+| 1 | `GameEvents` | barramento de eventos por valor | — |
+| 2 | `GameSession` | modo escolhido, personagem escolhido, resultado da última partida | limpo ao voltar ao menu |
+| 3 | `SceneRouter` | `GoTo(scenePath)` assíncrono com tela de loading | — |
+| 4 | `AudioDirector` | buses, pooling de `AudioStreamPlayer3D` | — |
+| 5 | `GameBootstrap` | aplica settings, valida conteúdo, abre a primeira cena | sem estado de partida |
+
+Cada serviço se **anuncia** ao `ServiceLocator` no próprio `_Ready`; nada procura
+autoload por caminho literal (`/root/GameSession`), o que quebraria em silêncio a
+cada renomeação.
 
 Nenhum outro singleton. Nada de `GameManager` genérico.
 

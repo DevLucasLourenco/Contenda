@@ -166,7 +166,7 @@ documentado como restrição desde a [visão geral](../00-visao-geral.md).
 ### Configuração
 
 - Export release com `Export With Debug` desligado.
-- `dotnet` publish em `Release`, `Optimize` ligado.
+- Build em **`ExportRelease`** (não existe `Release` — ver §8), `Optimize` ligado.
 - Excluir `docs/`, `tests/`, `tools/` do pacote (filtro de exclusão no preset).
 - Versionamento **SemVer** em `project.godot` (`application/config/version`),
   espelhado no `.csproj`.

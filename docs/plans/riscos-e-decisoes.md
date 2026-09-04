@@ -164,6 +164,23 @@ com câmera fixa. ❌ mais carga cognitiva (mãos fazendo coisas diferentes).
 
 ---
 
+### ADR-012 — O jogo se chama Contenda
+
+**Decisão:** o nome do projeto, do executável, do assembly e da raiz de namespace
+é **Contenda**.
+
+**Alternativa:** *Infinity Wars*, o codinome usado na conversa de concepção e nas
+tentativas anteriores do projeto.
+
+**Consequências:** ✅ nome já refletido em `project.godot`, `Contenda.csproj`,
+`Contenda.sln`, `RootNamespace` e nos caminhos `user://`; nada a migrar.
+❌ os ZIPs antigos de *Infinity Wars* em `Downloads` não são mais o mesmo
+produto — tratá-los como referência histórica, não como base.
+
+**Status:** aceito, decidido pelo usuário. Fecha o risco R14.
+
+---
+
 ## Parte 2 — Riscos do projeto
 
 ### Riscos altos
@@ -193,7 +210,7 @@ com câmera fixa. ❌ mais carga cognitiva (mãos fazendo coisas diferentes).
 | R11 | Sem export Web com C# | conhecido e aceito; se Web virar requisito, é decisão de reescrita — não de ajuste |
 | R12 | macOS exigindo notarização | fora do escopo da 0.1 |
 | R13 | Godot 4.7 mudando API em minor | fixar a versão do editor e do `GodotSharp` no `.csproj` |
-| R14 | Nome "Contenda" vs "Infinity Wars" | decidir antes da 0.1; hoje é uma troca de namespace |
+| ~~R14~~ | ~~Nome "Contenda" vs "Infinity Wars"~~ | **fechado** — ver ADR-012 |
 
 ### Riscos já mitigados pelo desenho
 

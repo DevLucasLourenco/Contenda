@@ -28,6 +28,8 @@ Namespace = caminho da pasta: `src/Components/Abilities/` →
 public partial class Foo : Node    // "partial" é obrigatório em toda classe Node
 ```
 
+- **`ImplicitUsings` está desligado** no `Godot.NET.Sdk`. Declare `using System;`
+  ao usar `ArgumentException`, `Action`, `Span` e afins — o build quebra sem ele.
 - `[Export]` para o que um designer ajusta; `private` para o resto.
 - `[GlobalClass]` em todo `Resource` de conteúdo.
 - `StringName` para ids, ações e nomes de animação — nunca `string` em hot path.

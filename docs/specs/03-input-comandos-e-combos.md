@@ -13,7 +13,12 @@ do jogo. Ele precisa ser um sistema de verdade — não `if (W && W)` espalhado.
 | `form_prev` / `form_next` | Scroll ↑ / Scroll ↓ | **seleciona** transformação |
 | `form_activate` | M3 (botão da roda) | **ativa/desativa** transformação |
 | `pause` | Esc | pause |
-| `dodge` | Space | reservado (pós-MVP) |
+| `dash` | **Shift** | avanço de 5 m com i-frames — ver [spec 16](16-mobilidade-criticos-e-combate-aereo.md) |
+| `jump` | **Espaço** | pulo; base do combate aéreo |
+
+> `dodge` foi **removido**: o `dash` o substitui, e Espaço passou a ser pulo.
+> Shift e Espaço não emitem símbolos de comando — não são direcionais e não
+> interferem no buffer.
 | `ui_accept` / `ui_cancel` | Enter / Esc | navegação de menu |
 
 Todas as ações são declaradas em `project.godot` e referenciadas por constantes

@@ -29,6 +29,8 @@ aceite por etapa).
 | 13 | [Assets 3D, animação e licenças](specs/13-assets-animacao-e-licencas.md) | Quaternius, KayKit, Mixamo, pipeline de import/retarget |
 | 14 | [Configurações, persistência e build](specs/14-configuracoes-persistencia-e-build.md) | settings, saves, export presets |
 | 15 | [Qualidade, testes e performance](specs/15-qualidade-testes-e-performance.md) | camadas testáveis, orçamentos de frame |
+| 16 | [Mobilidade, críticos e combate aéreo](specs/16-mobilidade-criticos-e-combate-aereo.md) | pulo, dash, crítico, golpes de ar, formas redefinidas |
+| 17 | [Arena urbana](specs/17-arena-urbana.md) | cruzamento de cidade em três níveis, regras de oclusão |
 
 ## Plans
 
