@@ -16,9 +16,10 @@ binários configurado. Nenhuma mecânica — é o andaime que todo ticket seguin
 - [x] estrutura de `src/`, `scenes/`, `data/`, `assets/`, `tests/`, `tools/`
       conforme spec 01 §2 e §3
 - [x] `.gitignore` e `.gitattributes` com as regras de LFS
-- [ ] **o editor Godot abre o projeto sem erro no console** — não verificado: o
-      Godot não está instalado na máquina de desenvolvimento. Reabrir este item
-      quando o editor 4.7.x .NET estiver instalado.
+- [x] **o editor Godot abre o projeto sem erro no console** — verificado em
+      2026-09-04, após instalar o Godot 4.7.2 .NET: `--headless --import` roda
+      limpo e o Godot **não reescreveu nenhum arquivo versionado**, ou seja,
+      aceitou o `project.godot` escrito à mão exatamente como estava.
 
 ## Comments
 

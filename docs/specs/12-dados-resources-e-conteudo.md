@@ -160,6 +160,11 @@ conteúdo que exige código, por definição.
 - `.godot/` e `.mono/` no `.gitignore`.
 - `*.import` **são commitados** — sem eles, cada dev reimporta com UIDs
   diferentes e as cenas quebram.
+- `*.uid` **também são commitados**, pela mesma razão. O Godot 4.4+ gera um
+  `<script>.cs.uid` por script, contendo um identificador estável
+  (`uid://b6vpyabthlppr`). Cenas referenciam scripts por esse identificador; se
+  cada máquina gerar o seu, as referências quebram no primeiro `git pull`.
+  Eles aparecem sozinhos no primeiro import — não crie à mão.
 - Alteração de balanceamento é um commit próprio, com o antes/depois no corpo da
   mensagem. Balanceamento misturado com refactor é irrevisável.
 

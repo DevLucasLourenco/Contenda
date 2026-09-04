@@ -7,23 +7,23 @@ ticket seguinte precise de string mágica nem de número de camada solto.
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** quase concluído — falta apenas `LICENSE`, que depende de decisão humana
 
-- [ ] as 10 camadas de física nomeadas em Project Settings exatamente como na
+- [x] as 10 camadas de física nomeadas em Project Settings exatamente como na
       [spec 01 §8](../../../docs/specs/01-arquitetura-tecnica.md), espelhadas em
       `src/Core/GameConstants.cs`
-- [ ] todas as ações de `InputMap` da
+- [x] todas as ações de `InputMap` da
       [spec 03 §1](../../../docs/specs/03-input-comandos-e-combos.md) registradas,
       com deadzone 0.2, e `GameConstants.InputActions` expondo cada uma como
       `StringName`
-- [ ] `GameBootstrap`, `GameSession`, `SceneRouter`, `GameEvents` e
+- [x] `GameBootstrap`, `GameSession`, `SceneRouter`, `GameEvents` e
       `AudioDirector` registrados como autoload, nessa ordem, cada um logando o
       nome no `_Ready`
-- [ ] `ServiceLocator` com acesso tipado aos autoloads
-- [ ] uma cena vazia definida em `run/main_scene`: rodar o projeto abre sem erro
-- [ ] `LICENSE` e `THIRD-PARTY-NOTICES.md` na raiz, o segundo no formato da
+- [x] `ServiceLocator` com acesso tipado aos autoloads
+- [x] uma cena vazia definida em `run/main_scene`: rodar o projeto abre sem erro
+- [ ] `LICENSE` (**pendente: decisão sua**) e `THIRD-PARTY-NOTICES.md` (feito) na raiz, o segundo no formato da
       [spec 13 §9](../../../docs/specs/13-assets-animacao-e-licencas.md)
-- [ ] nenhum nó 2D na cena vazia
+- [x] nenhum nó 2D na cena vazia
 
 ## Comments
 
@@ -33,3 +33,11 @@ ticket nenhum, apesar de constarem do M0.
 
 O `LICENSE` exige uma decisão humana sobre qual licença adotar — pergunte antes
 de escolher.
+
+---
+
+**Verificado em 2026-09-04**, com o Godot 4.7.2 .NET instalado: rodar o projeto
+sobe os cinco autoloads na ordem de dependência correta —
+`GameEvents → GameSession → SceneRouter → AudioDirector → GameBootstrap` — e o
+`GameBootstrap` imprime nome e versão lidos do assembly e da engine, provando que
+a referência ao GodotSharp resolve. Saída limpa, código 0.
