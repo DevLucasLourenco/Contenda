@@ -78,7 +78,7 @@ public static class PhysicsLayers
 ### 5. InputMap
 
 - [ ] Registrar `move_up/down/left/right`, `attack_basic`, `command_confirm`,
-      `form_prev`, `form_next`, `form_activate`, `pause`, `dodge`
+      `form_prev`, `form_next`, `form_activate`, `pause`, `dash`, `jump`
 - [ ] `GameConstants.InputActions` com `StringName` estático para cada uma
 - [ ] Deadzone 0.2 nos eixos
 

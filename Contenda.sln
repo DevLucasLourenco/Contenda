@@ -4,6 +4,12 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contenda", "Contenda.csproj", "{C798DDF9-BC1F-499A-A45B-C16A242A9A0A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contenda.Tests", "tests\Contenda.Tests\Contenda.Tests.csproj", "{0C9FA893-AD86-434B-8AA6-4515E93C858C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Contenda.SceneTests", "tests\Contenda.SceneTests\Contenda.SceneTests.csproj", "{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,8 +23,24 @@ Global
 		{C798DDF9-BC1F-499A-A45B-C16A242A9A0A}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
 		{C798DDF9-BC1F-499A-A45B-C16A242A9A0A}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
 		{C798DDF9-BC1F-499A-A45B-C16A242A9A0A}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.ExportRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C}.ExportRelease|Any CPU.Build.0 = Release|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.ExportRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9}.ExportRelease|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0C9FA893-AD86-434B-8AA6-4515E93C858C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{3E7A1C42-9B58-4D6F-A1E3-5C820B4D77A9} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

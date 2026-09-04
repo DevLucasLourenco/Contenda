@@ -48,38 +48,69 @@ public static class PhysicsMasks
 }
 
 /// <summary>
-/// Nomes das ações do InputMap.
+/// Nomes das ações do InputMap, como texto puro.
 /// </summary>
 /// <remarks>
-/// Sempre <see cref="StringName"/>: as convenções proíbem <c>string</c> em hot
-/// path, e input é lido a cada tique de física.
+/// Esta classe é a lista canônica e **não toca em nenhum tipo do Godot**, de
+/// propósito: construir um <see cref="StringName"/> chama código nativo, que não
+/// existe fora do editor. Um teste que tocasse em <see cref="InputActions"/>
+/// morreria no inicializador de tipo com uma mensagem que não explica nada.
+///
 /// Ver docs/specs/03-input-comandos-e-combos.md §1.
+/// </remarks>
+public static class InputActionNames
+{
+    public const string MoveUp    = "move_up";
+    public const string MoveDown  = "move_down";
+    public const string MoveLeft  = "move_left";
+    public const string MoveRight = "move_right";
+
+    public const string AttackBasic    = "attack_basic";
+    public const string CommandConfirm = "command_confirm";
+
+    public const string FormPrev     = "form_prev";
+    public const string FormNext     = "form_next";
+    public const string FormActivate = "form_activate";
+
+    public const string Pause = "pause";
+    public const string Dash  = "dash";
+    public const string Jump  = "jump";
+
+    /// <summary>Lista canônica, conferida contra project.godot em teste.</summary>
+    public static readonly string[] All =
+    [
+        MoveUp, MoveDown, MoveLeft, MoveRight,
+        AttackBasic, CommandConfirm,
+        FormPrev, FormNext, FormActivate,
+        Pause, Dash, Jump,
+    ];
+}
+
+/// <summary>
+/// As mesmas ações como <see cref="StringName"/>, para uso em runtime.
+/// </summary>
+/// <remarks>
+/// Input é lido a cada tique de física e as convenções proíbem <c>string</c> em
+/// hot path. Só use esta classe dentro do jogo — em teste, use
+/// <see cref="InputActionNames"/>.
 /// </remarks>
 public static class InputActions
 {
-    public static readonly StringName MoveUp    = new("move_up");
-    public static readonly StringName MoveDown  = new("move_down");
-    public static readonly StringName MoveLeft  = new("move_left");
-    public static readonly StringName MoveRight = new("move_right");
+    public static readonly StringName MoveUp    = new(InputActionNames.MoveUp);
+    public static readonly StringName MoveDown  = new(InputActionNames.MoveDown);
+    public static readonly StringName MoveLeft  = new(InputActionNames.MoveLeft);
+    public static readonly StringName MoveRight = new(InputActionNames.MoveRight);
 
-    public static readonly StringName AttackBasic    = new("attack_basic");
-    public static readonly StringName CommandConfirm = new("command_confirm");
+    public static readonly StringName AttackBasic    = new(InputActionNames.AttackBasic);
+    public static readonly StringName CommandConfirm = new(InputActionNames.CommandConfirm);
 
-    public static readonly StringName FormPrev     = new("form_prev");
-    public static readonly StringName FormNext     = new("form_next");
-    public static readonly StringName FormActivate = new("form_activate");
+    public static readonly StringName FormPrev     = new(InputActionNames.FormPrev);
+    public static readonly StringName FormNext     = new(InputActionNames.FormNext);
+    public static readonly StringName FormActivate = new(InputActionNames.FormActivate);
 
-    public static readonly StringName Pause = new("pause");
-    public static readonly StringName Dodge = new("dodge");
-
-    /// <summary>Para o teste de drift contra project.godot.</summary>
-    public static readonly string[] All =
-    [
-        "move_up", "move_down", "move_left", "move_right",
-        "attack_basic", "command_confirm",
-        "form_prev", "form_next", "form_activate",
-        "pause", "dodge",
-    ];
+    public static readonly StringName Pause = new(InputActionNames.Pause);
+    public static readonly StringName Dash  = new(InputActionNames.Dash);
+    public static readonly StringName Jump  = new(InputActionNames.Jump);
 }
 
 /// <summary>Time de uma entidade. Decide quem pode causar dano a quem.</summary>

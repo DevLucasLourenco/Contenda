@@ -12,12 +12,17 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
-    <!--
-      EnforceCodeStyleInBuild fica DESLIGADO de propósito até existir um
-      .editorconfig. Ligado sem ruleset, ele passa despercebido; no dia em que o
-      .editorconfig entrar, as regras de estilo viram erro de build por causa do
-      TreatWarningsAsErrors acima. Os dois entram juntos, na tarefa 10 do M0.
-    -->
+    <!-- Religado no ticket 03, junto com o .editorconfig na raiz. Os dois são
+         inseparáveis: um sem o outro é armadilha. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- IDE0005 (using desnecessário) só roda no build com o XML de documentação
+         ligado — é uma exigência do compilador, não escolha nossa.
+         Ligá-lo, porém, faz o CS1591 cobrar <summary> em todo membro público, o
+         que viraria centenas de erros e mataria o valor do TreatWarningsAsErrors.
+         Documentamos por julgamento (convenções §8), não por obrigação. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <!--

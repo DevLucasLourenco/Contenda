@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Testes de CENA: movimento, física, navegação, HUD e reciclagem de pool —
+    tudo que precisa de uma árvore de nós viva e não cabe em xUnit.
+    Ver docs/specs/15-qualidade-testes-e-performance.md §1.
+
+    O projeto ESTÁ no Contenda.sln e compila no CI — vazio, ele não depende do
+    Godot, e um projeto fora da solução nunca é restaurado nem validado, que é
+    exatamente o apodrecimento silencioso que ele existe para evitar.
+
+    O que ainda não roda são os testes em si: eles precisam do executor do
+    GdUnit4, que precisa do Godot instalado.
+
+    Para ativar, quando o Godot 4.7.x .NET estiver instalado:
+      1. descomente o PackageReference do gdUnit4.api abaixo
+      2. rode pelo executor do GdUnit4 dentro do editor, ou headless no CI (M9)
+
+    O esqueleto existe agora porque a spec 01 §2 exige os dois projetos de teste,
+    e um projeto que não existe é um projeto que ninguém lembra de criar.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Contenda.SceneTests</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+  <ItemGroup>
+    <PackageReference Include="gdUnit4.api" Version="*" />
+    <ProjectReference Include="..\..\Contenda.csproj" />
+  </ItemGroup>
+  -->
+
+</Project>

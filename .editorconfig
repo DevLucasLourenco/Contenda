@@ -1,0 +1,95 @@
+# Regras de estilo do Contenda.
+#
+# Entram JUNTO com <EnforceCodeStyleInBuild> no Contenda.csproj — os dois são
+# inseparáveis. Ligar a checagem sem este arquivo faz as regras padrão do .NET
+# virarem erro de build de uma vez, por causa do TreatWarningsAsErrors.
+#
+# ATENÇÃO: o parser de EditorConfig NÃO reconhece comentário no fim de uma linha
+# de valor. `severity = none  # motivo` faz o valor virar "none  # motivo" e a
+# regra silenciosamente não aplica. Comentário sempre em linha própria.
+#
+# Convenções completas: docs/plans/convencoes-de-codigo.md
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# Dois espaços no fim de linha são quebra de linha em Markdown.
+[*.{md,markdown}]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+# O Godot reescreve estes arquivos com formatação própria.
+[*.{tres,tscn,godot,import,cfg}]
+indent_size = 4
+trim_trailing_whitespace = false
+
+[*.cs]
+indent_size = 4
+max_line_length = 100
+
+# --- organização de usings ---
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:warning
+
+# --- 'this.' é ruído; o prefixo _ já distingue campo ---
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+
+# --- preferências de linguagem ---
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = when_multiline:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:suggestion
+dotnet_style_readonly_field = true:warning
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+# --- nomenclatura (docs/plans/convencoes-de-codigo.md §1) ---
+dotnet_naming_rule.tipos_pascal_case.severity = warning
+dotnet_naming_rule.tipos_pascal_case.symbols = tipos
+dotnet_naming_rule.tipos_pascal_case.style = pascal_case
+dotnet_naming_symbols.tipos.applicable_kinds = class,struct,enum,delegate,method,property,event
+dotnet_naming_symbols.tipos.applicable_accessibilities = *
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_rule.interfaces_com_i.severity = warning
+dotnet_naming_rule.interfaces_com_i.symbols = interfaces
+dotnet_naming_rule.interfaces_com_i.style = i_prefixada
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.i_prefixada.required_prefix = I
+dotnet_naming_style.i_prefixada.capitalization = pascal_case
+
+dotnet_naming_rule.campos_privados_underscore.severity = warning
+dotnet_naming_rule.campos_privados_underscore.symbols = campos_privados
+dotnet_naming_rule.campos_privados_underscore.style = underscore_camel
+dotnet_naming_symbols.campos_privados.applicable_kinds = field
+dotnet_naming_symbols.campos_privados.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# --- diagnósticos ---
+# ConfigureAwait não se aplica a um jogo de thread única.
+dotnet_diagnostic.CA2007.severity = none
+# using desnecessário — exige GenerateDocumentationFile no csproj para valer no build.
+dotnet_diagnostic.IDE0005.severity = warning
+# async sem await.
+dotnet_diagnostic.CS1998.severity = warning
+
+[tests/**/*.cs]
+# Nome de teste é frase, não identificador: `Bits_sao_potencias_de_dois` diz o
+# que quebrou no relatório de falha, e `BitsSaoPotenciasDeDois` não diz.
+# A regra de PascalCase para métodos fica desligada aqui de propósito.
+dotnet_naming_rule.tipos_pascal_case.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.IDE1006.severity = none

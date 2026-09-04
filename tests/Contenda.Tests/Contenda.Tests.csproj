@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Contenda.Tests</RootNamespace>
+
+    <!-- As mesmas regras do projeto do jogo valem aqui. Sem isto, todo o bloco
+         [tests/**/*.cs] do .editorconfig seria inerte, e teste é código como
+         qualquer outro. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <!--
+    Referencia o projeto do jogo para ler as constantes canônicas.
+
+    IMPORTANTE: só toque em tipos que NÃO constroem valores do Godot em
+    inicializador estático. `StringName`, `NodePath` e afins chamam código
+    nativo, que não existe fora do editor — tocar neles aqui derruba o teste no
+    inicializador de tipo, com uma mensagem que não explica nada.
+    Por isso os nomes canônicos vivem em classes puras
+    (`PhysicsLayers`, `InputActionNames`) e os `StringName` ficam à parte.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Contenda.csproj" />
+  </ItemGroup>
+
+</Project>

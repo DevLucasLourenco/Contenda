@@ -1,0 +1,66 @@
+name: CI
+
+# Todo push, em qualquer branch, e todo PR — não só main. Trabalho em
+# feature/* precisa de retorno antes de existir PR.
+on: [push, pull_request]
+
+# Um push novo no mesmo PR cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-e-testes:
+    name: Build e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar
+        run: dotnet restore Contenda.sln
+
+      # ATENÇÃO: a configuração é ExportRelease, não Release.
+      # O Godot.NET.Sdk define Debug, ExportDebug e ExportRelease — `Release`
+      # não existe, e um .sln gerado automaticamente mapeia Release para Debug,
+      # compilando Debug em silêncio. Ver docs/plans/m0-fundacao.md.
+      - name: Compilar (ExportRelease, warning = erro)
+        run: dotnet build Contenda.sln -c ExportRelease --no-restore
+
+      - name: Testes unitários
+        run: dotnet test tests/Contenda.Tests/Contenda.Tests.csproj --no-restore --verbosity normal
+
+  regra-2d:
+    name: Nenhum nó 2D no gameplay
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A regra não negociável número 1 do projeto, aplicada por máquina em vez
+      # de por disciplina. Ver docs/specs/02-camera-e-mundo-25d.md §2.
+      # O verificador de verdade é o ticket 06; este passo é o lugar dele.
+      - name: Verificar
+        run: |
+          if [ -x tools/check-no-2d.sh ]; then
+            tools/check-no-2d.sh
+          else
+            echo "::notice::Verificador anti-2D ainda não implementado (ticket 06)."
+          fi
+
+  godot-import:
+    name: Import do Godot (não bloqueante)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # Vira bloqueante no M9, junto com o ContentValidator e os testes de cena.
+      # Ver docs/specs/14-configuracoes-persistencia-e-build.md §8.
+      - name: Pendente
+        run: echo "::notice::Import headless do Godot entra no M9."
