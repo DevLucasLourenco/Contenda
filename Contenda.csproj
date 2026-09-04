@@ -1,0 +1,33 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+
+    <RootNamespace>Contenda</RootNamespace>
+    <AssemblyName>Contenda</AssemblyName>
+    <Version>0.1.0</Version>
+
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--
+      EnforceCodeStyleInBuild fica DESLIGADO de propósito até existir um
+      .editorconfig. Ligado sem ruleset, ele passa despercebido; no dia em que o
+      .editorconfig entrar, as regras de estilo viram erro de build por causa do
+      TreatWarningsAsErrors acima. Os dois entram juntos, na tarefa 10 do M0.
+    -->
+  </PropertyGroup>
+
+  <!--
+    O Godot.NET.Sdk inclui **/*.cs por padrão. Os projetos abaixo compilam
+    separado e precisam ficar de fora, senão o assembly do jogo tenta
+    compilar os testes (ticket 03).
+  -->
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <Compile Remove="tools/**" />
+  </ItemGroup>
+
+</Project>

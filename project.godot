@@ -1,0 +1,32 @@
+; Configuração do projeto Contenda.
+;
+; Editada à mão para o ticket 01 (fundação). O editor Godot reescreve este
+; arquivo ao salvar — mantenha as chaves abaixo ao fazê-lo.
+;
+; Camadas de física, InputMap e autoloads entram no ticket 02.
+
+config_version=5
+
+[application]
+
+config/name="Contenda"
+config/description="Jogo de ação 2.5D em arena: mundo 3D, câmera travada em ângulo superior."
+config/version="0.1.0"
+run/main_scene=""
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="Contenda"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="gl_compatibility"

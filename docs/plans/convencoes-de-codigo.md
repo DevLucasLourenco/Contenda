@@ -41,6 +41,10 @@ public partial class Foo : Node    // "partial" é obrigatório em toda classe N
 - `FindChild` em runtime.
 - Signal do Godot para lógica de gameplay entre componentes C# (usar `event`).
 - `Godot.Collections.Array/Dictionary` fora de `[Export]` — usar coleções .NET.
+  **Exceção:** quando a própria API da engine devolve esses tipos
+  (`Engine.GetVersionInfo()`, `GetTree().GetNodesInGroup()`), converta **na
+  fronteira** com `.AsString()` / `.AsInt32()` e comente o porquê. O tipo do
+  Godot não passa dali para dentro.
 - Herdar de `Node` uma classe cuja lógica você quer testar.
 
 ## 3. Ciclo de vida

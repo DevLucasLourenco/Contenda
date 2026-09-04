@@ -46,7 +46,8 @@ src/
 │   ├── GameSession.cs           # autoload: escolha de modo/personagem, resultado
 │   ├── SceneRouter.cs           # autoload: troca de cena assíncrona + loading
 │   ├── GameConstants.cs         # camadas de física, nomes de ações, tags
-│   └── ServiceLocator.cs        # acesso tipado aos autoloads
+│   ├── ServiceLocator.cs        # acesso tipado aos autoloads
+│   └── ProjectInfo.cs           # nome/versão do build; canário do GodotSharp
 │
 ├── Characters/
 │   ├── Base/
