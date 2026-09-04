@@ -1,0 +1,273 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://src/Camera/CameraRig.cs" id="1_rig"]
+[ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
+[ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="3_set"]
+[ext_resource type="NavigationMesh" path="res://data/navmesh/arena_nav.tres" id="4_nav"]
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
+sky_top_color = Color(0.35, 0.45, 0.62, 1)
+sky_horizon_color = Color(0.62, 0.68, 0.75, 1)
+ground_bottom_color = Color(0.2, 0.21, 0.24, 1)
+ground_horizon_color = Color(0.62, 0.68, 0.75, 1)
+
+[sub_resource type="Sky" id="Sky_2"]
+sky_material = SubResource("Sky_1")
+
+[sub_resource type="Environment" id="Env_1"]
+background_mode = 2
+sky = SubResource("Sky_2")
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_chao"]
+albedo_color = Color(0.26, 0.28, 0.31, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Mat_obst"]
+albedo_color = Color(0.52, 0.55, 0.6, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_plat"]
+albedo_color = Color(0.46, 0.56, 0.58, 1)
+roughness = 0.75
+
+[sub_resource type="BoxMesh" id="Mesh_chao"]
+material = SubResource("Mat_chao")
+size = Vector3(60, 0.5, 60)
+
+[sub_resource type="BoxShape3D" id="Shape_chao"]
+size = Vector3(60, 0.5, 60)
+
+[sub_resource type="BoxMesh" id="Mesh_obst"]
+material = SubResource("Mat_obst")
+size = Vector3(2.5, 3, 2.5)
+
+[sub_resource type="BoxShape3D" id="Shape_obst"]
+size = Vector3(2.5, 3, 2.5)
+
+[sub_resource type="BoxMesh" id="Mesh_plat"]
+material = SubResource("Mat_plat")
+size = Vector3(12, 1.5, 12)
+
+[sub_resource type="BoxShape3D" id="Shape_plat"]
+size = Vector3(12, 1.5, 12)
+
+[sub_resource type="BoxMesh" id="Mesh_rampa"]
+material = SubResource("Mat_plat")
+size = Vector3(6, 0.4, 8.2)
+
+[sub_resource type="BoxShape3D" id="Shape_rampa"]
+size = Vector3(6, 0.4, 8.2)
+
+[sub_resource type="BoxShape3D" id="Shape_parede"]
+size = Vector3(62, 6, 1)
+
+[node name="Arena" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_1")
+
+[node name="Sol" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.87, -0.35, 0.35, 0, 0.71, 0.71, -0.5, -0.61, 0.61, 0, 22, 0)
+light_energy = 1.1
+shadow_enabled = true
+directional_shadow_max_distance = 80.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = ExtResource("4_nav")
+
+[node name="Chao" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Chao"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("Mesh_chao")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Chao"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+shape = SubResource("Shape_chao")
+
+[node name="Plataforma" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.75, -16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Plataforma"]
+mesh = SubResource("Mesh_plat")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Plataforma"]
+shape = SubResource("Shape_plat")
+
+[node name="Rampa" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 0.9829, 0.1843, 0, -0.1843, 0.9829, -16, 0.548, -6.007)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Rampa"]
+mesh = SubResource("Mesh_rampa")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Rampa"]
+shape = SubResource("Shape_rampa")
+
+[node name="Obstaculo1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -4)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo1"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo1"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.5, 9)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo2"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo2"]
+shape = SubResource("Shape_obst")
+
+
+[node name="Obstaculo4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 1.5, -3)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo4"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo4"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -14)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo5"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo5"]
+shape = SubResource("Shape_obst")
+
+
+
+
+[node name="Obstaculo9" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.5, -6)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo9"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo9"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo10" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1.5, 1.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo10"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo10"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo11" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1.5, -9.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo11"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo11"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo12" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -7)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo12"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo12"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo13" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 1.5, 8.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo13"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo13"]
+shape = SubResource("Shape_obst")
+
+[node name="Obstaculo14" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, -10)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo14"]
+mesh = SubResource("Mesh_obst")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo14"]
+shape = SubResource("Shape_obst")
+
+[node name="Bounds" type="StaticBody3D" parent="."]
+
+[node name="Norte" type="CollisionShape3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -30.5)
+shape = SubResource("Shape_parede")
+
+[node name="Sul" type="CollisionShape3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 30.5)
+shape = SubResource("Shape_parede")
+
+[node name="Oeste" type="CollisionShape3D" parent="Bounds"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -30.5, 3, 0)
+shape = SubResource("Shape_parede")
+
+[node name="Leste" type="CollisionShape3D" parent="Bounds"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 30.5, 3, 0)
+shape = SubResource("Shape_parede")
+
+[node name="GroundPlane" type="Area3D" parent="."]
+collision_layer = 256
+collision_mask = 0
+
+[node name="Col" type="CollisionShape3D" parent="GroundPlane"]
+shape = SubResource("Shape_chao")
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="Spawn1" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -25)
+
+[node name="Spawn2" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -18)
+
+[node name="Spawn3" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 0)
+
+[node name="Spawn4" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 18)
+
+[node name="Spawn5" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 25)
+
+[node name="Spawn6" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 18)
+
+[node name="Spawn7" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 0)
+
+[node name="Spawn8" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -18)
+
+[node name="Alvo" type="Node3D" parent="."]
+
+[node name="Marca" type="MeshInstance3D" parent="Alvo"]
+transform = Transform3D(0.16, 0, 0, 0, 0.6, 0, 0, 0, 0.16, 0, 0.9, 0)
+mesh = SubResource("Mesh_obst")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("1_rig")
+Settings = ExtResource("3_set")
+Target = NodePath("../Alvo")
+Camera = NodePath("CombatCamera")
+
+[node name="CombatCamera" type="Camera3D" parent="CameraRig"]
+script = ExtResource("2_cam")

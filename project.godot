@@ -1,7 +1,7 @@
 ; Configuração do projeto Contenda.
 ;
-; Editada à mão (o Godot não está instalado na máquina de desenvolvimento).
-; O editor reescreve este arquivo ao salvar — mantenha as chaves abaixo ao fazê-lo.
+; Validada com o Godot 4.7.2 .NET: o editor importa e roda sem reescrever nada.
+; Ele PODE reescrever ao salvar pela interface — mantenha as chaves abaixo ao fazê-lo.
 
 config_version=5
 
@@ -10,7 +10,7 @@ config_version=5
 config/name="Contenda"
 config/description="Jogo de ação 2.5D em arena: mundo 3D, câmera travada em ângulo superior."
 config/version="0.1.0"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/arena/Arena.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 [autoload]
@@ -112,6 +112,13 @@ dash={
 3d_physics/layer_8="Projectile"
 3d_physics/layer_9="GroundPlane"
 3d_physics/layer_10="Interactable"
+
+[navigation]
+
+; Precisa bater com cell_size/cell_height da navmesh em data/navmesh/.
+; Divergir faz o servidor avisar e degrada a precisao do caminho.
+3d/default_cell_size=0.2
+3d/default_cell_height=0.2
 
 [rendering]
 

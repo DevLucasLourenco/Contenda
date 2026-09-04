@@ -95,7 +95,11 @@ src/
 │   └── Horde/  HordeGameMode.cs · WaveDirector.cs · WaveDefinition.cs
 │                SpawnDirector.cs · EnemyPool.cs
 │
-├── Camera/          CombatCamera.cs · CameraRig.cs · CameraSettings.cs
+├── Camera/          CameraRig.cs · CombatCamera.cs · CameraSettings.cs
+│                 CameraMath.cs   # matemática pura do enquadramento, testável
+│
+├── Tools/           NavmeshBaker.cs · FramingCapture.cs
+│                 # ferramentas de linha de comando; EXCLUÍDAS do export
 │
 ├── UI/
 │   ├── HUD/    HudController.cs · HealthBar.cs · ManaBar.cs

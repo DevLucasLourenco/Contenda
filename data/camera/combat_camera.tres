@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CameraSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Camera/CameraSettings.cs" id="1_cam"]
+
+[resource]
+script = ExtResource("1_cam")
+Fov = 38.0
+PitchDegrees = -55.0
+YawDegrees = 45.0
+Distance = 14.0
+NearPlane = 0.5
+FarPlane = 120.0
+TargetOffset = Vector3(0, 1, 0)
+FollowSmoothTime = 0.16
+VerticalFollowSmoothTime = 0.55
+VerticalDeadZone = 2.4
+DeadZoneRadius = 0.35
+LookAheadFactor = 0.0
+MaxLookAhead = 2.5
+ShakeDecay = 6.0
+UseOrthogonal = false
+OrthogonalSize = 16.0

@@ -167,7 +167,10 @@ documentado como restrição desde a [visão geral](../00-visao-geral.md).
 
 - Export release com `Export With Debug` desligado.
 - Build em **`ExportRelease`** (não existe `Release` — ver §8), `Optimize` ligado.
-- Excluir `docs/`, `tests/`, `tools/` do pacote (filtro de exclusão no preset).
+- Excluir `docs/`, `tests/`, `tools/`, **`src/Tools/`** e **`scenes/debug/`** do
+  pacote (filtro de exclusão no preset). As duas últimas são ferramentas de
+  linha de comando — o bakeador de navegação e o capturador de enquadramento —
+  e uma delas chama `GetTree().Quit()`.
 - Versionamento **SemVer** em `project.godot` (`application/config/version`),
   espelhado no `.csproj`.
 
