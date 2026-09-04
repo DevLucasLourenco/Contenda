@@ -54,12 +54,18 @@ profundidade real.
 |---|---|---|
 | Projection | `Perspective` | fixa |
 | FOV | **38°** | 35–42° |
-| Pitch (rotação X) | **-55°** | -50° a -60° |
+| Pitch (rotação X) | **-45°** | -40° a -55° |
 | Yaw (rotação Y) | **45°** | 35–45° |
 | Roll (rotação Z) | **0°** | fixo |
 | Distância ao alvo | **14 m** | 11–18 m |
 | Near / Far | 0.5 / 120 | — |
 | Rotação em runtime | **TRAVADA** | — |
+
+> **Faixa revisada depois de ver o resultado renderizado.** O desenho
+> original pedia −50° a −60°; na prática −55° lê como topo chapado e
+> esconde as laterais dos objetos. Já a −40° o horizonte entra no quadro e a
+> câmera passa a enxergar além da arena. **−45° é o ponto em que há volume
+> sem vazar horizonte.**
 
 FOV baixo + distância alta = compressão de perspectiva. É isso que dá o
 "aspecto 2.5D" mantendo paralaxe e altura legíveis.
@@ -67,7 +73,7 @@ FOV baixo + distância alta = compressão de perspectiva. É isso que dá o
 ```
               CAMERA
                  \
-                  \   pitch -55°
+                  \   pitch -45°
                    \
                     ↓
                   Player
@@ -114,7 +120,7 @@ Arena
 public partial class CameraSettings : Resource
 {
     [Export] public float Fov = 38f;
-    [Export] public float PitchDegrees = -55f;
+    [Export] public float PitchDegrees = -45f;
     [Export] public float YawDegrees = 45f;
     [Export] public float Distance = 14f;
     [Export] public Vector3 TargetOffset = new(0, 1.0f, 0); // mira no torso

@@ -266,8 +266,8 @@ mesh = SubResource("Mesh_obst")
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("1_rig")
 Settings = ExtResource("3_set")
-Target = NodePath("../Alvo")
-Camera = NodePath("CombatCamera")
+TargetPath = NodePath("../Alvo")
+CameraPath = NodePath("CombatCamera")
 
 [node name="CombatCamera" type="Camera3D" parent="CameraRig"]
 script = ExtResource("2_cam")

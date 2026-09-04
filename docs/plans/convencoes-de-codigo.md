@@ -34,6 +34,11 @@ public partial class Foo : Node    // "partial" é obrigatório em toda classe N
 - `[GlobalClass]` em todo `Resource` de conteúdo.
 - `StringName` para ids, ações e nomes de animação — nunca `string` em hot path.
 - `%UniqueName` ou `[Export] NodePath` para achar nós. Nunca caminho literal.
+- **Exporte `NodePath`, nunca o tipo do nó.** `[Export] public Node3D Alvo`
+  compila, aparece no editor e **não vincula**: a referência chega nula em
+  runtime, sem erro nenhum, e o objeto fica "quase funcionando" com valores
+  padrão. Exporte `NodePath`, resolva com `GetNodeOrNull<T>()` no `_Ready` e
+  falhe alto se não resolver.
 - Cachear referências de nó no `_Ready`.
 
 ### Nunca
@@ -148,14 +153,38 @@ XML doc só em API pública não óbvia. Nada de comentário decorativo.
 - Nunca engolir exceção em silêncio.
 - Nada de `try/catch` em hot path.
 
-## 10. Git
+## 10. Ferramentas nesta máquina
+
+- **Nunca use `Set-Content` do PowerShell** para escrever arquivo do projeto: com
+  `-Encoding utf8` ele grava **BOM UTF-8**. Um `.tres` com BOM o Godot não
+  parseia e cai nos valores padrão **em silêncio** — o sintoma é a configuração
+  parecer ignorada. Já corrompeu um `.cs` e um `.tres` aqui. Use Python,
+  heredoc do `bash` ou as ferramentas de edição.
+- `bash` chamado do PowerShell resolve para o WSL nesta máquina. Use o caminho
+  completo do Git Bash.
+- Abra o editor por `tools/abrir-editor.cmd`. Ver §11.
+
+## 11. Godot: a edição errada apaga a configuração de C#
+
+Só a edição **.NET** roda C#, e a diferença está só no nome do arquivo:
+
+```
+Godot_v4.7.2-stable_win64.exe        <- padrão, SEM C#
+Godot_v4.7.2-stable_mono_win64.exe   <- .NET, é esta
+```
+
+Abrir o projeto com a padrão mostra *"Abrir assim mesmo? Projeto será
+modificado"* — e continuar **remove a configuração de C# do `project.godot`**.
+Sempre **Cancelar**. `tools/abrir-editor.cmd` encontra a edição certa sozinho.
+
+## 12. Git
 
 - Branch por milestone: `feature/m3-abilities`; PRs pequenos dentro dele.
 - Commits imperativos em português ou inglês — escolher um e manter.
 - Um commit por assunto. **Balanceamento nunca no mesmo commit que refactor.**
 - `.tres` alterado por balanceamento: o corpo do commit traz antes/depois.
 
-## 11. Checklist de review
+## 13. Checklist de review
 
 - [ ] compila em `ExportRelease` sem warning
 - [ ] nenhum nó 2D novo no gameplay

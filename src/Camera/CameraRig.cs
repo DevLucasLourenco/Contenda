@@ -20,11 +20,25 @@ public sealed partial class CameraRig : Node3D
     /// <summary>Ajustes do enquadramento. Sem isto, valem os padrões da classe.</summary>
     [Export] public CameraSettings Settings { get; set; } = new();
 
-    /// <summary>O que seguir. Pode ser definido no editor ou em runtime.</summary>
-    [Export] public Node3D? Target { get; set; }
+    /// <summary>
+    /// Caminho do que seguir, resolvido no <c>_Ready</c>.
+    /// </summary>
+    /// <remarks>
+    /// Export de <c>NodePath</c>, e não de <c>Node3D</c> direto: exportar o tipo
+    /// do nó parecia funcionar e **não vinculava** — a referência chegava nula em
+    /// runtime, sem erro nenhum, e a câmera ficava parada na origem com os
+    /// valores padrão. É o que as convenções §2 já mandavam usar.
+    /// </remarks>
+    [Export] public NodePath TargetPath { get; set; } = new();
 
-    /// <summary>A câmera filha.</summary>
-    [Export] public CombatCamera? Camera { get; set; }
+    /// <summary>Caminho da câmera filha, resolvido no <c>_Ready</c>.</summary>
+    [Export] public NodePath CameraPath { get; set; } = new();
+
+    /// <summary>O que está sendo seguido. Trocável em runtime por <see cref="SetTarget"/>.</summary>
+    public Node3D? Target { get; private set; }
+
+    /// <summary>A câmera controlada por este rig.</summary>
+    public CombatCamera? Camera { get; private set; }
 
     /// <summary>
     /// Posição sem tremor.
@@ -44,8 +58,25 @@ public sealed partial class CameraRig : Node3D
 
     public override void _Ready()
     {
-        Settings ??= new CameraSettings();
-        Camera?.Configure(Settings);
+        var ajustes = Settings ?? new CameraSettings();
+        Settings = ajustes;
+
+        Target = GetNodeOrNull<Node3D>(TargetPath);
+        Camera = GetNodeOrNull<CombatCamera>(CameraPath);
+
+        if (Camera is null)
+        {
+            // Falhar alto: sem câmera o jogo renderiza de um ponto arbitrário e
+            // parece "quase certo", que é o pior modo de errar.
+            GD.PushError($"{Name}: CameraPath não resolveu ('{CameraPath}').");
+            return;
+        }
+
+        Camera.Configure(ajustes);
+
+        if (Target is null)
+            GD.PushWarning($"{Name}: TargetPath não resolveu ('{TargetPath}'); a câmera ficará parada.");
+
         Reenquadrar();
     }
 

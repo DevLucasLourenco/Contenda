@@ -19,7 +19,7 @@ public sealed partial class CameraSettings : Resource
     [Export(PropertyHint.Range, "20,70,0.5")] public float Fov { get; set; } = 38f;
 
     /// <summary>Inclinação. Negativo olha para baixo.</summary>
-    [Export(PropertyHint.Range, "-80,-20,0.5")] public float PitchDegrees { get; set; } = -55f;
+    [Export(PropertyHint.Range, "-70,-25,0.5")] public float PitchDegrees { get; set; } = -45f;
 
     /// <summary>Giro em torno do eixo vertical. TRAVADO em runtime.</summary>
     [Export(PropertyHint.Range, "0,90,0.5")] public float YawDegrees { get; set; } = 45f;

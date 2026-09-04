@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_cam")
 Fov = 38.0
-PitchDegrees = -55.0
+PitchDegrees = -45.0
 YawDegrees = 45.0
 Distance = 14.0
 NearPlane = 0.5

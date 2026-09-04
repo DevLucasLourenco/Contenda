@@ -55,3 +55,23 @@ imagem, ou simplesmente abra o projeto.
    ticket 22.
 2. O chão é uma superfície lisa sem textura. Movimento e profundidade vão ler
    mal até a cidade do ticket 21 — é limitação inerente ao bloqueio, não defeito.
+
+---
+
+**Correção em 2026-09-04.** O critério "editar o `.tres` altera o enquadramento
+em runtime" tinha sido marcado como cumprido **e era falso**.
+
+Os exports de nó do `CameraRig` (`Target` e `Camera`, tipados como `Node3D` e
+`CombatCamera`) **não vinculavam**: chegavam nulos em runtime, sem erro nenhum.
+Sem câmera configurada, o `CombatCamera` ficava com o `CameraSettings` padrão da
+própria classe, e o `.tres` nunca era lido. Sem alvo, o rig não seguia nada.
+
+O enquadramento parecia certo por coincidência — a câmera ficava parada na
+origem com pitch −55, e o marcador está justamente na origem. A captura enviada
+antes não refletia o recurso.
+
+Corrigido exportando `NodePath` e resolvendo no `_Ready`, com falha alta se não
+resolver. Verificado: pitch −55/−45/−35 agora produzem imagens diferentes.
+
+A armadilha ficou registrada nas convenções §2. O pitch passou a **−45°**, a
+pedido, e a faixa da spec 02 §3 foi revisada com o motivo.
