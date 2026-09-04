@@ -45,14 +45,15 @@ jobs:
 
       # A regra não negociável número 1 do projeto, aplicada por máquina em vez
       # de por disciplina. Ver docs/specs/02-camera-e-mundo-25d.md §2.
-      # O verificador de verdade é o ticket 06; este passo é o lugar dele.
-      - name: Verificar
-        run: |
-          if [ -x tools/check-no-2d.sh ]; then
-            tools/check-no-2d.sh
-          else
-            echo "::notice::Verificador anti-2D ainda não implementado (ticket 06)."
-          fi
+
+      # Um verificador que nunca falhou é um passo verde inútil: se o script
+      # quebrar de um jeito que o faça sempre passar, ninguém percebe. O
+      # autoteste roda primeiro e prova que ele ainda acusa violação.
+      - name: Autoteste do verificador
+        run: bash tools/check-no-2d.sh --self-test
+
+      - name: Nenhum nó 2D no gameplay
+        run: bash tools/check-no-2d.sh
 
   godot-import:
     name: Import do Godot (não bloqueante)

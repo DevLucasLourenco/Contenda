@@ -23,10 +23,22 @@ de novo**. Qualquer PR que introduza um nó 2D no gameplay viola este documento.
 `MeshInstance3D` · `StaticBody3D` · `Area3D` · `CollisionShape3D` ·
 `DirectionalLight3D` · `WorldEnvironment` · `GPUParticles3D`
 
-**Proibidos no gameplay (falha de review):**
+**Proibidos no gameplay (reprova o CI):**
 
-`Node2D` · `CharacterBody2D` · `Camera2D` · `Sprite2D` · `Area2D` ·
-`CollisionShape2D` · `TileMap` · `AnimatedSprite2D`
+A regra é um **padrão**, não uma lista: **todo tipo de nó terminado em `2D`**.
+`Node2D`, `CharacterBody2D`, `Camera2D`, `Sprite2D`, `Area2D`,
+`CollisionShape2D`, `AnimatedSprite2D` são os óbvios — mas
+`AudioStreamPlayer2D`, `RemoteTransform2D`, `Bone2D` e
+`NavigationObstacle2D` valem igual.
+
+Mais os 2D que não carregam o sufixo: `TileMap` · `TileMapLayer` ·
+`ParallaxBackground` · `ParallaxLayer` · `CanvasModulate` · `CanvasGroup` ·
+`BackBufferCopy` · `TouchScreenButton`.
+
+> Enumerar oito nomes convidava exatamente o furo que a regra existe para
+> fechar: um `AudioStreamPlayer2D` passaria por não estar na lista. O
+> verificador `tools/check-no-2d.sh` aplica o padrão, e o autoteste dele prova
+> que um 2D fora da lista canônica ainda é pego.
 
 `Control`/`CanvasLayer` são permitidos **exclusivamente** para UI/HUD.
 Barras de vida sobre inimigos usam `Sprite3D` com `SubViewport`, ou um `Control`
