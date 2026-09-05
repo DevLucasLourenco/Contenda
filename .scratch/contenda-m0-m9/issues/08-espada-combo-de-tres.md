@@ -8,7 +8,7 @@ possível.
 
 **Blocked by:** 07
 
-**Status:** PARCIAL — dois requisitos do próprio ticket não foram feitos
+**Status:** CONCLUÍDO
 
 - [x] O botão esquerdo dá um golpe que acerta o manequim
 - [x] Três cliques no ritmo encadeiam golpes crescentes; o terceiro empurra mais
@@ -36,22 +36,44 @@ o jogador destravar cedo demais.
 ---
 
 **Parcialmente implementado em 2026-09-04.** 75 testes verdes, build limpo, e
-duas sondas headless verificando a cadeia na árvore real.
+duas sondas headless verificando a cadeia na árvore real. Faltavam `IWeapon` e
+`ActionLock` — ver histórico abaixo.
 
-**O que NÃO foi feito, e é do escopo deste ticket:**
+**Concluído em 2026-09-05.** Os dois pontos em aberto foram fechados:
 
-1. **`IWeapon` não existe.** O `CombatComponent` **é** a espada: estado do combo,
-   varredura em cone e avanço estão embutidos nele. A razão declarada da
-   abstração — "permite o ticket 09 existir sem um único `if`" — continua sem
-   base. O `WeaponDefinition.Kind` existe mas ninguém ramifica nele; ele é
-   semente do `if` que a spec 07 §1 proíbe, não a solução.
-2. **`ActionLock` não existe.** A spec 07 §8 e os comentários deste ticket pedem
-   trava por fonte e com duração durante o golpe. Movimento e rotação seguem
-   livres no meio do ataque; a única contenção é o combo recusar reinício antes
-   da janela abrir.
+1. **`IWeapon` existe** ([`src/Weapons/IWeapon.cs`](../../../src/Weapons/IWeapon.cs)).
+   O combo, o avanço e a varredura em cone saíram do `CombatComponent` e foram
+   para [`MeleeWeapon`](../../../src/Weapons/MeleeWeapon.cs), que implementa a
+   interface. Uma [`WeaponFactory`](../../../src/Weapons/WeaponFactory.cs) —
+   único lugar do projeto que ramifica em `WeaponKind` — decide qual `IWeapon`
+   uma `WeaponDefinition` produz; o revólver hitscan do ticket 09 entra como
+   uma classe nova ali, sem tocar no `CombatComponent`. Um `WeaponKind` sem
+   implementação (hoje, `Hitscan`) recebe um
+   [`NullWeapon`](../../../src/Weapons/NullWeapon.cs) — null object, com
+   `GD.PushError` — em vez de deixar o contêiner com referência nula.
+   `CombatComponent` agora só faz `Bind`/`Configure`/`Tick` e repassa eventos;
+   não sabe mais o que está segurando.
+2. **`ActionLock` existe**
+   ([`ActionLock.cs`](../../../src/Components/Combat/ActionLock.cs) +
+   [`ActionLockSet.cs`](../../../src/Components/Combat/ActionLockSet.cs), POCO
+   testado em xUnit pelo mesmo motivo do `MeleeCombo`: janela de tempo é onde
+   erro de comparação passa despercebido). Cada golpe agora trava `Movement` e
+   `Rotation` da fonte `"combat.attack"`, refrescada a cada quadro enquanto
+   `IsAttacking` for verdadeiro — a duração vem do `CombatComponent`, não da
+   arma, então qualquer `IWeapon` futuro herda a trava de graça. A trava é por
+   fonte e soma por OR: uma segunda fonte (atordoamento, no ticket 11) não é
+   liberada cedo demais só porque esta expirou. `MovementComponent` consulta
+   `ctx.Combat.ActiveLocks` e ignora WASD e giro enquanto travado, mas continua
+   integrando gravidade e repulsão — travar a própria locomoção não devia
+   imunizar contra ser lançado por um golpe alheio.
 
-Fechar isto exige um ticket próprio, ou reabrir este. **Não marque como
-concluído.**
+A `CombatProbe` ganhou duas verificações novas: a trava fica ativa durante o
+golpe (quadro 2) e se libera sozinha, sem `ClearLock` explícito, assim que a
+janela de combo expira (quadro 140). **Não verificado nesta sessão:** o efeito
+real do lock sobre o WASD em playtest manual — a CLI não tem como segurar tecla
+no editor. A sonda prova a fiação (`ActiveLocks` liga e desliga na hora certa);
+vale confirmar no editor que segurar movimento durante o golpe realmente não
+desloca o personagem.
 
 **Bugs reais corrigidos, achados pelas sondas e pelo code-review:**
 

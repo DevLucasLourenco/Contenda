@@ -1,5 +1,6 @@
 using Contenda.Camera;
 using Contenda.Characters.Base;
+using Contenda.Components.Combat;
 using Contenda.Input;
 using Godot;
 
@@ -74,11 +75,17 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
 
         var corpo = _contexto.Body;
         var yaw = CameraReference?.YawDegrees ?? 45f;
+        var travas = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
 
         // WASD relativo à CÂMERA. Sem esta conversão, W andaria na diagonal do
         // mundo em vez de para cima na tela — requisito da spec 02 §8.
         var direcao = CameraMath.MovementToWorld(intencao.Move, yaw);
-        var desejada = direcao * Settings.MoveSpeed;
+
+        // Movimento travado (ex.: golpe em andamento, ticket 08) ignora o WASD,
+        // mas gravidade e repulsão continuam integrando: travar a própria
+        // locomoção não deveria imunizar contra ser lançado por um golpe.
+        var travado = (travas & ActionLock.Movement) != 0;
+        var desejada = travado ? Vector3.Zero : direcao * Settings.MoveSpeed;
 
         var velocidade = MovementMath.Accelerate(
             corpo.Velocity, desejada, Settings.Acceleration, Settings.Deceleration, delta);
@@ -96,7 +103,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         corpo.MoveAndSlide();
         Velocity = corpo.Velocity;
 
-        Girar(intencao, direcao, delta);
+        if ((travas & ActionLock.Rotation) == 0)
+            Girar(intencao, direcao, delta);
     }
 
     private void Girar(in IntentFrame intencao, Vector3 direcaoDoMovimento, float delta)

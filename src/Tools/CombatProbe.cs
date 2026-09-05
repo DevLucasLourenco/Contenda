@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Contenda.Characters.Base;
+using Contenda.Components.Combat;
 using Contenda.Core;
 using Godot;
 
@@ -93,6 +94,16 @@ public sealed partial class CombatProbe : Node
             case 2:
                 _avancoNoPrimeiroQuadro = AvancoDesdeOPedido();
                 Reposicionar();
+
+                // Ticket 08: o golpe trava quem o desfere. Checado no quadro 2,
+                // não no 1 — a trava é aplicada dentro de CombatComponent.Tick,
+                // chamado pelo CharacterController depois do pedido, e a ordem
+                // entre nós irmãos na árvore não é garantida dentro do mesmo
+                // quadro do pedido.
+                Verificar(
+                    (combate.ActiveLocks & (ActionLock.Movement | ActionLock.Rotation))
+                    == (ActionLock.Movement | ActionLock.Rotation),
+                    $"o golpe deveria travar Movement e Rotation, travou {combate.ActiveLocks}");
                 break;
 
             case 20:
@@ -123,6 +134,16 @@ public sealed partial class CombatProbe : Node
                 Reposicionar();
                 combate.RequestBasicAttack();
                 Verificar(combate.ComboStep == 3, $"deveria encadear para 3, foi {combate.ComboStep}");
+                break;
+
+            case 140:
+                // A janela de combo do golpe 3 expirou por volta do quadro 105
+                // (60 + ~0,75 s). Dez quadros de folga depois, a trava deveria
+                // ter se liberado sozinha -- sem ClearLock explícito, só pelo
+                // refresco por duração parar de acontecer.
+                Verificar(!combate.IsAttacking, "deveria estar ocioso depois da janela de combo expirar");
+                Verificar(combate.ActiveLocks == ActionLock.None,
+                    $"a trava deveria ter se liberado sozinha fora do golpe, continua {combate.ActiveLocks}");
                 break;
 
             case 150:
