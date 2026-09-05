@@ -1,4 +1,5 @@
 using Contenda.Components.Health;
+using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Weapons;
 using Godot;
@@ -27,6 +28,9 @@ public sealed partial class CharacterDefinition : Resource
 
     /// <summary>Parâmetros de vida.</summary>
     [Export] public HealthDefinition? Health { get; set; }
+
+    /// <summary>Parâmetros de mana. Nulo para quem não usa mana (inimigo simples).</summary>
+    [Export] public ManaDefinition? Mana { get; set; }
 
     /// <summary>A arma equipada. É ela que decide o que M1 faz.</summary>
     [Export] public WeaponDefinition? Weapon { get; set; }

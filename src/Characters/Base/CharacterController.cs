@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
+using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
@@ -36,6 +37,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private TargetingComponent? _mira;
     private MovementComponent? _movimento;
     private HealthComponent? _vida;
+    private ManaComponent? _mana;
     private CombatComponent? _combate;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
@@ -107,6 +109,11 @@ public sealed partial class CharacterController : CharacterBody3D
 
         _combate?.Tick((float)delta, intencao.AttackHeld);
 
+        // 3c. mana: regenera, com atraso após qualquer gasto. Nada mais no M2
+        //     lê ou gasta mana ainda dentro deste quadro, então a posição
+        //     exata na ordem não importa até o M3 consumir por habilidade.
+        _mana?.Tick((float)delta);
+
         // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
         //    momentos arbitrários; resolvê-los só aqui é o que impede dois
         //    golpes simultâneos de disparar morte duas vezes.
@@ -167,6 +174,10 @@ public sealed partial class CharacterController : CharacterBody3D
             case HealthComponent h:
                 _vida = h;
                 Context!.Health = h;
+                break;
+            case ManaComponent mn:
+                _mana = mn;
+                Context!.Mana = mn;
                 break;
             case CombatComponent c:
                 _combate = c;

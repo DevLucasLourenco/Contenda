@@ -1,5 +1,6 @@
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
+using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
@@ -42,6 +43,9 @@ public sealed class CharacterContext
 
     /// <summary>Vida. Enfileira golpes e resolve num ponto único do quadro.</summary>
     public HealthComponent? Health { get; internal set; }
+
+    /// <summary>Mana. Nulo para quem não usa mana (inimigo simples).</summary>
+    public ManaComponent? Mana { get; internal set; }
 
     /// <summary>Combate. Executa o ataque básico com a arma equipada.</summary>
     public CombatComponent? Combat { get; internal set; }

@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_swordsman.tres" id="2_mov"]
 [ext_resource type="Resource" path="res://data/characters/shared/health_swordsman.tres" id="3_hp"]
 [ext_resource type="Resource" path="res://data/weapons/sword.tres" id="4_arma"]
+[ext_resource type="Resource" path="res://data/characters/shared/mana_swordsman.tres" id="5_mana"]
 
 [resource]
 script = ExtResource("1_def")
 Id = &"swordsman"
 DisplayName = "Swordsman"
 Health = ExtResource("3_hp")
+Mana = ExtResource("5_mana")
 Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")

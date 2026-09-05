@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ManaDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Mana/ManaDefinition.cs" id="1_mana"]
+
+[resource]
+script = ExtResource("1_mana")
+MaxMana = 100.0
+RegenPerSecond = 5.0
+RegenDelayAfterSpend = 1.0
+StartingManaPercent = 1.0
