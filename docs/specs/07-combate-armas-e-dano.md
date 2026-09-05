@@ -101,6 +101,15 @@ M1 -> Slash 1  (×1.00, 20 dano)
 
 - Cada golpe avança o personagem `ForwardStep` metros na direção de mira —
   ataque melee que não desloca fica ruim de acertar com câmera fixa.
+- O avanço é **distribuído ao longo da preparação**, do início do golpe até
+  `HitWindowStart`, e não aplicado de uma vez. Aplicado num quadro só ele lê
+  como teleporte — foi a primeira coisa que o playtest apontou; espalhado, o
+  personagem desliza para dentro do golpe e o deslocamento parece parte da
+  animação. Quando a lâmina conecta o deslize já acabou, então o alcance é
+  medido de onde o personagem realmente parou. Ver `LungeMotion`.
+- Um golpe com `HitWindowStart = 0` não tem preparação para distribuir, e nesse
+  caso o avanço sai de uma vez — é o único comportamento possível, não uma
+  exceção esquecida. Nenhum golpe da espada usa 0.
 - A hitbox é um `Area3D` (cone/box) filho do `WeaponSocket`, **habilitado só
   entre `HitWindowStart` e `HitWindowEnd`**.
 - Um alvo só pode ser atingido **uma vez por golpe** — lista de `InstanceId` já

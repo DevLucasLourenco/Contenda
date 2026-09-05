@@ -32,6 +32,8 @@ public sealed partial class CombatProbe : Node
     private int _quadro;
     private int _acertos;
     private float _vidaAntes;
+    private Vector3 _origemDoAvanco;
+    private float _avancoNoPrimeiroQuadro;
 
     public override void _Ready()
     {
@@ -85,6 +87,25 @@ public sealed partial class CombatProbe : Node
                 Reposicionar();
                 combate.RequestBasicAttack();
                 Verificar(combate.ComboStep == 1, $"primeiro golpe deveria ser o passo 1, foi {combate.ComboStep}");
+                _origemDoAvanco = _jogador!.GlobalPosition;
+                break;
+
+            case 2:
+                _avancoNoPrimeiroQuadro = AvancoDesdeOPedido();
+                Reposicionar();
+                break;
+
+            case 20:
+                // O avanco do golpe e espalhado pela preparacao, e nao aplicado
+                // de uma vez. Comparar o primeiro quadro com o total mede isso
+                // sem repetir aqui o valor que vive no .tres: se o passo tivesse
+                // voltado a ser instantaneo, os dois seriam iguais.
+                var total = AvancoDesdeOPedido();
+                Verificar(total > 0.05f, $"o golpe deveria avancar; avancou {total:0.000} m");
+                Verificar(_avancoNoPrimeiroQuadro < total * 0.25f,
+                    $"o avanco saiu quase todo num quadro so ({_avancoNoPrimeiroQuadro:0.000} de {total:0.000} m) — "
+                    + "voltou a ser teleporte");
+                Reposicionar();
                 break;
 
             case 30:
@@ -112,7 +133,28 @@ public sealed partial class CombatProbe : Node
                     $"depois de perder a janela deveria voltar ao passo 1, foi {combate.ComboStep}");
                 break;
 
-            case 180:
+            case 163:
+                // Encadeia CEDO, no primeiro instante em que o combo aceita: 13
+                // quadros = 0,217 s, dentro da janela de acerto do golpe 1
+                // (0,18-0,32 s). E o que quem martela o botao faz, e e o unico
+                // momento em que o estado de janela do golpe ANTERIOR pode
+                // vazar para o golpe novo. O encadeamento do quadro 30 acima
+                // acontece com a janela ja fechada e nao exercita isto.
+                Reposicionar();
+                combate.RequestBasicAttack();
+                Verificar(combate.ComboStep == 2,
+                    $"encadeamento cedo deveria ir para o passo 2, foi {combate.ComboStep}");
+                _origemDoAvanco = _jogador!.GlobalPosition;
+                break;
+
+            case 164:
+                Verificar(AvancoDesdeOPedido() > 0.001f,
+                    "o golpe encadeado nao avancou no primeiro quadro: a janela do golpe anterior "
+                    + "sobreviveu ao pedido e engoliu o comeco do deslize");
+                Reposicionar();
+                break;
+
+            case 200:
                 Verificar(_acertos >= 3, $"os três golpes deveriam ter conectado; conectaram {_acertos}");
                 Concluir();
                 break;
@@ -120,6 +162,13 @@ public sealed partial class CombatProbe : Node
             default:
                 break;
         }
+    }
+
+    /// <summary>Quanto o jogador andou no plano desde que o golpe foi pedido.</summary>
+    private float AvancoDesdeOPedido()
+    {
+        var ate = _jogador!.GlobalPosition - _origemDoAvanco;
+        return new Vector3(ate.X, 0f, ate.Z).Length();
     }
 
     /// <summary>

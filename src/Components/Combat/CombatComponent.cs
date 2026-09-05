@@ -40,6 +40,8 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     private readonly HashSet<ulong> _jaAtingidosNesteGolpe = [];
     private readonly List<CharacterController> _alvos = [];
 
+    private readonly LungeMotion _avanco = new();
+
     private CharacterContext? _contexto;
     private bool _janelaAberta;
     private WeaponDefinition _arma = new();
@@ -89,7 +91,17 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
         // acerte o mesmo alvo.
         _jaAtingidosNesteGolpe.Clear();
 
-        Avancar(_passoAtual.ForwardStep);
+        // O avanco e distribuido pelo wind-up, e nao aplicado de uma vez: um
+        // salto de 1 m num quadro le como teleporte. Espalhado ate a lamina
+        // conectar, o personagem desliza para dentro do golpe. Ver spec 07 §4.
+        _avanco.Start(_passoAtual.ForwardStep, _passoAtual.HitWindowStart);
+
+        // O golpe novo comeca com a janela fechada. Sem zerar aqui, encadear
+        // herdaria o estado do golpe anterior -- e como o encadeamento so e
+        // aceito da janela de acerto em diante, o proximo Tick descartaria o
+        // primeiro quadro de avanco de todo golpe 2 e 3.
+        _janelaAberta = false;
+
         AttackStarted?.Invoke(_combo.Step);
     }
 
@@ -97,6 +109,7 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     public void Cancel()
     {
         _combo?.Cancel();
+        _avanco.Cancel();
         _jaAtingidosNesteGolpe.Clear();
     }
 
@@ -104,6 +117,7 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     public void ResetForSpawn()
     {
         _combo?.Reset();
+        _avanco.Cancel();
         _jaAtingidosNesteGolpe.Clear();
     }
 
@@ -120,9 +134,21 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
         if (_combo is null)
             return;
 
+        // O avanço é consumido ANTES de o relógio andar: quando a lâmina
+        // conecta o deslize já acabou, e o alcance é medido de onde o
+        // personagem realmente parou.
+        Avancar(_avanco.Consume(delta));
+
         var estavaAberta = _janelaAberta;
         _combo.Advance(delta);
         _janelaAberta = _combo.IsHitWindowOpen;
+
+        // Abrir a janela encerra o deslize: a sobra de arredondamento não vaza
+        // para dentro dela nem para o golpe seguinte. É a ÚNICA parada do
+        // avanço — duplicá-la num guard acima só cria duas regras para
+        // divergirem.
+        if (_janelaAberta || !_combo.IsAttacking)
+            _avanco.Cancel();
 
         if (_janelaAberta && !estavaAberta)
             AmostrarAlvos();
@@ -137,6 +163,7 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
         return _arma.ComboSteps.Length > 0 ? _arma.ComboSteps[indice] : new MeleeComboStep();
     }
 
+    /// <summary>Empurra o corpo à frente pela distância deste quadro.</summary>
     private void Avancar(float metros)
     {
         if (_contexto is null || metros <= 0f)
