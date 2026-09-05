@@ -1,3 +1,4 @@
+using Contenda.Components.Abilities;
 using Contenda.Components.Health;
 using Contenda.Components.Mana;
 using Contenda.Components.Movement;
@@ -37,4 +38,7 @@ public sealed partial class CharacterDefinition : Resource
 
     /// <summary>Parâmetros de locomoção.</summary>
     [Export] public MovementSettings? Movement { get; set; }
+
+    /// <summary>As habilidades executáveis por sequência de WASD. Vazia é válido — sem AbilityComponent, sem M2.</summary>
+    [Export] public AbilityDefinition[] Abilities { get; set; } = [];
 }

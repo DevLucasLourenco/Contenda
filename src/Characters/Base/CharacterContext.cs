@@ -1,3 +1,4 @@
+using Contenda.Components.Abilities;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Mana;
@@ -55,4 +56,7 @@ public sealed class CharacterContext
 
     /// <summary>Para onde o personagem olha e mira.</summary>
     public TargetingComponent? Targeting { get; internal set; }
+
+    /// <summary>Habilidades. Executa uma sequência de WASD confirmada. Nulo para quem não tem nenhuma.</summary>
+    public AbilityComponent? Abilities { get; internal set; }
 }

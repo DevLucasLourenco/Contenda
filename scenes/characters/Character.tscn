@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
 [ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="2_mov"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://src/Components/Combat/CombatComponent.cs" id="9_cbt"]
 [ext_resource type="Script" path="res://src/Components/Mana/ManaComponent.cs" id="10_mana"]
 [ext_resource type="Script" path="res://src/Components/Health/DamageFlashComponent.cs" id="11_flash"]
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityComponent.cs" id="12_hab"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -69,6 +70,9 @@ MeshPath = NodePath("../Corpo")
 
 [node name="CombatComponent" type="Node" parent="."]
 script = ExtResource("9_cbt")
+
+[node name="AbilityComponent" type="Node" parent="."]
+script = ExtResource("12_hab")
 
 [node name="MovementComponent" type="Node" parent="."]
 script = ExtResource("2_mov")

@@ -27,6 +27,15 @@ namespace Contenda.Input;
 /// hitscan atira em cadência enquanto for true — spec 07 §5, ticket 09.
 /// </param>
 /// <param name="ConfirmPressed">Confirmação de sequência neste tique.</param>
+/// <param name="CommandUpPressed">
+/// Borda de subida de W neste tique — símbolo de comando, não movimento.
+/// Distinto de <see cref="Move"/>: o buffer de comandos grava tecla por
+/// tecla, nunca o eixo composto, senão W+D gravaria só uma diagonal em vez de
+/// dois símbolos. Ver <c>CommandBuffer</c> e o ticket 14.
+/// </param>
+/// <param name="CommandDownPressed">Borda de subida de S neste tique. Ver <see cref="CommandUpPressed"/>.</param>
+/// <param name="CommandLeftPressed">Borda de subida de A neste tique. Ver <see cref="CommandUpPressed"/>.</param>
+/// <param name="CommandRightPressed">Borda de subida de D neste tique. Ver <see cref="CommandUpPressed"/>.</param>
 /// <param name="FormScrollDelta">Troca de forma selecionada: −1, 0 ou +1.</param>
 /// <param name="FormActivatePressed">Ativação de forma neste tique.</param>
 /// <param name="JumpPressed">Pulo neste tique. Consumido a partir do ticket 17.</param>
@@ -40,6 +49,10 @@ public readonly record struct IntentFrame(
     bool AttackPressed,
     bool AttackHeld,
     bool ConfirmPressed,
+    bool CommandUpPressed,
+    bool CommandDownPressed,
+    bool CommandLeftPressed,
+    bool CommandRightPressed,
     int FormScrollDelta,
     bool FormActivatePressed,
     bool JumpPressed,

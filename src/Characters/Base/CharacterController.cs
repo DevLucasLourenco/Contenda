@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Contenda.Components.Abilities;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Mana;
@@ -40,6 +41,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private HealthComponent? _vida;
     private ManaComponent? _mana;
     private CombatComponent? _combate;
+    private AbilityComponent? _habilidades;
     private DamageFlashComponent? _flash;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
@@ -144,12 +146,26 @@ public sealed partial class CharacterController : CharacterBody3D
 
         _combate?.Tick((float)delta, intencao.AttackHeld);
 
-        // 3c. mana: regenera, com atraso após qualquer gasto. Nada mais no M2
-        //     lê ou gasta mana ainda dentro deste quadro, então a posição
-        //     exata na ordem não importa até o M3 consumir por habilidade.
+        // 3c. habilidades: grava o símbolo de comando na borda de subida de
+        //     cada tecla (nunca o eixo composto de Move -- ver IntentFrame),
+        //     confirma com M2, e avança a execução em curso. Depois do
+        //     combate: o gate de ActionLock.Abilities lido por TryExecute
+        //     precisa das travas JÁ atualizadas por este quadro.
+        if (intencao.CommandUpPressed) _habilidades?.PushToken(CommandDirection.Up);
+        if (intencao.CommandDownPressed) _habilidades?.PushToken(CommandDirection.Down);
+        if (intencao.CommandLeftPressed) _habilidades?.PushToken(CommandDirection.Left);
+        if (intencao.CommandRightPressed) _habilidades?.PushToken(CommandDirection.Right);
+        if (intencao.ConfirmPressed) _habilidades?.RequestConfirm();
+
+        _habilidades?.Tick((float)delta);
+
+        // 3d. mana: regenera, com atraso após qualquer gasto. Precisa vir
+        //     DEPOIS das habilidades: um TryExecute bem-sucedido já gastou
+        //     mana neste mesmo quadro, e regenerar antes disso devolveria uma
+        //     fração de sobra que a habilidade nem tinha visto ainda.
         _mana?.Tick((float)delta);
 
-        // 3d. flash de dano: puramente visual, sem afetar simulação nenhuma.
+        // 3e. flash de dano: puramente visual, sem afetar simulação nenhuma.
         _flash?.Tick((float)delta);
 
         // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
@@ -221,6 +237,10 @@ public sealed partial class CharacterController : CharacterBody3D
             case CombatComponent c:
                 _combate = c;
                 Context!.Combat = c;
+                break;
+            case AbilityComponent a:
+                _habilidades = a;
+                Context!.Abilities = a;
                 break;
             case DamageFlashComponent f:
                 _flash = f;
