@@ -34,11 +34,17 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// </remarks>
     [Export] public CameraSettings? CameraReference { get; set; }
 
-    /// <summary>Quão rápido a repulsão de um golpe se dissipa, em m/s².</summary>
-    [Export(PropertyHint.Range, "5,120,1")] public float KnockbackDecay { get; set; } = 40f;
+    /// <summary>Em quanto tempo a repulsão de um golpe decai até zero, em segundos.</summary>
+    /// <remarks>
+    /// Duração fixa, não taxa fixa — ver ticket 11 e <see cref="KnockbackState"/>.
+    /// Um golpe fraco e um forte decaem no MESMO tempo, só com magnitudes
+    /// diferentes; a taxa antiga (m/s² constante) fazia golpes fortes
+    /// empurrarem por mais tempo, o que a spec não pede.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0.05,1,0.01")] public float KnockbackDuration { get; set; } = 0.25f;
 
     private CharacterContext? _contexto;
-    private Vector3 _repulsao;
+    private KnockbackState _recuo = new(0.25f);
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
@@ -52,12 +58,17 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// Decai sozinho, e não substitui a velocidade: substituir faria o alvo
     /// parar de andar ao apanhar, o que sob câmera fixa parece travamento.
     /// </remarks>
-    public void ApplyKnockback(Vector3 impulso) => _repulsao += impulso;
+    public void ApplyKnockback(Vector3 impulso) => _recuo.Apply(impulso);
 
     public void Configure(CharacterDefinition definicao)
     {
         if (definicao.Movement is not null)
             Settings = definicao.Movement;
+
+        // Reconstruído aqui, não no inicializador de campo: [Export] só
+        // aplica KnockbackDuration depois que o campo já teria rodado com o
+        // valor padrão do código, ignorando o que a cena pediu.
+        _recuo = new KnockbackState(KnockbackDuration);
     }
 
     /// <summary>
@@ -90,8 +101,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var velocidade = MovementMath.Accelerate(
             corpo.Velocity, desejada, Settings.Acceleration, Settings.Deceleration, delta);
 
-        velocidade += _repulsao;
-        _repulsao = _repulsao.MoveToward(Vector3.Zero, KnockbackDecay * delta);
+        velocidade += _recuo.Current;
+        _recuo.Advance(delta);
 
         // A altura vem de `velocidade`, e não de `corpo.Velocity`: são iguais
         // hoje, mas quando o pulo entrar (ticket 17) o primeiro passo a mexer em

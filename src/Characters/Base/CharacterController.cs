@@ -40,6 +40,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private HealthComponent? _vida;
     private ManaComponent? _mana;
     private CombatComponent? _combate;
+    private DamageFlashComponent? _flash;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
@@ -119,8 +120,22 @@ public sealed partial class CharacterController : CharacterBody3D
             };
         }
 
+        // Hitstop (ticket 11): escala SÓ a locomoção. Lido do estado que
+        // RESOLVEQUEUE (item 4, abaixo) atualizou no quadro ANTERIOR — um
+        // congelamento pedido agora só trava movimento a partir do próximo
+        // quadro. Curto o bastante (0,04-0,09 s) para essa defasagem não
+        // incomodar.
+        //
+        // NÃO escala combate: o combo/tambor de QUEM ACABOU de acertar
+        // rodaria em delta zero pelo mesmo congelamento que o próprio acerto
+        // pediu, atrasando o disparo/golpe seguinte a cada vez que um
+        // conectasse -- um efeito cascata que se acumula tiro a tiro. O
+        // congelamento visual vem do corpo parar de deslizar, que já é o
+        // sinal dominante sem animações (M8).
+        var escalaDeHitstop = _vida?.TimeScale ?? 1f;
+
         // 3. locomoção
-        _movimento?.Tick(intencao, (float)delta);
+        _movimento?.Tick(intencao, (float)delta * escalaDeHitstop);
 
         // 3b. combate: o pedido primeiro, a resolução da janela depois — assim
         //     um golpe pedido neste quadro já pode abrir a janela no próximo.
@@ -134,9 +149,13 @@ public sealed partial class CharacterController : CharacterBody3D
         //     exata na ordem não importa até o M3 consumir por habilidade.
         _mana?.Tick((float)delta);
 
+        // 3d. flash de dano: puramente visual, sem afetar simulação nenhuma.
+        _flash?.Tick((float)delta);
+
         // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
         //    momentos arbitrários; resolvê-los só aqui é o que impede dois
-        //    golpes simultâneos de disparar morte duas vezes.
+        //    golpes simultâneos de disparar morte duas vezes. Delta CRU:
+        //    é aqui que o relógio do próprio hitstop anda (ver HealthComponent).
         _vida?.ResolveQueue((float)delta);
     }
 
@@ -202,6 +221,9 @@ public sealed partial class CharacterController : CharacterBody3D
             case CombatComponent c:
                 _combate = c;
                 Context!.Combat = c;
+                break;
+            case DamageFlashComponent f:
+                _flash = f;
                 break;
             case PlayerInputController e:
                 _entrada = e;

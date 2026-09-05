@@ -10,3 +10,4 @@ HitWindowEnd = 0.40
 ComboWindowEnd = 0.60
 ForwardStep = 1.0
 KnockbackMultiplier = 2.0
+HitstopSeconds = 0.09

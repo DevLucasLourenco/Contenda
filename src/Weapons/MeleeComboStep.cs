@@ -37,4 +37,14 @@ public sealed partial class MeleeComboStep : Resource
 
     /// <summary>Multiplicador da repulsão aplicada ao alvo.</summary>
     [Export(PropertyHint.Range, "0,5,0.1")] public float KnockbackMultiplier { get; set; } = 1f;
+
+    /// <summary>
+    /// Duração do congelamento local ao conectar, em segundos. Ver ticket 11.
+    /// </summary>
+    /// <remarks>
+    /// É por isto que o finalizador (0,09 s) não precisa de nenhum código
+    /// especial: é só um passo com um número maior aqui que os outros
+    /// (0,04 s). Aplicado aos dois envolvidos — quem bateu e quem apanhou.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float HitstopSeconds { get; set; } = 0.04f;
 }

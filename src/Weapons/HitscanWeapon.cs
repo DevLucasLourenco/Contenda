@@ -151,6 +151,12 @@ public sealed class HitscanWeapon : IWeapon
 
             alvo.Context?.Movement?.ApplyKnockback(direcao * _arma.Knockback);
 
+            // Hitstop nos dois envolvidos -- ticket 11. Sem cadeia de combo
+            // aqui, então é sempre a mesma duração; nenhum "finalizador" para
+            // o revólver.
+            _contexto.Health?.ApplyHitstop(_arma.HitstopSeconds);
+            alvo.Context?.Health?.ApplyHitstop(_arma.HitstopSeconds);
+
             HitLanded?.Invoke(alvo);
         }
 

@@ -14,3 +14,4 @@ AttackInterval = 0.3
 MagazineSize = 6
 ReloadTime = 1.6
 SpreadDegrees = 1.5
+HitstopSeconds = 0.04

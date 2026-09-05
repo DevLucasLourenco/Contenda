@@ -1,3 +1,5 @@
+using Contenda.Characters.Base;
+using Contenda.Components.Health;
 using Godot;
 
 namespace Contenda.Camera;
@@ -34,11 +36,28 @@ public sealed partial class CameraRig : Node3D
     /// <summary>Caminho da câmera filha, resolvido no <c>_Ready</c>.</summary>
     [Export] public NodePath CameraPath { get; set; } = new();
 
+    /// <summary>Intensidade do tremor ao ACERTAR um golpe. Ticket 11.</summary>
+    [Export(PropertyHint.Range, "0,1,0.01")] public float HitLandedShakeIntensity { get; set; } = 0.15f;
+
+    /// <summary>Intensidade do tremor ao LEVAR um golpe. Ticket 11.</summary>
+    [Export(PropertyHint.Range, "0,1,0.01")] public float DamageTakenShakeIntensity { get; set; } = 0.3f;
+
     /// <summary>O que está sendo seguido. Trocável em runtime por <see cref="SetTarget"/>.</summary>
     public Node3D? Target { get; private set; }
 
     /// <summary>A câmera controlada por este rig.</summary>
     public CombatCamera? Camera { get; private set; }
+
+    /// <summary>
+    /// De quem este rig ouve acertos/golpes para sacudir a câmera.
+    /// </summary>
+    /// <remarks>
+    /// Só existe quando <see cref="Target"/> é um <see cref="CharacterController"/>
+    /// com <c>Context</c> já montado — o rig não sacode por qualquer coisa que
+    /// esteja seguindo (uma câmera de replay futura poderia seguir um ponto
+    /// sem personagem nenhum).
+    /// </remarks>
+    private CharacterController? _fonteDoTremor;
 
     /// <summary>
     /// Posição sem tremor.
@@ -55,6 +74,9 @@ public sealed partial class CameraRig : Node3D
     private Vector3 _tremor;
     private float _alturaAlvo;
     private bool _iniciado;
+
+    /// <summary>Deslocamento de tremor deste quadro. Para o probe/depuração.</summary>
+    public Vector3 ShakeOffset => _tremor;
 
     public override void _Ready()
     {
@@ -78,6 +100,11 @@ public sealed partial class CameraRig : Node3D
             GD.PushWarning($"{Name}: TargetPath não resolveu ('{TargetPath}'); a câmera ficará parada.");
 
         Reenquadrar();
+
+        // Adiado: se o alvo é um CharacterController, o próprio _Ready dele
+        // (que monta Context) pode não ter rodado ainda -- rig e personagem
+        // são IRMÃOS na árvore, e ordem entre irmãos não é garantida.
+        CallDeferred(nameof(ConectarAoAlvo));
     }
 
     /// <summary>Troca o alvo seguido, sem solavanco.</summary>
@@ -85,7 +112,10 @@ public sealed partial class CameraRig : Node3D
     {
         Target = alvo;
         Reenquadrar();
+        ConectarAoAlvo();
     }
+
+    public override void _ExitTree() => DesconectarDoAlvo();
 
     /// <summary>
     /// Sacode a câmera. Some sozinho por <c>ShakeDecay</c>.
@@ -94,12 +124,22 @@ public sealed partial class CameraRig : Node3D
     /// O deslocamento é gerado no espaço da CÂMERA e só depois levado para o
     /// mundo: sacudir nos eixos do mundo, sob um yaw de 45°, faria o tremor sair
     /// na diagonal da tela em vez de para os lados.
+    ///
+    /// <see cref="CameraSettings.ShakeIntensityMultiplier"/> é aplicado AQUI,
+    /// não em cada chamador — é o knob único que o menu de acessibilidade do
+    /// M7 vai expor, e todo tremor (acerto, dano, o que vier depois) passa por
+    /// ele automaticamente. Nunca mexe na rotação base da câmera — só desloca
+    /// a posição, por cima do enquadramento normal.
     /// </remarks>
     public void Shake(float intensidade)
     {
+        var escalada = intensidade * Settings.ShakeIntensityMultiplier;
+        if (escalada <= 0f)
+            return;
+
         var local = new Vector3(
-            (float)GD.RandRange(-intensidade, intensidade),
-            (float)GD.RandRange(-intensidade, intensidade),
+            (float)GD.RandRange(-escalada, escalada),
+            (float)GD.RandRange(-escalada, escalada),
             0f);
 
         var baseCamera = new Basis(Vector3.Up, Mathf.DegToRad(Settings.YawDegrees))
@@ -181,4 +221,44 @@ public sealed partial class CameraRig : Node3D
 
         return new Vector3(alvo.X, _alturaAlvo, alvo.Z) + Settings.TargetOffset;
     }
+
+    /// <remarks>
+    /// Comunicação DIRETA, não pelo <c>GameEvents</c>: o rig já segura uma
+    /// referência estrutural ao alvo (<see cref="Target"/>), e a spec 01 §5
+    /// reserva o barramento para sistemas SEM relação — aqui a relação já
+    /// existe. Ver o comentário da classe <c>GameEvents</c>.
+    /// </remarks>
+    private void ConectarAoAlvo()
+    {
+        DesconectarDoAlvo();
+
+        if (Target is not CharacterController jogador || jogador.Context is not { } ctx)
+            return;
+
+        _fonteDoTremor = jogador;
+
+        if (ctx.Combat is not null)
+            ctx.Combat.HitLanded += AoAcertar;
+
+        if (ctx.Health is not null)
+            ctx.Health.Damaged += AoApanhar;
+    }
+
+    private void DesconectarDoAlvo()
+    {
+        if (_fonteDoTremor?.Context is { } ctx)
+        {
+            if (ctx.Combat is not null)
+                ctx.Combat.HitLanded -= AoAcertar;
+
+            if (ctx.Health is not null)
+                ctx.Health.Damaged -= AoApanhar;
+        }
+
+        _fonteDoTremor = null;
+    }
+
+    private void AoAcertar(Node3D alvo) => Shake(HitLandedShakeIntensity);
+
+    private void AoApanhar(DamageInfo golpe) => Shake(DamageTakenShakeIntensity);
 }

@@ -66,6 +66,15 @@ public sealed partial class CameraSettings : Resource
     [Export(PropertyHint.Range, "1,20,0.5")] public float ShakeDecay { get; set; } = 6f;
 
     /// <summary>
+    /// Multiplicador de intensidade de todo tremor de tela.
+    /// </summary>
+    /// <remarks>
+    /// O knob que o menu de acessibilidade do M7 vai expor — "mesmo que o menu
+    /// só chegue depois", ticket 11. Até lá, é só um `.tres`.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,2,0.05")] public float ShakeIntensityMultiplier { get; set; } = 1f;
+
+    /// <summary>
     /// Experimento pós-MVP. Projeção ortográfica achata a profundidade e empurra
     /// o resultado para "isométrico chapado" — o oposto do pedido.
     /// </summary>

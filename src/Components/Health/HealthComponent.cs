@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Components.Stats;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.Components.Health;
@@ -21,6 +22,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     [Export] public HealthDefinition? Fallback { get; set; }
 
     private readonly Queue<DamageInfo> _fila = new();
+    private readonly HitstopState _hitstop = new();
     private HealthState _estado = new(100f);
     private CharacterContext? _contexto;
     private StatsComponent? _stats;
@@ -41,6 +43,17 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
 
     /// <inheritdoc/>
     public bool IsAlive => _estado.IsAlive;
+
+    /// <summary>
+    /// Multiplicador de delta enquanto o congelamento de impacto durar — 0
+    /// congelado, 1 normal.
+    /// </summary>
+    /// <remarks>
+    /// Lido pelo <c>CharacterController</c> para escalar o delta de movimento
+    /// e combate deste personagem. Nunca <c>Engine.TimeScale</c> — ver
+    /// <c>HitstopState</c> e o ticket 11.
+    /// </remarks>
+    public float TimeScale => _hitstop.TimeScale;
 
     /// <summary>Avisa que apanhou.</summary>
     public event Action<DamageInfo>? Damaged;
@@ -97,6 +110,12 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     /// <summary>Cura, sem passar do máximo e sem ressuscitar.</summary>
     public void Heal(float quanto) => _estado.Heal(quanto);
 
+    /// <summary>
+    /// Congela este personagem por um instante. Chamado pela arma, dos dois
+    /// lados do golpe — quem bateu e quem apanhou.
+    /// </summary>
+    public void ApplyHitstop(float duration) => _hitstop.Apply(duration);
+
     /// <summary>Enfileira um golpe fatal, resolvido no ponto único do quadro.</summary>
     public void Kill(string origem)
         => ApplyDamage(new DamageInfo(
@@ -122,6 +141,11 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     /// </remarks>
     public void ResolveQueue(float delta)
     {
+        // Sempre em delta CRU, nunca no delta já escalado pelo hitstop que o
+        // CharacterController repassa a movimento/combate -- senão o próprio
+        // congelamento nunca andaria o relógio que o encerra.
+        _hitstop.Advance(delta);
+
         if (_restanteDeInvulnerabilidade > 0f)
         {
             _restanteDeInvulnerabilidade -= delta;
@@ -160,6 +184,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
         _fila.Clear();
         _restanteDeInvulnerabilidade = 0f;
         _estado.Reset();
+        _hitstop.Reset();
     }
 
     // --- privados ------------------------------------------------------------
@@ -186,7 +211,17 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
             _estado.SetMax(valor);
     }
 
-    private void RepassarDano(DamageInfo golpe) => Damaged?.Invoke(golpe);
+    /// <remarks>
+    /// Repassa também para <see cref="GameEvents"/>: o número de dano flutuante
+    /// do ticket 11 é pooled e genérico, sem referência a nenhum personagem —
+    /// exatamente o tipo de consumidor cross-cutting que o barramento existe
+    /// para atender, spec 01 §5.
+    /// </remarks>
+    private void RepassarDano(DamageInfo golpe)
+    {
+        Damaged?.Invoke(golpe);
+        ServiceLocator.Events.RaiseDamageNumber(new DamageNumberEvent(golpe.HitPoint, golpe.Amount, golpe.IsCritical));
+    }
 
     private void RepassarMorte(DamageInfo golpe) => Died?.Invoke(golpe);
 

@@ -253,6 +253,12 @@ public sealed class MeleeWeapon : IWeapon
             alvo.Context?.Movement?.ApplyKnockback(
                 direcao * _arma.Knockback * _passoAtual.KnockbackMultiplier);
 
+            // Hitstop nos DOIS envolvidos, pela duração DESTE passo -- é só
+            // isso que faz o finalizador congelar mais que um golpe normal,
+            // sem nenhum código distinguindo "é o último passo". Ticket 11.
+            _contexto.Health?.ApplyHitstop(_passoAtual.HitstopSeconds);
+            vida.ApplyHitstop(_passoAtual.HitstopSeconds);
+
             HitLanded?.Invoke(alvo);
         }
     }

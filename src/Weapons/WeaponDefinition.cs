@@ -59,4 +59,11 @@ public sealed partial class WeaponDefinition : Resource
 
     /// <summary>Meia-abertura do cone de dispersão aleatória do tiro, em graus. Só hitscan.</summary>
     [Export(PropertyHint.Range, "0,15,0.1")] public float SpreadDegrees { get; set; } = 1.5f;
+
+    /// <summary>
+    /// Duração do congelamento local ao conectar, em segundos. Só hitscan —
+    /// corpo a corpo usa o valor por passo em <see cref="MeleeComboStep"/>.
+    /// </summary>
+    /// <remarks>Ver ticket 11. Aplicado aos dois envolvidos — quem atirou e quem apanhou.</remarks>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float HitstopSeconds { get; set; } = 0.04f;
 }

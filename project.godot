@@ -32,6 +32,7 @@ GameEvents="*res://src/Core/GameEvents.cs"
 GameSession="*res://src/Core/GameSession.cs"
 SceneRouter="*res://src/Core/SceneRouter.cs"
 AudioDirector="*res://src/Core/AudioDirector.cs"
+DamageNumberPool="*res://src/Vfx/DamageNumberPool.cs"
 GameBootstrap="*res://src/Core/GameBootstrap.cs"
 
 [display]

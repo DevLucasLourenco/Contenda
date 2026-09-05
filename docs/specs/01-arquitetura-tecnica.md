@@ -235,13 +235,17 @@ registro, e `GameBootstrap` é o único que usa os outros — por isso vem por
 | 2 | `GameSession` | modo escolhido, personagem escolhido, resultado da última partida | limpo ao voltar ao menu |
 | 3 | `SceneRouter` | `GoTo(scenePath)` assíncrono com tela de loading | — |
 | 4 | `AudioDirector` | buses, pooling de `AudioStreamPlayer3D` | — |
-| 5 | `GameBootstrap` | aplica settings, valida conteúdo, abre a primeira cena | sem estado de partida |
+| 5 | `DamageNumberPool` | números de dano flutuantes, pooled (ticket 11) | — |
+| 6 | `GameBootstrap` | aplica settings, valida conteúdo, abre a primeira cena | sem estado de partida |
 
-Cada serviço se **anuncia** ao `ServiceLocator` no próprio `_Ready`; nada procura
-autoload por caminho literal (`/root/GameSession`), o que quebraria em silêncio a
-cada renomeação.
+Cada serviço que PRECISA ser encontrado por outro se **anuncia** ao
+`ServiceLocator` no próprio `_Ready`; nada procura autoload por caminho literal
+(`/root/GameSession`), o que quebraria em silêncio a cada renomeação.
+`DamageNumberPool` é a exceção deliberada: ninguém segura referência a ele, só
+ouve `GameEvents.DamageNumberRequested` sozinho — por isso fica fora da tabela
+fixa do `ServiceLocator` (ver o comentário na própria classe).
 
-Nenhum outro singleton. Nada de `GameManager` genérico.
+Nenhum outro singleton além destes seis. Nada de `GameManager` genérico.
 
 ## 8. Camadas de física
 
