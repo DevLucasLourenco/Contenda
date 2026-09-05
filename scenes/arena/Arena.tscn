@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
 [ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="3_set"]
 [ext_resource type="NavigationMesh" path="res://data/navmesh/arena_nav.tres" id="4_nav"]
+[ext_resource type="PackedScene" path="res://scenes/characters/Character.tscn" id="5_pj"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
 sky_top_color = Color(0.35, 0.45, 0.62, 1)
@@ -257,16 +258,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 0)
 [node name="Spawn8" type="Marker3D" parent="SpawnPoints"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -18)
 
-[node name="Alvo" type="Node3D" parent="."]
-
-[node name="Marca" type="MeshInstance3D" parent="Alvo"]
-transform = Transform3D(0.16, 0, 0, 0, 0.6, 0, 0, 0, 0.16, 0, 0.9, 0)
-mesh = SubResource("Mesh_obst")
+[node name="Jogador" parent="." instance=ExtResource("5_pj")]
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("1_rig")
 Settings = ExtResource("3_set")
-TargetPath = NodePath("../Alvo")
+TargetPath = NodePath("../Jogador")
 CameraPath = NodePath("CombatCamera")
 
 [node name="CombatCamera" type="Camera3D" parent="CameraRig"]

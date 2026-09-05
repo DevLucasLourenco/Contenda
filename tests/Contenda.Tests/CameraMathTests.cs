@@ -122,4 +122,50 @@ public sealed class CameraMathTests
     {
         Assert.Equal(Vector3.Zero, CameraMath.MovementToWorld(Vector2.Zero, 45f));
     }
+
+    [Fact]
+    public void As_oito_direcoes_formam_uma_rosa_completa_na_tela()
+    {
+        // O critério do ticket 05: W para cima na tela, e as oito direções
+        // consistentes entre si. Um sinal trocado numa diagonal passa
+        // despercebido ao testar só os quatro eixos.
+        var entradas = new (string Nome, Vector2 Eixo)[]
+        {
+            ("W",  new Vector2(0f, -1f)),
+            ("WD", new Vector2(1f, -1f).Normalized()),
+            ("D",  new Vector2(1f, 0f)),
+            ("SD", new Vector2(1f, 1f).Normalized()),
+            ("S",  new Vector2(0f, 1f)),
+            ("SA", new Vector2(-1f, 1f).Normalized()),
+            ("A",  new Vector2(-1f, 0f)),
+            ("WA", new Vector2(-1f, -1f).Normalized()),
+        };
+
+        var anterior = CameraMath.MovementToWorld(entradas[^1].Eixo, 45f);
+        foreach (var (nome, eixo) in entradas)
+        {
+            var atual = CameraMath.MovementToWorld(eixo, 45f);
+
+            Assert.Equal(1f, atual.Length(), Tol);
+            Assert.Equal(0f, atual.Y, Tol);
+
+            // Passos consecutivos da rosa ficam a 45° um do outro: sem buracos
+            // nem direções repetidas.
+            var graus = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp(anterior.Dot(atual), -1f, 1f)));
+            Assert.True(Mathf.Abs(graus - 45f) < 0.5f,
+                $"de {nome} para o anterior deu {graus:0.0}°, esperado 45°");
+
+            anterior = atual;
+        }
+    }
+
+    [Fact]
+    public void Diagonais_ficam_exatamente_entre_os_eixos_vizinhos()
+    {
+        var w = CameraMath.MovementToWorld(new Vector2(0f, -1f), 45f);
+        var d = CameraMath.MovementToWorld(new Vector2(1f, 0f), 45f);
+        var wd = CameraMath.MovementToWorld(new Vector2(1f, -1f).Normalized(), 45f);
+
+        Assert.Equal(0f, ((w + d).Normalized() - wd).Length(), Tol);
+    }
 }

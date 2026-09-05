@@ -1,0 +1,59 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
+[ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="2_mov"]
+[ext_resource type="Script" path="res://src/Components/Targeting/TargetingComponent.cs" id="3_alvo"]
+[ext_resource type="Script" path="res://src/Input/PlayerInputController.cs" id="4_in"]
+[ext_resource type="Resource" path="res://data/characters/swordsman.tres" id="5_def"]
+[ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="6_cam"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_corpo"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_corpo"]
+albedo_color = Color(0.42, 0.72, 0.78, 1)
+roughness = 0.6
+
+[sub_resource type="CapsuleMesh" id="Mesh_corpo"]
+material = SubResource("Mat_corpo")
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_frente"]
+albedo_color = Color(0.95, 0.75, 0.25, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="Mesh_frente"]
+material = SubResource("Mat_frente")
+size = Vector3(0.18, 0.18, 0.5)
+
+[node name="Character" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_ctrl")
+Definition = ExtResource("5_def")
+Team = 1
+
+[node name="Colisao" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_corpo")
+
+[node name="Corpo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("Mesh_corpo")
+
+[node name="Frente" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -0.42)
+mesh = SubResource("Mesh_frente")
+
+[node name="MovementComponent" type="Node" parent="."]
+script = ExtResource("2_mov")
+CameraReference = ExtResource("6_cam")
+
+[node name="TargetingComponent" type="Node" parent="."]
+script = ExtResource("3_alvo")
+TorsoHeight = 1.0
+
+[node name="PlayerInputController" type="Node" parent="."]
+script = ExtResource("4_in")
