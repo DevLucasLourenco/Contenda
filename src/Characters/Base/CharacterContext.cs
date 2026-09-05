@@ -1,4 +1,6 @@
+using Contenda.Components.Health;
 using Contenda.Components.Movement;
+using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
 using Contenda.Core;
 using Godot;
@@ -33,6 +35,12 @@ public sealed class CharacterContext
 
     /// <summary>De que lado este personagem está. Decide quem pode ferir quem.</summary>
     public Team Team { get; }
+
+    /// <summary>Atributos. Base para dano, defesa, velocidade e o resto.</summary>
+    public StatsComponent? Stats { get; internal set; }
+
+    /// <summary>Vida. Enfileira golpes e resolve num ponto único do quadro.</summary>
+    public HealthComponent? Health { get; internal set; }
 
     /// <summary>Locomoção. Consome intenção, venha ela do teclado ou da IA.</summary>
     public MovementComponent? Movement { get; internal set; }

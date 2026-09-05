@@ -1,3 +1,4 @@
+using Contenda.Components.Health;
 using Contenda.Components.Movement;
 using Godot;
 
@@ -22,6 +23,9 @@ public sealed partial class CharacterDefinition : Resource
 
     /// <summary>Nome exibido nas telas.</summary>
     [Export] public string DisplayName { get; set; } = "Sem nome";
+
+    /// <summary>Parâmetros de vida.</summary>
+    [Export] public HealthDefinition? Health { get; set; }
 
     /// <summary>Parâmetros de locomoção.</summary>
     [Export] public MovementSettings? Movement { get; set; }

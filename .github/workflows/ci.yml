@@ -63,5 +63,14 @@ jobs:
       - uses: actions/checkout@v4
       # Vira bloqueante no M9, junto com o ContentValidator e os testes de cena.
       # Ver docs/specs/14-configuracoes-persistencia-e-build.md §8.
+      #
+      # Quando este job for real, ele DEVE rodar as sondas headless abaixo. Elas
+      # verificam fiação que teste unitário não alcança — a sonda de dano já
+      # pegou um bug de i-frames bloqueando o segundo golpe do mesmo quadro:
+      #
+      #   godot --headless --path . --import
+      #   godot --headless --path . --scene res://scenes/debug/DamageProbe.tscn
+      #   godot --headless --path . --scene res://scenes/debug/BakeNavmesh.tscn
+      #
       - name: Pendente
-        run: echo "::notice::Import headless do Godot entra no M9."
+        run: echo "::notice::Import e sondas headless do Godot entram no M9."

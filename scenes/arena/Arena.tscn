@@ -5,6 +5,7 @@
 [ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="3_set"]
 [ext_resource type="NavigationMesh" path="res://data/navmesh/arena_nav.tres" id="4_nav"]
 [ext_resource type="PackedScene" path="res://scenes/characters/Character.tscn" id="5_pj"]
+[ext_resource type="PackedScene" path="res://scenes/debug/TrainingDummy.tscn" id="6_alvo"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
 sky_top_color = Color(0.35, 0.45, 0.62, 1)
@@ -259,6 +260,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -18)
 
 [node name="Jogador" parent="." instance=ExtResource("5_pj")]
+
+[node name="Manequim1" parent="." instance=ExtResource("6_alvo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, -2)
+
+[node name="Manequim2" parent="." instance=ExtResource("6_alvo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -2)
+
+[node name="Manequim3" parent="." instance=ExtResource("6_alvo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.5)
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("1_rig")

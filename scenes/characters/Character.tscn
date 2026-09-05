@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
 [ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="2_mov"]
@@ -6,6 +6,9 @@
 [ext_resource type="Script" path="res://src/Input/PlayerInputController.cs" id="4_in"]
 [ext_resource type="Resource" path="res://data/characters/swordsman.tres" id="5_def"]
 [ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="6_cam"]
+[ext_resource type="Script" path="res://src/Components/Stats/StatsComponent.cs" id="7_stats"]
+[ext_resource type="Script" path="res://src/Components/Health/HealthComponent.cs" id="8_vida"]
+[ext_resource type="Script" path="res://src/Components/Combat/DebugDamageDealer.cs" id="9_dbg"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -46,6 +49,19 @@ mesh = SubResource("Mesh_corpo")
 [node name="Frente" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -0.42)
 mesh = SubResource("Mesh_frente")
+
+[node name="StatsComponent" type="Node" parent="."]
+script = ExtResource("7_stats")
+BaseDefense = 1.0
+BaseDamage = 1.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("8_vida")
+
+[node name="DebugDamageDealer" type="Node" parent="."]
+script = ExtResource("9_dbg")
+Range = 3.0
+Damage = 20.0
 
 [node name="MovementComponent" type="Node" parent="."]
 script = ExtResource("2_mov")

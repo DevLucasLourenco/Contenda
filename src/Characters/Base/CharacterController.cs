@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using Contenda.Components.Combat;
+using Contenda.Components.Health;
 using Contenda.Components.Movement;
+using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
 using Contenda.Core;
 using Contenda.Input;
@@ -32,6 +35,8 @@ public sealed partial class CharacterController : CharacterBody3D
     private PlayerInputController? _entrada;
     private TargetingComponent? _mira;
     private MovementComponent? _movimento;
+    private HealthComponent? _vida;
+    private DebugDamageDealer? _golpeDebug;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
@@ -59,11 +64,9 @@ public sealed partial class CharacterController : CharacterBody3D
         foreach (var componente in _componentes)
             componente.Configure(Definition);
 
-        if (_movimento is null)
-        {
-            GD.PushError($"{Name}: sem MovementComponent.");
-            SetPhysicsProcess(false);
-        }
+        // Movimento é OPCIONAL: um manequim de treino tem vida e atributos, mas
+        // não anda. Exigir locomoção obrigaria a inventar um componente inútil só
+        // para satisfazer o contêiner.
     }
 
     /// <summary>
@@ -76,7 +79,7 @@ public sealed partial class CharacterController : CharacterBody3D
     /// </remarks>
     public override void _PhysicsProcess(double delta)
     {
-        if (Context is null || _movimento is null)
+        if (Context is null)
             return;
 
         // 1. entrada bruta
@@ -95,7 +98,16 @@ public sealed partial class CharacterController : CharacterBody3D
         }
 
         // 3. locomoção
-        _movimento.Tick(intencao, (float)delta);
+        _movimento?.Tick(intencao, (float)delta);
+
+        // 3b. andaime do ticket 07: sai quando o IWeapon do 08 entrar
+        if (intencao.AttackPressed)
+            _golpeDebug?.TryStrike();
+
+        // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
+        //    momentos arbitrários; resolvê-los só aqui é o que impede dois
+        //    golpes simultâneos de disparar morte duas vezes.
+        _vida?.ResolveQueue((float)delta);
     }
 
     /// <summary>
@@ -145,6 +157,16 @@ public sealed partial class CharacterController : CharacterBody3D
             case TargetingComponent t:
                 _mira = t;
                 Context!.Targeting = t;
+                break;
+            case StatsComponent st:
+                Context!.Stats = st;
+                break;
+            case HealthComponent h:
+                _vida = h;
+                Context!.Health = h;
+                break;
+            case DebugDamageDealer d:
+                _golpeDebug = d;
                 break;
             case PlayerInputController e:
                 _entrada = e;

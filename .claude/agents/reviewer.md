@@ -20,11 +20,12 @@ Analise os commits relacionados à feature.
 
 1. **Leia spec**: Entenda o objetivo da feature.
 2. **Verifique tarefas**: Todas as tarefas têm `status: "done"`?
-3. **Trace commits**: Identifique commits de cada agente.
-4. **Valide escopo**: Cada commit toca apenas arquivos da tarefa correspondente?
-5. **Analise código**: Procure bugs, regressões, problemas.
-6. **Verifique compliance**: CLAUDE.md foi respeitado?
-7. **Report**: APPROVED ou CHANGES REQUESTED.
+3. **Trace commits**: Identifique commits de cada worker (implementer-a/b/c).
+4. **Valide escopo**: Cada commit toca apenas arquivos da tarefa correspondente (`files`)?
+5. **Valide ownership**: Nenhum arquivo foi tocado por duas tasks diferentes sem `depends_on` entre elas?
+6. **Analise código**: Procure bugs, regressões, problemas.
+7. **Verifique compliance**: CLAUDE.md foi respeitado?
+8. **Report**: APPROVED ou CHANGES REQUESTED.
 
 ## O QUE PROCURAR
 
@@ -72,9 +73,13 @@ APPROVED ou CHANGES REQUESTED
 
 ## Task Completion
 
-- task-1: ✅ (claimed_by: backend, status: done)
-- task-2: ✅ (claimed_by: frontend, status: done)
+- task-1: ✅ (claimed_by: implementer-a, status: done)
+- task-2: ✅ (claimed_by: implementer-b, status: done)
 - etc
+
+## File Ownership Check
+
+[Confirme que nenhum arquivo foi tocado por duas tasks sem depends_on entre elas]
 
 ## Commits Analyzed
 

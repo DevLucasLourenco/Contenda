@@ -1,299 +1,231 @@
 ---
 name: implement-multiagent
-description: Spec-driven puro. Agentes leem spec, claiam tarefas, trabalham independentemente. Zero conflito.
+description: Orquestra workers genéricos via grafo de dependências (DAG). O orchestrator escalona tasks para workers livres, garantindo zero atropelo mesmo com worktrees isoladas.
 disable-model-invocation: true
 ---
 
-# Spec-Driven Multi-Agent Orchestrator (Pure)
+# Multi-Agent Implementation Orchestrator (DAG Scheduler)
 
 Você é o **IMPLEMENTATION ORCHESTRATOR**.
 
-Agentes **leem a spec completa**, **decidem o que fazer**, **claiam tarefas no JSON**.
+A spec do usuário está em:
+
+$ARGUMENTS
 
 ---
 
-## MODELO
+## POR QUE O ORCHESTRATOR ATRIBUI (e não os workers sozinhos)
 
-**Verdadeiramente spec-driven**:
+Cada worker roda com `isolation: worktree` — uma cópia isolada do repositório. Dois workers disparados ao mesmo tempo **não enxergam o claim um do outro** em tempo real: se cada um "decidisse sozinho" qual task pegar, dois poderiam escolher a mesma, ou dois poderiam mexer no mesmo arquivo sem saber.
 
-1. **Architect** — lê spec, lista tarefas (sem owner pré-definido)
-2. **Todos agentes** — leem spec + tasks, claiam o que faz sentido
-3. **Paralelo**: Agentes trabalham independentemente, sem coordenação pré-definida
-4. **Locking automático**: JSON evita que dois claiem a mesma tarefa
-5. **Reviewer** — valida tudo
-6. **Integrate** — coleta commits, resolve conflitos, valida
+Por isso **você (orchestrator)** é o único ponto com visão completa e sem isolamento — você é quem decide, a cada rodada, qual task vai para qual worker, baseado em:
+1. Dependências satisfeitas (`depends_on` todas `done`)
+2. Nenhuma sobreposição de arquivo com task em andamento
+3. Quais workers estão livres agora
+
+Os workers (`implementer-a`, `implementer-b`, `implementer-c`) são **genéricos e intercambiáveis** — nenhum tem foco por tipo de trabalho. Eles só executam o que você atribui.
 
 ---
 
 ## FASE 0 — SAFETY CHECK
 
 1. Leia `CLAUDE.md`.
-2. `git status` — identifique alterações não commitadas.
-3. Preserve trabalho existente.
-4. Descubra arquitetura.
+2. `git status` — identifique alterações não commitadas, preserve-as.
+3. Descubra comandos de build/test.
 
-Se houver `.claude/implement-tasks.json` existente, **não sobrescreva** — continue de lá.
-
----
-
-## FASE 1 — ARCHITECT (Delegado)
-
-Descreva a task:
-
-> Você é o Architect. Leia a spec abaixo e:
->
-> 1. Analise a arquitetura existente (leia CLAUDE.md, projete existente)
-> 2. Identifique TODAS as tarefas necessárias
-> 3. **Não defina owner** — tarefas são genéricas
-> 4. Crie/atualize `.claude/implement-tasks.json` com:
->    - `claimed_by: null`
->    - `status: "unclaimed"`
->    - Descrição clara
->    - Arquivos afetados
->    - Critérios de aceitação
->    - Dependências
->
-> Retorne: Análise arquitetônica + lista de tarefas criadas.
-
-Aguarde resultado. Valide que tarefas são claras e independentes.
+Se `.claude/implement-tasks.json` já existir com tasks não concluídas de uma sessão anterior, **continue de lá** em vez de recriar (pergunte ao usuário se não estiver claro se é a mesma feature).
 
 ---
 
-## FASE 2 — PARALLEL CLAIM & IMPLEMENT
+## FASE 1 — ARCHITECT
 
-Descreva para TODOS os agentes (backend, frontend, tester) simultaneamente:
+Delegue ao `architect` a spec completa. Ele retorna o grafo de tasks em `.claude/implement-tasks.json`, todas com `status: "unclaimed"`, `claimed_by: null`.
 
-> Vocês estão vendo a feature: `$ARGUMENTS`
->
-> 1. Leia `.claude/implement-tasks.json`
-> 2. Leia a spec completa
-> 3. **Identifique qual dessas tarefas VOCÊ pode fazer** — baseado no seu tipo
-> 4. Para cada tarefa que você quer fazer:
->    - Edite `.claude/implement-tasks.json`: `claimed_by: "<seu-tipo>"`, `status: "claimed"`
->    - Faça commit disso PRIMEIRO (reserva a tarefa)
->    - Implemente
->    - Teste
->    - Commit final
->    - Marque como `status: "done"`
-> 5. Retorne: tarefas claimas + commits
-
-**Não espere sequencialmente.** Todos começam simultaneamente.
-
-Cada agente vai caiimar diferentes tarefas baseado na spec.
-
-Se houver conflito de tarefa (dois tentam claimer a mesma), o segundo commit vai falhar no JSON — agente detecta e claima outra.
+Valide antes de prosseguir:
+- Nenhum par de tasks sem `depends_on` entre si compartilha arquivo (peça correção ao architect se encontrar).
+- Sem dependência circular.
 
 ---
 
-## FASE 3 — COLLECT & CONFLICT CHECK
+## FASE 2 — SCHEDULING LOOP
 
-Quando todos retornarem:
+Este é o núcleo do orchestrator. Repita até todas as tasks estarem `done`:
 
-1. Verifique `.claude/implement-tasks.json`:
-   - Todas tarefas têm `claimed_by` preenchido?
-   - Todas têm `status: "done"`?
-2. Colete commits de cada agente.
-3. **Valide conflitos de arquivo**:
-   - Se dois commits tocam o mesmo arquivo → **ERRO**
-   - Cause: Architect dividiu mal as tarefas
-   - Solution: Peça replanejamento ou resolução manual
-4. Ordene commits por dependência (tasks que dependem de outras vêm depois).
+```
+1. Leia .claude/implement-tasks.json (fonte da verdade, no repo principal)
 
----
+2. READY = tasks com status == "unclaimed"
+           E todas as depends_on com status == "done"
 
-## FASE 4 — INTEGRATE
+3. Se READY está vazio:
+   - Se existem tasks "claimed" (em andamento) → aguarde elas retornarem, não inicie nova rodada
+   - Se não há nada em andamento e ainda sobram tasks não-done → DEADLOCK
+     (dependência mal formada) → reporte ao usuário, não prossiga
 
-Integre commits em ordem:
+4. FREE_WORKERS = workers (implementer-a/b/c) que não estão ocupados agora
 
-```bash
-# Para cada commit, em ordem de dependência:
-git cherry-pick <commit-hash>
+5. Para cada worker livre, atribua 1 task de READY (round-robin simples):
+   a. Marque no JSON: claimed_by=<worker>, status="claimed"
+   b. Commit essa mudança no repo principal ANTES de disparar o worker
+      (assim a atribuição é serializada e não há corrida)
+
+6. Dispare os workers designados EM PARALELO (Agent tool, múltiplas
+   chamadas na mesma mensagem), cada um recebendo:
+   - a(s) task(s) atribuída(s) a ele nesta rodada
+   - o implement-tasks.json completo (contexto)
+   - a spec completa
+
+7. Conforme cada worker retorna:
+   a. Colete os commits que ele fez (implementação + marca de "done")
+   b. Cherry-pick esses commits no worktree principal, em ordem
+   c. Confirme no JSON principal que a task está "done"
+   d. Esse worker agora está livre de novo
+
+8. Volte ao passo 1 (releitura pode revelar novas tasks READY,
+   destravadas pelas dependências recém-concluídas)
 ```
 
-Antes de cada cherry-pick: `git status`
-Após cada cherry-pick: `git status` + `git diff HEAD~1..HEAD`
+Não dispare mais tasks do que workers livres. Não deixe um worker ocioso se há task READY disponível para ele.
 
-Se conflito: resolva manualmente, preferindo solução que preserve contratos.
+Se um worker reportar task **bloqueada/recusada** (dependência pendente ou conflito de arquivo que você não previu), trate como bug de agendamento: recalcule o grafo antes da próxima rodada.
 
 ---
 
-## FASE 5 — VALIDATION
+## FASE 3 — INTEGRATION (por rodada, incremental)
+
+A cada retorno de worker (não espere o fim de tudo):
+
+```bash
+git status
+git cherry-pick <commit-1> <commit-2> ...
+git status
+git diff HEAD~N..HEAD
+```
+
+Resolva conflitos preservando contratos e menor escopo de mudança. Nunca descarte trabalho de um worker silenciosamente.
+
+---
+
+## FASE 4 — VALIDATION (após todas as tasks done)
 
 ```bash
 dotnet build Contenda.sln -c ExportDebug
-[execute testes]
+[testes relevantes, lint, typecheck conforme aplicável]
 ```
 
-Se falhar: identifique commit culpado. Comunique ao agente relevante.
+Se falhar, identifique o commit/task responsável e corrija no escopo dela.
 
 ---
 
-## FASE 6 — REVIEW (Delegado)
+## FASE 5 — REVIEW
 
-Descreva a task:
+Delegue ao `reviewer` a spec + `.claude/implement-tasks.json` + lista de commits integrados.
 
-> Você é o Reviewer. 
->
-> Spec: `$ARGUMENTS`
-> 
-> Tasks completadas em `.claude/implement-tasks.json`
->
-> Analise:
-> - Compliance com CLAUDE.md
-> - Bugs, regressões
-> - Testes adequados
-> - Escopo respeitado
->
-> Retorne: APPROVED ou CHANGES REQUESTED
+Ele valida compliance, escopo, ownership de arquivo, bugs. Retorna `APPROVED` ou `CHANGES REQUESTED`.
 
-Se CHANGES REQUESTED:
-- Agentes fazem novos commits
-- Integra de novo
-- Reviewer valida novamente
+Se `CHANGES REQUESTED`:
+- Para cada finding, crie uma task de correção nova no JSON (`depends_on` apontando pro que precisa ser corrigido)
+- Rode a FASE 2 novamente só para essas tasks
+- Peça nova revisão
 
-Se APPROVED: continue.
+Se `APPROVED`: prossiga.
 
 ---
 
-## FASE 7 — FINAL VALIDATION
+## FASE 6 — FINAL VALIDATION
 
 ```bash
 git status
 git diff
 git log --oneline -n 20
 dotnet build Contenda.sln -c ExportDebug
-[execute testes]
 ```
 
-Certifique:
-- Sem alterações inesperadas
-- Sem secrets
-- Sem logs de debug
-- Critérios de aceitação atendidos
+Confirme: sem alterações inesperadas, sem secrets, sem logs de debug, critérios de aceitação atendidos.
 
 ---
 
-## FASE 8 — REPORT
+## FASE 7 — REPORT
 
 ```
 ## ✅ Implementado
+[resumo da feature]
 
-[Resumo da feature]
+## 🗺️ Task Graph
+[cada task: id, descrição, claimed_by, status]
 
-## 📊 Tarefas
-
-[Lista com claimed_by + status]
-
-## 🤖 Agentes Participantes
-
-- architect ✅
-- backend ✅ (tarefas: X, Y)
-- frontend ✅ (tarefas: Z)
-- tester ✅ (tarefas: A)
-- reviewer ✅
+## 🤖 Workers
+- implementer-a: tasks X, Y
+- implementer-b: tasks Z
+- implementer-c: tasks W
 
 ## 🔍 Review
-
 APPROVED
 
 ## 📦 Commits
+[lista com hashes]
 
-[Lista de commits com hashes]
-
-## ⚠️ Anotações
-
-[Observações]
+## ⚠️ Notas
+[riscos, pendências]
 ```
+
+Não diga que algo foi validado se o comando correspondente não foi executado.
 
 ---
 
-## TASK-TRACKING JSON FORMAT
+## FORMATO DO TASK GRAPH (`.claude/implement-tasks.json`)
 
 ```json
 {
-  "spec": "Adicionar sistema de vida ao personagem com barra de dano",
-  "created_at": "2026-09-04T21:30:00Z",
+  "spec": "descrição da feature",
+  "created_at": "ISO timestamp",
   "tasks": [
     {
       "id": "task-1",
       "description": "Criar componente Health com vida/maxVida",
       "files": ["src/Components/Health.cs"],
-      "acceptance_criteria": [
-        "Componente tem vida/maxVida",
-        "Método Damage(amount)",
-        "Evento OnDeath"
-      ],
+      "acceptance_criteria": ["Damage(amount) reduz vida", "OnDeath disparado em 0"],
       "depends_on": [],
       "claimed_by": null,
       "status": "unclaimed"
     },
     {
       "id": "task-2",
-      "description": "Criar UI barra de vida que mostra dano em tempo real",
-      "files": ["scenes/UI/HealthBar.tscn"],
-      "acceptance_criteria": [
-        "Barra vermelha visível",
-        "Atualiza ao receber Damage"
-      ],
+      "description": "UI de barra de vida",
+      "files": ["scenes/UI/HealthBar.tscn", "scenes/UI/HealthBar.cs"],
+      "acceptance_criteria": ["Atualiza ao chamar Damage"],
       "depends_on": ["task-1"],
       "claimed_by": null,
       "status": "unclaimed"
     }
   ],
-  "risks": ["Integração UI <-> Health pode ter timing"],
-  "architecture_notes": "Health é compartilhado (Player e Enemy)"
+  "risks": ["..."],
+  "architecture_notes": "..."
 }
 ```
 
-Depois que agentes claiam:
-
-```json
-{
-  "tasks": [
-    {
-      "id": "task-1",
-      "claimed_by": "backend",
-      "status": "claimed"  // depois "done"
-    },
-    {
-      "id": "task-2",
-      "claimed_by": "frontend",
-      "status": "claimed"  // depois "done"
-    }
-  ]
-}
-```
+`status` transita: `unclaimed` → `claimed` → `done` (só o orchestrator escreve `claimed`; o worker escreve `done` dentro da sua worktree, e o orchestrator confirma ao integrar o commit).
 
 ---
 
-## WORKFLOW VISUAL
+## RESUMO VISUAL
 
 ```
-Usuario: /implement-multiagent <spec>
-    |
-    v
-Architect → .claude/implement-tasks.json
-            (tasks: unclaimed)
-    |
-    +────────────────────┬────────────────────┬────────────────┐
-    |                    |                    |                |
-    v                    v                    v                v
-Backend              Frontend            Tester           (ninguém?)
-(lê spec)            (lê spec)            (lê spec)
-(claima task-1)      (claima task-2)      (claima task-3)
-(implementa)         (implementa)         (implementa)
-(commit)             (commit)             (commit)
-    |                    |                    |
-    └────────────────────┼────────────────────┘
-                         |
-                    INTEGRATE
-                         |
-                      VALIDATE
-                         |
-                      REVIEWER
-                         |
-                      REPORT
+/implement-multiagent <spec>
+        |
+        v
+    Architect → DAG de tasks (unclaimed)
+        |
+        v
+  ┌─────────────── SCHEDULING LOOP ───────────────┐
+  │  READY = unclaimed + deps done                │
+  │  atribui a workers livres (round-robin)        │
+  │  dispara em paralelo → integra ao retornar     │
+  │  recalcula READY → repete até tudo done        │
+  └─────────────────────────────────────────────────┘
+        |
+        v
+    Validation → Review → Final Validation → Report
 ```
 
-**Agentes trabalham independentemente. Nenhum foco pré-definido. Spec-driven puro.**
-
+**Zero foco por tipo de worker. Zero atropelo — o orchestrator serializa toda atribuição antes de paralelizar a execução.**
