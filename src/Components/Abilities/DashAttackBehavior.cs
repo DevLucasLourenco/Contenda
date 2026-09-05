@@ -1,4 +1,3 @@
-using Contenda.Characters.Base;
 using Contenda.Components.Health;
 using Contenda.Components.Stats;
 using Contenda.Weapons;
@@ -19,6 +18,14 @@ namespace Contenda.Components.Abilities;
 /// Sempre na frente do CORPO, nunca na mira do mouse: um golpe corpo a corpo
 /// que virasse a direção do dash pela mira ficaria estranho de sentir, e nada
 /// no catálogo do MVP pede isso.
+///
+/// O acerto varre até <c>Max(DashDistance, Range)</c>, não só a distância
+/// realmente percorrida: para Dash Slash e Heavy Lunge os dois campos batem
+/// (o alcance do golpe é o próprio avanço), mas o Quick Step Shot da
+/// pistoleira (spec 05 §5: "dash 4 m, tiro 14 m") é o mesmo <c>Kind</c> com um
+/// <c>Range</c> bem maior que o <c>DashDistance</c> — avança pouco, mas o tiro
+/// que sai do avanço alcança longe. Não existe um `Kind` "dash + tiro"
+/// separado na spec (§3): é este mesmo comportamento, só com dados diferentes.
 /// </remarks>
 public sealed class DashAttackBehavior : IAbilityBehavior
 {
@@ -42,9 +49,7 @@ public sealed class DashAttackBehavior : IAbilityBehavior
     private static void Executar(AbilityContext ctx)
     {
         var corpo = ctx.Character.Body;
-        var frenteBruta = -corpo.GlobalTransform.Basis.Z;
-        var frente = new Vector3(frenteBruta.X, 0f, frenteBruta.Z).Normalized();
-
+        var frente = AbilityGeometry.FlattenedForward(corpo.GlobalTransform.Basis);
         var origem = corpo.GlobalPosition;
 
         // MoveAndCollide, e não soma direta em GlobalPosition -- mesmo motivo
@@ -57,27 +62,21 @@ public sealed class DashAttackBehavior : IAbilityBehavior
     private static void ResolverAcertos(AbilityContext ctx, Vector3 origem, Vector3 destino, Vector3 frente)
     {
         var corpo = ctx.Character.Body;
-        var comprimento = origem.DistanceTo(destino);
+
+        // Max, não a distância percorrida sozinha: ver o comentário da classe
+        // sobre o Quick Step Shot, cujo Range vai bem além do DashDistance.
+        var comprimento = Mathf.Max(origem.DistanceTo(destino), ctx.Definition.Range);
         var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+        var atingidos = 0;
 
-        // Fronteira com a engine: GetNodesInGroup só aqui, uma vez por
-        // execução -- o dash resolve num instante só, não numa janela.
-        foreach (var no in corpo.GetTree().GetNodesInGroup(ctx.TargetGroup))
+        AbilityTargeting.ForEachValidTarget(corpo.GetTree(), ctx.TargetGroup, corpo, ctx.Character.Team, alvo =>
         {
-            if (no is not CharacterController alvo || alvo == corpo || !GodotObject.IsInstanceValid(alvo))
-                continue;
-
-            if (alvo.Team == ctx.Character.Team)
-                continue;
-
-            var vida = alvo.Context?.Health;
-            if (vida is null || !vida.IsAlive)
-                continue;
-
             if (!HitscanMath.TryHitSegment(origem, frente, comprimento, alvo.GlobalPosition, ctx.Definition.Radius, out _))
-                continue;
+                return true;
 
-            vida.ApplyDamage(new DamageInfo(
+            // `!`: AbilityTargeting só chama este callback para alvos com
+            // Health vivo -- é a própria checagem que filtra o candidato.
+            alvo.Context!.Health!.ApplyDamage(new DamageInfo(
                 Amount: dano,
                 Type: DamageType.Physical,
                 HitPoint: alvo.GlobalPosition,
@@ -87,7 +86,10 @@ public sealed class DashAttackBehavior : IAbilityBehavior
                 SourceTag: ctx.Definition.Id.ToString(),
                 IsCritical: false));
 
-            alvo.Context?.Movement?.ApplyKnockback(frente * ctx.Definition.Knockback);
-        }
+            alvo.Context.Movement?.ApplyKnockback(frente * ctx.Definition.Knockback);
+            atingidos++;
+
+            return ctx.Definition.MaxTargets <= 0 || atingidos < ctx.Definition.MaxTargets;
+        });
     }
 }

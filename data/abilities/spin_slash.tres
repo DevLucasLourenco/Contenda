@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+
+[resource]
+script = ExtResource("1_hab")
+Id = &"swordsman.spin_slash"
+DisplayName = "Spin Slash"
+Description = "Giro de 360° que corta tudo ao redor."
+Sequence = [2, 3]
+ManaCost = 18.0
+Cooldown = 4.0
+Kind = 0
+Damage = 28.0
+Range = 3.0
+Angle = 180.0
+Knockback = 5.0
+LocksDuringCast = 11

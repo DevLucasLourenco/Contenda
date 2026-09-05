@@ -4,18 +4,16 @@
 
 [resource]
 script = ExtResource("1_hab")
-Id = &"swordsman.dash_slash"
-DisplayName = "Dash Slash"
-Description = "Avança cortando quem estiver no caminho."
-Sequence = [0, 0]
-ManaCost = 15.0
-Cooldown = 3.0
-CastTime = 0.1
-RecoveryTime = 0.25
+Id = &"swordsman.heavy_lunge"
+DisplayName = "Heavy Lunge"
+Description = "Avanço longo com um golpe pesado no fim."
+Sequence = [0, 2, 0]
+ManaCost = 30.0
+Cooldown = 8.0
 Kind = 1
-Damage = 35.0
-Range = 6.0
+Damage = 75.0
+Range = 9.0
 Radius = 1.2
-DashDistance = 6.0
-Knockback = 4.0
+DashDistance = 9.0
+Knockback = 7.0
 LocksDuringCast = 11

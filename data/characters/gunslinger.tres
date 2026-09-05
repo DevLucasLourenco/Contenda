@@ -1,10 +1,14 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_gunslinger.tres" id="2_mov"]
 [ext_resource type="Resource" path="res://data/characters/shared/health_gunslinger.tres" id="3_hp"]
 [ext_resource type="Resource" path="res://data/weapons/revolver.tres" id="4_arma"]
 [ext_resource type="Resource" path="res://data/characters/shared/mana_gunslinger.tres" id="5_mana"]
+[ext_resource type="Resource" path="res://data/abilities/quick_step_shot.tres" id="6_quickstep"]
+[ext_resource type="Resource" path="res://data/abilities/explosive_shot.tres" id="7_explosive"]
+[ext_resource type="Resource" path="res://data/abilities/fan_the_hammer.tres" id="8_fan"]
+[ext_resource type="Resource" path="res://data/abilities/deadeye.tres" id="9_deadeye"]
 
 [resource]
 script = ExtResource("1_def")
@@ -14,3 +18,4 @@ Health = ExtResource("3_hp")
 Mana = ExtResource("5_mana")
 Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")
+Abilities = [ExtResource("6_quickstep"), ExtResource("7_explosive"), ExtResource("8_fan"), ExtResource("9_deadeye")]

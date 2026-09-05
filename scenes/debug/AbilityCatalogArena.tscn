@@ -1,0 +1,47 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/Camera/CameraRig.cs" id="1_rig"]
+[ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
+[ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="3_set"]
+[ext_resource type="PackedScene" path="res://scenes/characters/Character.tscn" id="4_pj"]
+[ext_resource type="Resource" path="res://data/characters/gunslinger.tres" id="5_gun"]
+[ext_resource type="PackedScene" path="res://scenes/debug/TrainingDummy.tscn" id="6_alvo"]
+[ext_resource type="Resource" path="res://data/characters/training_dummy_resiliente.tres" id="7_alvo_def"]
+
+[sub_resource type="BoxMesh" id="Mesh_chao"]
+size = Vector3(100, 0.5, 100)
+
+[sub_resource type="BoxShape3D" id="Shape_chao"]
+size = Vector3(100, 0.5, 100)
+
+[node name="AbilityCatalogArena" type="Node3D"]
+
+[node name="Chao" type="StaticBody3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="Chao"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("Mesh_chao")
+
+[node name="Col" type="CollisionShape3D" parent="Chao"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+shape = SubResource("Shape_chao")
+
+[node name="Swordsman" parent="." instance=ExtResource("4_pj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 0)
+
+[node name="Gunslinger" parent="." instance=ExtResource("4_pj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
+Definition = ExtResource("5_gun")
+
+[node name="Manequim" parent="." instance=ExtResource("6_alvo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -3)
+Definition = ExtResource("7_alvo_def")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("1_rig")
+Settings = ExtResource("3_set")
+TargetPath = NodePath("../Swordsman")
+CameraPath = NodePath("CombatCamera")
+
+[node name="CombatCamera" type="Camera3D" parent="CameraRig"]
+script = ExtResource("2_cam")

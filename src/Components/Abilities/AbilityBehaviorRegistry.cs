@@ -17,7 +17,12 @@ public static class AbilityBehaviorRegistry
 {
     public static IAbilityBehavior Criar(AbilityEffectKind kind) => kind switch
     {
+        AbilityEffectKind.MeleeArc => new MeleeArcBehavior(),
         AbilityEffectKind.DashAttack => new DashAttackBehavior(),
+        AbilityEffectKind.Uppercut => new UppercutBehavior(),
+        AbilityEffectKind.HitscanShot => new HitscanShotBehavior(),
+        AbilityEffectKind.HitscanBurst => new HitscanBurstBehavior(),
+        AbilityEffectKind.Projectile => new ProjectileBehavior(),
         _ => SemImplementacao(kind),
     };
 
@@ -25,10 +30,12 @@ public static class AbilityBehaviorRegistry
     /// Erro de CONTEÚDO — um `.tres` pedindo um <see cref="AbilityEffectKind"/>
     /// sem implementação — falha alto no boot em debug e só loga em release,
     /// convenções §9: quem está editando o `.tres` deveria descobrir na hora.
+    /// Hoje só <see cref="AbilityEffectKind.SelfBuff"/> cai aqui — pós-MVP,
+    /// sem nenhuma habilidade do catálogo (spec 05 §5) pedindo por ele.
     /// </remarks>
     private static IAbilityBehavior SemImplementacao(AbilityEffectKind kind)
     {
-        var mensagem = $"AbilityBehaviorRegistry: {kind} ainda não tem IAbilityBehavior (ticket 15). "
+        var mensagem = $"AbilityBehaviorRegistry: {kind} ainda não tem IAbilityBehavior. "
                        + "Habilidade fica sem efeito.";
 
         if (OS.IsDebugBuild())

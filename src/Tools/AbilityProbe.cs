@@ -181,8 +181,12 @@ public sealed partial class AbilityProbe : Node
 
                 var basicosAntes = _ataquesBasicosDisparados;
                 var sequenciasAntes = _sequenciasRejeitadas;
-                _habilidades.PushToken(CommandDirection.Left);
+
+                // Direita-Esquerda: não é a sequência de nenhuma habilidade do
+                // Swordsman (Esquerda-Direita É o Spin Slash, ticket 15) --
+                // de propósito, para continuar testando "sem match nenhum".
                 _habilidades.PushToken(CommandDirection.Right);
+                _habilidades.PushToken(CommandDirection.Left);
                 _habilidades.RequestConfirm();
                 Verificar(_sequenciasRejeitadas == sequenciasAntes + 1,
                     "confirmar uma sequência sem match deveria disparar SequenceRejected");

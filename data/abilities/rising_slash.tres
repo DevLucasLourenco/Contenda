@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+
+[resource]
+script = ExtResource("1_hab")
+Id = &"swordsman.rising_slash"
+DisplayName = "Rising Slash"
+Description = "Corte ascendente que lança o alvo para cima."
+Sequence = [1, 0]
+ManaCost = 20.0
+Cooldown = 5.0
+Kind = 2
+Damage = 40.0
+Range = 2.5
+Angle = 50.0
+Knockback = 8.0
+LocksDuringCast = 11

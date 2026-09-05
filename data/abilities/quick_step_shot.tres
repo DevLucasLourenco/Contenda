@@ -4,18 +4,16 @@
 
 [resource]
 script = ExtResource("1_hab")
-Id = &"swordsman.dash_slash"
-DisplayName = "Dash Slash"
-Description = "Avança cortando quem estiver no caminho."
+Id = &"gunslinger.quick_step_shot"
+DisplayName = "Quick Step Shot"
+Description = "Passo rápido para o lado seguido de um tiro certeiro."
 Sequence = [0, 0]
 ManaCost = 15.0
 Cooldown = 3.0
-CastTime = 0.1
-RecoveryTime = 0.25
 Kind = 1
-Damage = 35.0
-Range = 6.0
-Radius = 1.2
-DashDistance = 6.0
-Knockback = 4.0
+Damage = 25.0
+Range = 14.0
+Radius = 0.6
+DashDistance = 4.0
+Knockback = 3.0
 LocksDuringCast = 11

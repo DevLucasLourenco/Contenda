@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+
+[resource]
+script = ExtResource("1_hab")
+Id = &"gunslinger.fan_the_hammer"
+DisplayName = "Fan The Hammer"
+Description = "Seis tiros rápidos num cone à frente."
+Sequence = [2, 3]
+ManaCost = 20.0
+Cooldown = 5.0
+Kind = 4
+Damage = 12.0
+Range = 10.0
+Radius = 0.5
+Angle = 15.0
+Knockback = 1.5
+MaxTargets = 6

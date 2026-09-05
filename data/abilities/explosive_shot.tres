@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+
+[resource]
+script = ExtResource("1_hab")
+Id = &"gunslinger.explosive_shot"
+DisplayName = "Explosive Shot"
+Description = "Projétil que explode numa área ao atingir alguém."
+Sequence = [1, 0]
+ManaCost = 25.0
+Cooldown = 6.0
+Kind = 5
+Damage = 55.0
+Range = 18.0
+Radius = 3.0
+Knockback = 5.0

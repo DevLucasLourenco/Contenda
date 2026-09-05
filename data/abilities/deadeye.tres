@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+
+[resource]
+script = ExtResource("1_hab")
+Id = &"gunslinger.deadeye"
+DisplayName = "Deadeye"
+Description = "Tiro perfurante de altíssimo dano, longo alcance."
+Sequence = [0, 2, 0]
+ManaCost = 35.0
+Cooldown = 10.0
+Kind = 3
+Damage = 120.0
+Range = 30.0
+Radius = 0.5
+Knockback = 3.0
