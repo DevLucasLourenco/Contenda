@@ -22,3 +22,8 @@ obj/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Claude Code: a configuracao compartilhada (.claude/agents, skills, settings.json)
+# e versionada de proposito. Só o override pessoal fica de fora.
+.claude/settings.local.json
+.claude/implement-tasks.json
