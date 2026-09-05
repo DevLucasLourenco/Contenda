@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="MovementSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Movement/MovementSettings.cs" id="1_mov"]
+
+[resource]
+script = ExtResource("1_mov")
+MoveSpeed = 6.2
+Acceleration = 45.0
+Deceleration = 60.0
+RotationSpeed = 14.0
+FaceMode = 0
+Gravity = 22.0

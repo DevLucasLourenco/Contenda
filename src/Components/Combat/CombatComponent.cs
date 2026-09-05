@@ -99,9 +99,11 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     /// <summary>
     /// Avança a arma e a expiração das travas. Chamado pelo contêiner.
     /// </summary>
-    public void Tick(float delta)
+    /// <param name="delta">Tempo do tique, em segundos.</param>
+    /// <param name="triggerHeld">Se o botão de M1 segue pressionado agora.</param>
+    public void Tick(float delta, bool triggerHeld)
     {
-        _arma.Tick(delta);
+        _arma.Tick(delta, triggerHeld);
         _locks.Tick(delta);
 
         // O golpe trava quem o desfere: refrescado a cada quadro enquanto durar,

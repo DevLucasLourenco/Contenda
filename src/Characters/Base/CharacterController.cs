@@ -105,7 +105,7 @@ public sealed partial class CharacterController : CharacterBody3D
         if (intencao.AttackPressed)
             _combate?.RequestBasicAttack();
 
-        _combate?.Tick((float)delta);
+        _combate?.Tick((float)delta, intencao.AttackHeld);
 
         // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
         //    momentos arbitrários; resolvê-los só aqui é o que impede dois

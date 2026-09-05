@@ -26,11 +26,20 @@ public interface IWeapon
     /// <summary>Passo atual da cadeia, de 1 a N. Zero quando ocioso ou sem cadeia.</summary>
     int ComboStep { get; }
 
-    /// <summary>Pede um ataque básico.</summary>
+    /// <summary>Pede um ataque básico — o clique que inicia o golpe ou o tiro.</summary>
     void RequestBasicAttack();
 
-    /// <summary>Avança o estado da arma neste tique de física.</summary>
-    void Tick(float delta);
+    /// <summary>
+    /// Avança o estado da arma neste tique de física.
+    /// </summary>
+    /// <param name="delta">Tempo do tique, em segundos.</param>
+    /// <param name="triggerHeld">
+    /// Se o botão de M1 segue pressionado agora. Corpo a corpo ignora — cada
+    /// passo do combo exige um clique novo, spec 07 §4. Hitscan usa para
+    /// atirar em cadência enquanto o botão for mantido, sem exigir um clique
+    /// por tiro — spec 07 §5, ticket 09.
+    /// </param>
+    void Tick(float delta, bool triggerHeld);
 
     /// <summary>Interrompe o que estiver em andamento. Chamado ao morrer ou tomar atordoamento.</summary>
     void Cancel();

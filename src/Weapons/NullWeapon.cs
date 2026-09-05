@@ -32,7 +32,7 @@ public sealed class NullWeapon : IWeapon
     {
     }
 
-    public void Tick(float delta)
+    public void Tick(float delta, bool triggerHeld)
     {
     }
 

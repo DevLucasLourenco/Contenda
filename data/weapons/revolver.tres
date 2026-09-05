@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.revolver"
+DisplayName = "Revólver"
+Kind = 1
+BaseDamage = 18.0
+Range = 25.0
+Knockback = 1.0
+AttackInterval = 0.3
+MagazineSize = 6
+ReloadTime = 1.6
+SpreadDegrees = 1.5

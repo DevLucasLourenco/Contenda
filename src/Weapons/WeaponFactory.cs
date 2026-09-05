@@ -29,16 +29,17 @@ public static class WeaponFactory
         return definicao.Kind switch
         {
             WeaponKind.Melee => new MeleeWeapon(definicao, contexto, dono, targetGroup, verticalReach),
+            WeaponKind.Hitscan => new HitscanWeapon(definicao, contexto, dono, targetGroup, verticalReach),
             _ => SemImplementacao(definicao),
         };
     }
 
     /// <remarks>
-    /// Hitscan é o ticket 09: ainda não tem <see cref="IWeapon"/>. Erro de
-    /// CONTEÚDO — um `.tres` pedindo um `WeaponKind` sem implementação — falha
-    /// alto no boot em debug e só loga em release, convenções §9: um jogador não
-    /// deveria ver a build inteira cair por isso, mas quem está editando o
-    /// `.tres` deveria descobrir na hora, não em produção.
+    /// Erro de CONTEÚDO — um `.tres` pedindo um <see cref="WeaponKind"/> sem
+    /// implementação — falha alto no boot em debug e só loga em release,
+    /// convenções §9: um jogador não deveria ver a build inteira cair por
+    /// isso, mas quem está editando o `.tres` deveria descobrir na hora, não
+    /// em produção.
     /// </remarks>
     private static IWeapon SemImplementacao(WeaponDefinition definicao)
     {

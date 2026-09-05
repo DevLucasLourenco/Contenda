@@ -21,7 +21,11 @@ namespace Contenda.Input;
 /// <param name="AimPoint">Ponto do mundo para onde se olha.</param>
 /// <param name="AimDirection">Direção horizontal até a mira, já normalizada.</param>
 /// <param name="HasAim">Se há mira válida; falso quando o cursor passa do horizonte.</param>
-/// <param name="AttackPressed">Ataque básico neste tique.</param>
+/// <param name="AttackPressed">Ataque básico neste tique — a borda de subida do clique.</param>
+/// <param name="AttackHeld">
+/// Se o botão de ataque básico segue pressionado agora. Corpo a corpo ignora;
+/// hitscan atira em cadência enquanto for true — spec 07 §5, ticket 09.
+/// </param>
 /// <param name="ConfirmPressed">Confirmação de sequência neste tique.</param>
 /// <param name="FormScrollDelta">Troca de forma selecionada: −1, 0 ou +1.</param>
 /// <param name="FormActivatePressed">Ativação de forma neste tique.</param>
@@ -34,6 +38,7 @@ public readonly record struct IntentFrame(
     Vector3 AimDirection,
     bool HasAim,
     bool AttackPressed,
+    bool AttackHeld,
     bool ConfirmPressed,
     int FormScrollDelta,
     bool FormActivatePressed,

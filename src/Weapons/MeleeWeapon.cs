@@ -110,8 +110,12 @@ public sealed class MeleeWeapon : IWeapon
     /// A varredura por alvos só acontece com a janela ABERTA. Fora dela não há
     /// área de dano nenhuma — nunca existe hitbox permanentemente ligada, que é
     /// como um golpe acerta quem passa por perto muito depois.
+    ///
+    /// <paramref name="triggerHeld"/> é ignorado: corpo a corpo exige um clique
+    /// novo por passo do combo (spec 07 §4). É a arma hitscan que interpreta
+    /// "segurando" como cadência automática.
     /// </remarks>
-    public void Tick(float delta)
+    public void Tick(float delta, bool triggerHeld)
     {
         // O avanço é consumido ANTES de o relógio andar: quando a lâmina
         // conecta o deslize já acabou, e o alcance é medido de onde o

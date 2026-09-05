@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
+[ext_resource type="Resource" path="res://data/characters/shared/health_training_dummy_resiliente.tres" id="2_hp"]
+
+[resource]
+script = ExtResource("1_def")
+Id = &"training_dummy_resiliente"
+DisplayName = "Manequim resiliente"
+Health = ExtResource("2_hp")

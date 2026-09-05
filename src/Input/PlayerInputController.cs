@@ -55,6 +55,7 @@ public sealed partial class PlayerInputController : Node, ICharacterComponent
             AimDirection: Vector3.Zero,
             HasAim: false,
             AttackPressed: Godot.Input.IsActionJustPressed(InputActions.AttackBasic),
+            AttackHeld: Godot.Input.IsActionPressed(InputActions.AttackBasic),
             ConfirmPressed: Godot.Input.IsActionJustPressed(InputActions.CommandConfirm),
             FormScrollDelta: scroll,
             FormActivatePressed: Godot.Input.IsActionJustPressed(InputActions.FormActivate),
