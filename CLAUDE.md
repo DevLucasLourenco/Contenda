@@ -21,6 +21,16 @@ A especificação completa está em [`docs/`](docs/README.md). Comece pela
 5. **A câmera nunca é filha do jogador.** `CameraRig` é irmão e recebe só
    posição, jamais rotação.
 
+## Abrindo o editor
+
+Use o atalho **`Contenda (Godot .NET)`** na Área de Trabalho, ou
+`tools/abrir-editor.cmd`.
+
+**Só a edição .NET roda C#.** Abrir com a edição padrão oferece *"Projeto será
+modificado"* — e continuar remove a configuração de C# do `project.godot`.
+Sempre **Cancelar**. Ver
+[convenções §11](docs/plans/convencoes-de-codigo.md).
+
 ## Build
 
 As configurações do `Godot.NET.Sdk` são **`Debug`, `ExportDebug` e

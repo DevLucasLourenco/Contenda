@@ -175,7 +175,20 @@ Godot_v4.7.2-stable_mono_win64.exe   <- .NET, é esta
 
 Abrir o projeto com a padrão mostra *"Abrir assim mesmo? Projeto será
 modificado"* — e continuar **remove a configuração de C# do `project.godot`**.
-Sempre **Cancelar**. `tools/abrir-editor.cmd` encontra a edição certa sozinho.
+Sempre **Cancelar**.
+
+Três formas de abrir certo, em ordem de conveniência:
+
+1. **Atalho `Contenda (Godot .NET)` na Área de Trabalho** — abre o projeto direto.
+2. `tools/abrir-editor.cmd` no repositório — localiza a edição .NET sozinho.
+3. O atalho `Godot 4.7 .NET`, para abrir outros projetos.
+
+A cópia sem C# que estava na Área de Trabalho foi renomeada para
+`_SEM-CSHARP-nao-usar-neste-projeto` — nada foi apagado, e o nome existe para
+que ninguém a abra por hábito.
+
+Se o `project.godot` perder os comentários porque alguém salvou pela interface,
+rode `python tools/restaurar-comentarios-project.py`.
 
 ## 12. Git
 
