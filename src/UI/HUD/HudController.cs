@@ -35,6 +35,9 @@ public sealed partial class HudController : CanvasLayer
     /// <summary>A barra de mana a alimentar.</summary>
     [Export] public NodePath ManaBarPath { get; set; } = new();
 
+    /// <summary>O guia de combos a alimentar.</summary>
+    [Export] public NodePath AbilityGuidePath { get; set; } = new();
+
     /// <summary>
     /// Arquétipos alternáveis pela tecla de debug, nesta ordem.
     /// </summary>
@@ -46,6 +49,7 @@ public sealed partial class HudController : CanvasLayer
 
     private HealthBar? _barraDeVida;
     private ManaBar? _barraDeMana;
+    private AbilityGuide? _guiaDeHabilidades;
     private CharacterController? _jogador;
     private int _indiceArquetipo;
 
@@ -53,12 +57,13 @@ public sealed partial class HudController : CanvasLayer
     {
         _barraDeVida = GetNodeOrNull<HealthBar>(HealthBarPath);
         _barraDeMana = GetNodeOrNull<ManaBar>(ManaBarPath);
+        _guiaDeHabilidades = GetNodeOrNull<AbilityGuide>(AbilityGuidePath);
 
-        if (_barraDeVida is null || _barraDeMana is null)
+        if (_barraDeVida is null || _barraDeMana is null || _guiaDeHabilidades is null)
         {
             // Falhar alto: um HUD "quase ligado" pareceria funcionar e nunca
             // atualizaria nada. Convenções §9.
-            GD.PushError($"{Name}: HealthBarPath ou ManaBarPath não resolveram.");
+            GD.PushError($"{Name}: HealthBarPath, ManaBarPath ou AbilityGuidePath não resolveram.");
             SetPhysicsProcess(false);
         }
     }
@@ -94,12 +99,14 @@ public sealed partial class HudController : CanvasLayer
     private void ProcurarJogador()
     {
         var encontrado = GetTree().GetFirstNodeInGroup(NodeGroups.Player);
-        if (encontrado is not CharacterController jogador || jogador.Context is not { Health: { } vida, Mana: { } mana })
+        if (encontrado is not CharacterController jogador
+            || jogador.Context is not { Health: { } vida, Mana: { } mana, Abilities: { } habilidades })
             return;
 
         _jogador = jogador;
         _barraDeVida?.Bind(vida);
         _barraDeMana?.Bind(mana);
+        _guiaDeHabilidades?.Bind(habilidades, mana);
     }
 
     /// <remarks>

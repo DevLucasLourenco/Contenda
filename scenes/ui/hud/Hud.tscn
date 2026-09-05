@@ -1,15 +1,17 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
 [ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
 [ext_resource type="Script" path="res://src/UI/HUD/ManaBar.cs" id="3_mana"]
 [ext_resource type="Resource" path="res://data/characters/swordsman.tres" id="4_sw"]
 [ext_resource type="Resource" path="res://data/characters/gunslinger.tres" id="5_gs"]
+[ext_resource type="Script" path="res://src/UI/HUD/AbilityGuide.cs" id="6_guia"]
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
 HealthBarPath = NodePath("Vida")
 ManaBarPath = NodePath("Mana")
+AbilityGuidePath = NodePath("Habilidades")
 DebugArchetypes = [ExtResource("4_sw"), ExtResource("5_gs")]
 
 [node name="Vida" type="Control" parent="."]
@@ -71,3 +73,10 @@ offset_left = 226.0
 offset_right = 340.0
 offset_bottom = 18.0
 text = "100/100"
+
+[node name="Habilidades" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 76.0
+offset_right = 340.0
+offset_bottom = 176.0
+script = ExtResource("6_guia")

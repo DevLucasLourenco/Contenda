@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Components.Health;
 using Contenda.Core;
+using Contenda.Input;
 using Contenda.UI.HUD;
 using Godot;
 
@@ -11,12 +12,14 @@ namespace Contenda.Tools;
 /// Verifica a fiação do HUD na árvore real, sem teclado.
 /// </summary>
 /// <remarks>
-/// Os testes de xUnit cobrem a <c>DamageLayerState</c> isolada, com controle
-/// exato do relógio. O que eles não alcançam é a fiação: se o
-/// <c>GameBootstrap</c> realmente adiciona o HUD à árvore, se o
-/// <c>HudController</c> encontra o jogador pelo grupo <c>"player"</c>, se as
-/// barras refletem dano e gasto de mana de verdade, e se a tecla de debug
-/// troca o arquétipo e as duas barras acompanham.
+/// Os testes de xUnit cobrem a <c>DamageLayerState</c> e o
+/// <c>AbilityMatchEvaluator</c> isolados, com controle exato do relógio e do
+/// buffer. O que eles não alcançam é a fiação: se o <c>GameBootstrap</c>
+/// realmente adiciona o HUD à árvore, se o <c>HudController</c> encontra o
+/// jogador pelo grupo <c>"player"</c>, se as barras refletem dano e gasto de
+/// mana de verdade, se o guia de combos (ticket 16) reage a um buffer real do
+/// <c>AbilityComponent</c>, e se a tecla de debug troca o arquétipo e os três
+/// widgets acompanham.
 ///
 /// O HUD já existe quando este probe roda — é o <c>GameBootstrap</c> (um
 /// autoload) quem o adiciona, em qualquer cena. Este probe só o ENCONTRA.
@@ -35,6 +38,7 @@ public sealed partial class HudProbe : Node
     private CharacterController? _jogador;
     private HealthBar? _barraDeVida;
     private ManaBar? _barraDeMana;
+    private AbilityGuide? _guia;
     private int _quadro;
     private float _vidaMaximaAntesDaTroca;
 
@@ -58,15 +62,17 @@ public sealed partial class HudProbe : Node
         // Localizado por quadro, até aparecer: o GameBootstrap adiciona o HUD
         // e o HudController acha o jogador pelo grupo, ambos sem ordem
         // garantida em relação a este probe. Ver comentário do HudController.
-        if (_jogador is null || _barraDeVida is null || _barraDeMana is null)
+        if (_jogador is null || _barraDeVida is null || _barraDeMana is null || _guia is null)
         {
             Localizar();
             return;
         }
 
-        // `!` daqui em diante em _jogador.Context/.Health/.Mana: o guard acima
-        // só libera este ramo depois de Localizar() confirmar os três não
-        // nulos (ver o pattern match em ProcurarHud/Localizar).
+        // `!` daqui em diante em _jogador.Context/.Health/.Mana/.Abilities: o
+        // guard acima só libera este ramo depois de Localizar() confirmar os
+        // quatro não nulos (ver o pattern match em ProcurarHud/Localizar).
+        // Context.Abilities em si não passa por um guard explícito aqui, mas
+        // Character.tscn sempre traz AbilityComponent (ticket 14).
         switch (_quadro)
         {
             case 10:
@@ -105,6 +111,57 @@ public sealed partial class HudProbe : Node
                     $"a barra de mana deveria refletir o gasto, ficou em {_barraDeMana.CurrentFraction}");
                 break;
 
+            case 42:
+                // Swordsman padrão: Dash Slash, Rising Slash, Spin Slash,
+                // Heavy Lunge, nesta ordem (data/characters/swordsman.tres).
+                Verificar(_guia.RowCount == 4, $"o guia deveria ter 4 linhas para o Swordsman, tem {_guia.RowCount}");
+                Verificar(_guia.StateOf(0) == AbilityMatchState.Neutral,
+                    $"sem nada digitado, a linha deveria ser Neutral; era {_guia.StateOf(0)}");
+
+                _jogador.Context!.Abilities!.PushToken(CommandDirection.Up);
+                break;
+
+            case 43:
+                // W sozinho é prefixo de Dash Slash (W W) e Heavy Lunge
+                // (W A W), mas não de Rising Slash (S W) nem Spin Slash (A D).
+                Verificar(_guia.StateOf(0) == AbilityMatchState.PartialMatch,
+                    $"Dash Slash deveria estar parcial depois de W; era {_guia.StateOf(0)}");
+                Verificar(_guia.StateOf(1) == AbilityMatchState.Impossible,
+                    $"Rising Slash deveria estar impossível depois de W; era {_guia.StateOf(1)}");
+                Verificar(_guia.StateOf(3) == AbilityMatchState.PartialMatch,
+                    $"Heavy Lunge deveria estar parcial depois de W; era {_guia.StateOf(3)}");
+
+                _jogador.Context!.Abilities!.PushToken(CommandDirection.Up);
+                break;
+
+            case 44:
+                // W W completa Dash Slash e descarta Heavy Lunge (que precisa
+                // de A no segundo símbolo, não W de novo).
+                Verificar(_guia.StateOf(0) == AbilityMatchState.Complete,
+                    $"Dash Slash deveria estar completa depois de W W; era {_guia.StateOf(0)}");
+                Verificar(_guia.StateOf(3) == AbilityMatchState.Impossible,
+                    $"Heavy Lunge deveria estar impossível depois de W W; era {_guia.StateOf(3)}");
+
+                _jogador.Context!.Abilities!.RequestConfirm();
+                break;
+
+            case 45:
+                // A recarga do Dash Slash começa no INÍCIO da execução (ticket
+                // 14) -- a linha já deveria estar esmaecida um quadro depois.
+                Verificar(_guia.AlphaOf(0) < 0.99f,
+                    $"Dash Slash em recarga deveria esmaecer a linha; alfa era {_guia.AlphaOf(0)}");
+
+                // S S não é a sequência de nenhuma habilidade -- confirmar
+                // deveria piscar a lista, nunca cair no ataque básico.
+                _jogador.Context!.Abilities!.PushToken(CommandDirection.Down);
+                _jogador.Context!.Abilities!.PushToken(CommandDirection.Down);
+                _jogador.Context!.Abilities!.RequestConfirm();
+                break;
+
+            case 46:
+                Verificar(_guia.IsFlashing, "confirmar sem casamento deveria piscar a lista, e não piscou");
+                break;
+
             case 50:
                 _vidaMaximaAntesDaTroca = _jogador.Context!.Health!.Max;
 
@@ -128,6 +185,14 @@ public sealed partial class HudProbe : Node
                     $"fração de vida inválida depois da troca: {_barraDeVida.CurrentFraction}");
                 Verificar(_barraDeMana.CurrentFraction is >= 0f and <= 1f,
                     $"fração de mana inválida depois da troca: {_barraDeMana.CurrentFraction}");
+
+                // Trocar de personagem troca a lista inteira (ticket 16): a
+                // Gunslinger também tem 4 habilidades, mas são outras -- o
+                // buffer (vazio desde o Configure da troca) devolve todo
+                // mundo a Neutral de novo.
+                Verificar(_guia.RowCount == 4, $"o guia deveria ter 4 linhas para a Gunslinger, tem {_guia.RowCount}");
+                Verificar(_guia.StateOf(0) == AbilityMatchState.Neutral,
+                    $"a troca de personagem deveria zerar o buffer exibido; linha 0 era {_guia.StateOf(0)}");
                 break;
 
             case 60:
@@ -152,7 +217,7 @@ public sealed partial class HudProbe : Node
             _jogador = candidato;
         }
 
-        if (_barraDeVida is null || _barraDeMana is null)
+        if (_barraDeVida is null || _barraDeMana is null || _guia is null)
             ProcurarHud(GetTree().Root);
     }
 
@@ -162,8 +227,10 @@ public sealed partial class HudProbe : Node
             _barraDeVida = vida;
         else if (no is ManaBar mana)
             _barraDeMana = mana;
+        else if (no is AbilityGuide guia)
+            _guia = guia;
 
-        if (_barraDeVida is not null && _barraDeMana is not null)
+        if (_barraDeVida is not null && _barraDeMana is not null && _guia is not null)
             return;
 
         // Fronteira com a engine: GetChildren() devolve Godot.Collections.Array.

@@ -75,6 +75,14 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     /// </summary>
     public event Action? SequenceRejected;
 
+    /// <summary>
+    /// A lista de <see cref="Abilities"/> mudou — de <see cref="Configure"/>,
+    /// seja o primeiro `_Ready` ou uma troca de arquétipo em runtime (ticket
+    /// 12). O guia de combos do ticket 16 reconstrói as próprias linhas a
+    /// partir daqui, em vez de assumir que a lista nunca muda.
+    /// </summary>
+    public event Action? AbilitiesChanged;
+
     public void Bind(CharacterContext contexto)
     {
         // Desassinar antes de assinar: Bind pode rodar de novo num nó
@@ -101,6 +109,8 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
         _buffer = new CommandBuffer(BufferCapacity, TokenLifetime, SequenceTimeout);
         CancelCurrent();
         _recargas.Reset();
+
+        AbilitiesChanged?.Invoke();
     }
 
     public override void _ExitTree()
