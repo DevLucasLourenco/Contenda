@@ -70,6 +70,7 @@ jobs:
       #
       #   godot --headless --path . --import
       #   godot --headless --path . --scene res://scenes/debug/DamageProbe.tscn
+      #   godot --headless --path . --scene res://scenes/debug/CombatProbe.tscn
       #   godot --headless --path . --scene res://scenes/debug/BakeNavmesh.tscn
       #
       - name: Pendente

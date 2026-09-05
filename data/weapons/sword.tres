@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+[ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_1.tres" id="2_s1"]
+[ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_2.tres" id="3_s2"]
+[ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_3.tres" id="4_s3"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.sword"
+DisplayName = "Espada"
+Kind = 0
+BaseDamage = 20.0
+Range = 2.6
+HalfAngle = 60.0
+Knockback = 2.0
+ComboSteps = [ExtResource("2_s1"), ExtResource("3_s2"), ExtResource("4_s3")]

@@ -33,12 +33,25 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// </remarks>
     [Export] public CameraSettings? CameraReference { get; set; }
 
+    /// <summary>Quão rápido a repulsão de um golpe se dissipa, em m/s².</summary>
+    [Export(PropertyHint.Range, "5,120,1")] public float KnockbackDecay { get; set; } = 40f;
+
     private CharacterContext? _contexto;
+    private Vector3 _repulsao;
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
 
     public void Bind(CharacterContext contexto) => _contexto = contexto;
+
+    /// <summary>
+    /// Empurra o personagem, somando ao movimento próprio.
+    /// </summary>
+    /// <remarks>
+    /// Decai sozinho, e não substitui a velocidade: substituir faria o alvo
+    /// parar de andar ao apanhar, o que sob câmera fixa parece travamento.
+    /// </remarks>
+    public void ApplyKnockback(Vector3 impulso) => _repulsao += impulso;
 
     public void Configure(CharacterDefinition definicao)
     {
@@ -69,6 +82,9 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
 
         var velocidade = MovementMath.Accelerate(
             corpo.Velocity, desejada, Settings.Acceleration, Settings.Deceleration, delta);
+
+        velocidade += _repulsao;
+        _repulsao = _repulsao.MoveToward(Vector3.Zero, KnockbackDecay * delta);
 
         // A altura vem de `velocidade`, e não de `corpo.Velocity`: são iguais
         // hoje, mas quando o pulo entrar (ticket 17) o primeiro passo a mexer em

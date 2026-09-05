@@ -1,3 +1,4 @@
+using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
@@ -41,6 +42,9 @@ public sealed class CharacterContext
 
     /// <summary>Vida. Enfileira golpes e resolve num ponto único do quadro.</summary>
     public HealthComponent? Health { get; internal set; }
+
+    /// <summary>Combate. Executa o ataque básico com a arma equipada.</summary>
+    public CombatComponent? Combat { get; internal set; }
 
     /// <summary>Locomoção. Consome intenção, venha ela do teclado ou da IA.</summary>
     public MovementComponent? Movement { get; internal set; }

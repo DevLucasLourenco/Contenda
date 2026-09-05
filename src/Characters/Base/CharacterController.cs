@@ -36,7 +36,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private TargetingComponent? _mira;
     private MovementComponent? _movimento;
     private HealthComponent? _vida;
-    private DebugDamageDealer? _golpeDebug;
+    private CombatComponent? _combate;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
@@ -100,9 +100,12 @@ public sealed partial class CharacterController : CharacterBody3D
         // 3. locomoção
         _movimento?.Tick(intencao, (float)delta);
 
-        // 3b. andaime do ticket 07: sai quando o IWeapon do 08 entrar
+        // 3b. combate: o pedido primeiro, a resolução da janela depois — assim
+        //     um golpe pedido neste quadro já pode abrir a janela no próximo.
         if (intencao.AttackPressed)
-            _golpeDebug?.TryStrike();
+            _combate?.RequestBasicAttack();
+
+        _combate?.Tick((float)delta);
 
         // 4. dano: PONTO ÚNICO do quadro. Golpes chegam de áreas de colisão em
         //    momentos arbitrários; resolvê-los só aqui é o que impede dois
@@ -165,8 +168,9 @@ public sealed partial class CharacterController : CharacterBody3D
                 _vida = h;
                 Context!.Health = h;
                 break;
-            case DebugDamageDealer d:
-                _golpeDebug = d;
+            case CombatComponent c:
+                _combate = c;
+                Context!.Combat = c;
                 break;
             case PlayerInputController e:
                 _entrada = e;

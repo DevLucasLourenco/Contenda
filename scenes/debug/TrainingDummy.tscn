@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
 [ext_resource type="Script" path="res://src/Components/Stats/StatsComponent.cs" id="2_stats"]
 [ext_resource type="Script" path="res://src/Components/Health/HealthComponent.cs" id="3_vida"]
 [ext_resource type="Script" path="res://src/UI/HUD/WorldHealthBar.cs" id="4_barra"]
 [ext_resource type="Resource" path="res://data/characters/training_dummy.tres" id="5_def"]
+[ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="6_mov"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -58,6 +59,9 @@ BaseDamage = 1.0
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_vida")
+
+[node name="MovementComponent" type="Node" parent="."]
+script = ExtResource("6_mov")
 
 [node name="WorldHealthBar" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)

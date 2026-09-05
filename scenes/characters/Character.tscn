@@ -8,7 +8,7 @@
 [ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="6_cam"]
 [ext_resource type="Script" path="res://src/Components/Stats/StatsComponent.cs" id="7_stats"]
 [ext_resource type="Script" path="res://src/Components/Health/HealthComponent.cs" id="8_vida"]
-[ext_resource type="Script" path="res://src/Components/Combat/DebugDamageDealer.cs" id="9_dbg"]
+[ext_resource type="Script" path="res://src/Components/Combat/CombatComponent.cs" id="9_cbt"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -31,7 +31,7 @@ roughness = 0.5
 material = SubResource("Mat_frente")
 size = Vector3(0.18, 0.18, 0.5)
 
-[node name="Character" type="CharacterBody3D"]
+[node name="Character" type="CharacterBody3D" groups=["damageable"]]
 collision_layer = 2
 collision_mask = 1
 script = ExtResource("1_ctrl")
@@ -58,10 +58,8 @@ BaseDamage = 1.0
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("8_vida")
 
-[node name="DebugDamageDealer" type="Node" parent="."]
-script = ExtResource("9_dbg")
-Range = 3.0
-Damage = 20.0
+[node name="CombatComponent" type="Node" parent="."]
+script = ExtResource("9_cbt")
 
 [node name="MovementComponent" type="Node" parent="."]
 script = ExtResource("2_mov")
