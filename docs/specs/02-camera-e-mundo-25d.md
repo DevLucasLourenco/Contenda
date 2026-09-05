@@ -57,9 +57,14 @@ profundidade real.
 | Pitch (rotação X) | **-45°** | -40° a -55° |
 | Yaw (rotação Y) | **45°** | 35–45° |
 | Roll (rotação Z) | **0°** | fixo |
-| Distância ao alvo | **14 m** | 11–18 m |
+| Distância ao alvo | **17 m** | 11–17 m |
 | Near / Far | 0.5 / 120 | — |
 | Rotação em runtime | **TRAVADA** | — |
+
+> **Teto de distância é da ARENA, não da câmera.** A 18 m o horizonte já
+> aparece no canto superior, e a 20 m a borda do cenário entra no quadro. O
+> limite sobe se as paredes de borda subirem — hoje elas têm 6 m e ficam a
+> ±30,5 m. Vale reavaliar no ticket 21, com a cidade.
 
 > **Faixa revisada depois de ver o resultado renderizado.** O desenho
 > original pedia −50° a −60°; na prática −55° lê como topo chapado e
@@ -122,7 +127,7 @@ public partial class CameraSettings : Resource
     [Export] public float Fov = 38f;
     [Export] public float PitchDegrees = -45f;
     [Export] public float YawDegrees = 45f;
-    [Export] public float Distance = 14f;
+    [Export] public float Distance = 17f;
     [Export] public Vector3 TargetOffset = new(0, 1.0f, 0); // mira no torso
     [Export] public float FollowSmoothTime = 0.16f;         // SmoothDamp
     [Export] public float DeadZoneRadius = 0.35f;           // m — evita jitter

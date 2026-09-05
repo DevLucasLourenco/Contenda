@@ -1,7 +1,17 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 ; Configuração do projeto Contenda.
 ;
-; Validada com o Godot 4.7.2 .NET: o editor importa e roda sem reescrever nada.
-; Ele PODE reescrever ao salvar pela interface — mantenha as chaves abaixo ao fazê-lo.
+; ATENÇÃO: o editor Godot REESCREVE este arquivo ao salvar pela interface, e ao
+; fazê-lo APAGA TODOS OS COMENTÁRIOS. Se eles sumirem, restaure com
+; tools/restaurar-comentarios-project.py — as explicações abaixo não são
+; decorativas.
 
 config_version=5
 
@@ -16,8 +26,8 @@ config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 [autoload]
 
 ; A ORDEM IMPORTA. Autoloads recebem _Ready na ordem em que aparecem aqui, e
-; GameBootstrap é o único que usa os outros — por isso vem por último. Registrá-lo
-; primeiro faria o ServiceLocator devolver nulo no exato momento do boot.
+; GameBootstrap é o único que usa os outros — por isso vem por último.
+; Registrá-lo primeiro faria o ServiceLocator devolver nulo no boot.
 GameEvents="*res://src/Core/GameEvents.cs"
 GameSession="*res://src/Core/GameSession.cs"
 SceneRouter="*res://src/Core/SceneRouter.cs"
@@ -100,8 +110,9 @@ dash={
 
 [layer_names]
 
-; Espelhado em src/Core/GameConstants.cs — PhysicsLayers.
-; Os dois lados andam juntos. Ver docs/specs/01-arquitetura-tecnica.md §8.
+; Espelhado em src/Core/GameConstants.cs — PhysicsLayers. Os dois lados andam
+; juntos, e um teste em Contenda.Tests reprova a divergência.
+; Ver docs/specs/01-arquitetura-tecnica.md §8.
 3d_physics/layer_1="World"
 3d_physics/layer_2="PlayerBody"
 3d_physics/layer_3="EnemyBody"
@@ -116,11 +127,13 @@ dash={
 [navigation]
 
 ; Precisa bater com cell_size/cell_height da navmesh em data/navmesh/.
-; Divergir faz o servidor avisar e degrada a precisao do caminho.
+; Divergir faz o servidor avisar e degrada a precisão do caminho.
 3d/default_cell_size=0.2
 3d/default_cell_height=0.2
 
 [rendering]
 
+; Explícito de propósito: o editor omite por ser o padrão atual, mas a
+; spec 01 §1 fixa Forward+ e um padrão implícito muda sem aviso.
 renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="gl_compatibility"

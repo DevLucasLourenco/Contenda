@@ -25,7 +25,7 @@ public sealed partial class CameraSettings : Resource
     [Export(PropertyHint.Range, "0,90,0.5")] public float YawDegrees { get; set; } = 45f;
 
     /// <summary>Distância da câmera ao alvo, em metros.</summary>
-    [Export(PropertyHint.Range, "5,30,0.5")] public float Distance { get; set; } = 14f;
+    [Export(PropertyHint.Range, "5,30,0.5")] public float Distance { get; set; } = 17f;
 
     /// <summary>Plano de corte próximo, em metros.</summary>
     [Export(PropertyHint.Range, "0.05,2,0.05")] public float NearPlane { get; set; } = 0.5f;
