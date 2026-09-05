@@ -1,3 +1,4 @@
+using System.IO;
 using Godot;
 
 namespace Contenda.Core;
@@ -16,9 +17,41 @@ namespace Contenda.Core;
 /// </remarks>
 public sealed partial class GameBootstrap : Node
 {
+    /// <summary>Caminho do HUD, carregado uma vez no boot.</summary>
+    [Export(PropertyHint.File, "*.tscn")]
+    public string HudScenePath { get; set; } = "res://scenes/ui/hud/Hud.tscn";
+
     public override void _Ready()
     {
         GD.Print($"[boot] {ProjectInfo.Describe()}");
+
+        // O HUD vive fora da cena do nível de propósito: `Arena.tscn` não pode
+        // instanciar uma cena de `scenes/ui/` sem reprovar o verificador
+        // anti-2D (regra 1 do CLAUDE.md — nenhuma cena de interface dentro do
+        // mundo). Um autoload adicionando o HUD à raiz da árvore, e o
+        // HudController achando o jogador por grupo em vez de NodePath, é o
+        // que mantém o HUD independente de qual nível está carregado.
+        var hud = GD.Load<PackedScene>(HudScenePath);
+        if (hud is null)
+        {
+            // Erro de CONTEÚDO: falha alto no boot em debug, só loga em
+            // release -- convenções §9. Um jogador não deveria ver a build
+            // inteira cair por um caminho de cena errado, mas quem está
+            // editando o `.tres`/`.tscn` deveria descobrir na hora.
+            var mensagem = $"{Name}: não consegui carregar o HUD em '{HudScenePath}'.";
+            if (OS.IsDebugBuild())
+                throw new FileNotFoundException(mensagem, HudScenePath);
+
+            GD.PushError(mensagem);
+        }
+        else
+        {
+            // Adiado: a raiz da árvore ainda está ocupada registrando os
+            // outros autoloads durante ESTE _Ready — um add_child direto aqui
+            // falha com "Parent node is busy setting up children".
+            GetTree().Root.CallDeferred(Node.MethodName.AddChild, hud.Instantiate());
+        }
+
         GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
     }
 }

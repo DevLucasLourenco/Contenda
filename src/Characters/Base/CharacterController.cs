@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
@@ -69,6 +70,25 @@ public sealed partial class CharacterController : CharacterBody3D
         // Movimento é OPCIONAL: um manequim de treino tem vida e atributos, mas
         // não anda. Exigir locomoção obrigaria a inventar um componente inútil só
         // para satisfazer o contêiner.
+    }
+
+    /// <summary>
+    /// Troca a definição em runtime, reconfigurando todos os componentes.
+    /// </summary>
+    /// <remarks>
+    /// Reaplica só a segunda passada (<c>Configure</c>) — os componentes já
+    /// estão vinculados e não mudam de identidade, só os dados que carregam.
+    /// É a mesma operação que uma transformação fará no M4; hoje serve à
+    /// tecla de debug do ticket 12 para alternar de arquétipo sem reiniciar a
+    /// cena.
+    /// </remarks>
+    public void SwitchDefinition(CharacterDefinition novaDefinicao)
+    {
+        ArgumentNullException.ThrowIfNull(novaDefinicao);
+
+        Definition = novaDefinicao;
+        foreach (var componente in _componentes)
+            componente.Configure(novaDefinicao);
     }
 
     /// <summary>

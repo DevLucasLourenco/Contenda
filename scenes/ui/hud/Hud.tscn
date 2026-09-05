@@ -1,0 +1,73 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
+[ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
+[ext_resource type="Script" path="res://src/UI/HUD/ManaBar.cs" id="3_mana"]
+[ext_resource type="Resource" path="res://data/characters/swordsman.tres" id="4_sw"]
+[ext_resource type="Resource" path="res://data/characters/gunslinger.tres" id="5_gs"]
+
+[node name="Hud" type="CanvasLayer"]
+script = ExtResource("1_hud")
+HealthBarPath = NodePath("Vida")
+ManaBarPath = NodePath("Mana")
+DebugArchetypes = [ExtResource("4_sw"), ExtResource("5_gs")]
+
+[node name="Vida" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 340.0
+offset_bottom = 38.0
+script = ExtResource("2_vida")
+FillPath = NodePath("Preenchimento")
+DamageLayerPath = NodePath("CamadaDeDano")
+ValueLabelPath = NodePath("Valor")
+BarWidth = 220.0
+BarHeight = 18.0
+
+[node name="Fundo" type="ColorRect" parent="Vida"]
+offset_right = 220.0
+offset_bottom = 18.0
+color = Color(0.1, 0.1, 0.12, 1)
+
+[node name="CamadaDeDano" type="ColorRect" parent="Vida"]
+offset_right = 220.0
+offset_bottom = 18.0
+color = Color(0.9, 0.85, 0.3, 1)
+
+[node name="Preenchimento" type="ColorRect" parent="Vida"]
+offset_right = 220.0
+offset_bottom = 18.0
+color = Color(0.75, 0.2, 0.2, 1)
+
+[node name="Valor" type="Label" parent="Vida"]
+offset_left = 226.0
+offset_right = 340.0
+offset_bottom = 18.0
+text = "100/100"
+
+[node name="Mana" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 44.0
+offset_right = 340.0
+offset_bottom = 62.0
+script = ExtResource("3_mana")
+FillPath = NodePath("Preenchimento")
+ValueLabelPath = NodePath("Valor")
+BarWidth = 220.0
+BarHeight = 18.0
+
+[node name="Fundo" type="ColorRect" parent="Mana"]
+offset_right = 220.0
+offset_bottom = 18.0
+color = Color(0.1, 0.1, 0.12, 1)
+
+[node name="Preenchimento" type="ColorRect" parent="Mana"]
+offset_right = 220.0
+offset_bottom = 18.0
+color = Color(0.25, 0.45, 0.85, 1)
+
+[node name="Valor" type="Label" parent="Mana"]
+offset_left = 226.0
+offset_right = 340.0
+offset_bottom = 18.0
+text = "100/100"

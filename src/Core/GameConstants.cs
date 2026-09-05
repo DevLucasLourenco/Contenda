@@ -76,6 +76,15 @@ public static class InputActionNames
     public const string Dash  = "dash";
     public const string Jump  = "jump";
 
+    /// <summary>
+    /// Alterna o arquétipo do jogador em runtime, sem reiniciar a cena.
+    /// </summary>
+    /// <remarks>
+    /// Só em build de debug — ver <c>HudController</c>. Existe para acelerar
+    /// o teste dos dois arquétipos, ticket 12; não é uma ação de gameplay.
+    /// </remarks>
+    public const string DebugSwitchCharacter = "debug_switch_character";
+
     /// <summary>Lista canônica, conferida contra project.godot em teste.</summary>
     public static readonly string[] All =
     [
@@ -83,6 +92,7 @@ public static class InputActionNames
         AttackBasic, CommandConfirm,
         FormPrev, FormNext, FormActivate,
         Pause, Dash, Jump,
+        DebugSwitchCharacter,
     ];
 }
 
@@ -111,6 +121,23 @@ public static class InputActions
     public static readonly StringName Pause = new(InputActionNames.Pause);
     public static readonly StringName Dash  = new(InputActionNames.Dash);
     public static readonly StringName Jump  = new(InputActionNames.Jump);
+
+    public static readonly StringName DebugSwitchCharacter = new(InputActionNames.DebugSwitchCharacter);
+}
+
+/// <summary>
+/// Nomes de grupos de nós, para <c>GetNodesInGroup</c>.
+/// </summary>
+/// <remarks>
+/// Só o que precisa ser encontrado por busca na árvore entra aqui. A maioria
+/// das relações usa <see cref="Characters.Base.CharacterContext"/> direto —
+/// grupo é para quem não tem outro jeito de achar o alvo, como o
+/// <c>HudController</c> procurando o jogador de um autoload.
+/// </remarks>
+public static class NodeGroups
+{
+    /// <summary>O personagem controlado pelo jogador. Ver <c>Character.tscn</c>.</summary>
+    public const string Player = "player";
 }
 
 /// <summary>Time de uma entidade. Decide quem pode causar dano a quem.</summary>
