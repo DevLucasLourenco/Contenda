@@ -28,6 +28,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     private StatsComponent? _stats;
     private float _invulnerabilidade = 0.25f;
     private float _restanteDeInvulnerabilidade;
+    private float _restanteDeInvulnerabilidadeConcedida;
 
     /// <summary>Vida atual.</summary>
     public float Current => _estado.Current;
@@ -116,6 +117,21 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     /// </summary>
     public void ApplyHitstop(float duration) => _hitstop.Apply(duration);
 
+    /// <summary>
+    /// Concede invulnerabilidade externa por uma duração, além da que já
+    /// existe (se houver).
+    /// </summary>
+    /// <remarks>
+    /// Fonte independente da invulnerabilidade pós-golpe — as duas somam por
+    /// OR (uma reforça a outra, nunca corta a que já estava rodando), mesma
+    /// disciplina do <c>ActionLockSet</c> para não deixar uma fonte encerrar
+    /// cedo demais o que a outra ainda estava pedindo. O dash (ticket 17,
+    /// spec 16 §4) é o primeiro consumidor: os i-frames do dash não deveriam
+    /// nem estender nem encurtar os i-frames de ter acabado de apanhar.
+    /// </remarks>
+    public void GrantInvulnerability(float duration)
+        => _restanteDeInvulnerabilidadeConcedida = Mathf.Max(_restanteDeInvulnerabilidadeConcedida, duration);
+
     /// <summary>Enfileira um golpe fatal, resolvido no ponto único do quadro.</summary>
     public void Kill(string origem)
         => ApplyDamage(new DamageInfo(
@@ -146,15 +162,13 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
         // congelamento nunca andaria o relógio que o encerra.
         _hitstop.Advance(delta);
 
-        if (_restanteDeInvulnerabilidade > 0f)
-        {
-            _restanteDeInvulnerabilidade -= delta;
-            if (_restanteDeInvulnerabilidade <= 0f)
-            {
-                _restanteDeInvulnerabilidade = 0f;
-                _estado.IsInvulnerable = false;
-            }
-        }
+        _restanteDeInvulnerabilidade = Mathf.Max(0f, _restanteDeInvulnerabilidade - delta);
+        _restanteDeInvulnerabilidadeConcedida = Mathf.Max(0f, _restanteDeInvulnerabilidadeConcedida - delta);
+
+        // OR das duas fontes, recalculado a cada quadro -- nunca um `= false`
+        // direto de uma fonte só, que apagaria a invulnerabilidade que a OUTRA
+        // fonte ainda estava pedindo.
+        _estado.IsInvulnerable = _restanteDeInvulnerabilidade > 0f || _restanteDeInvulnerabilidadeConcedida > 0f;
 
         var algumAcertou = false;
 
@@ -183,6 +197,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     {
         _fila.Clear();
         _restanteDeInvulnerabilidade = 0f;
+        _restanteDeInvulnerabilidadeConcedida = 0f;
         _estado.Reset();
         _hitstop.Reset();
     }

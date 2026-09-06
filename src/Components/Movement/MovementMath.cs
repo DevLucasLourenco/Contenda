@@ -63,9 +63,31 @@ public static class MovementMath
     /// vez de zero: zerada de fato, o <c>MoveAndSlide</c> perde o contato em
     /// rampas e o personagem passa a alternar entre apoiado e no ar, o que faz o
     /// acompanhamento da câmera tremer.
+    ///
+    /// <paramref name="fallGravityScale"/> só multiplica a gravidade QUANDO já
+    /// caindo (<paramref name="velocidadeY"/> negativa) -- durante a subida do
+    /// pulo a gravidade fica no valor base. É o que faz a queda ficar mais
+    /// pesada que a subida sem achatar o pico do pulo. Ver spec 16 §3 e o
+    /// ticket 17.
     /// </remarks>
-    public static float ApplyGravity(float velocidadeY, float gravidade, bool noChao, float delta)
-        => noChao && velocidadeY <= 0f
-            ? -1f
-            : velocidadeY - (gravidade * delta);
+    public static float ApplyGravity(float velocidadeY, float gravidade, float fallGravityScale, bool noChao, float delta)
+    {
+        if (noChao && velocidadeY <= 0f)
+            return -1f;
+
+        var gravidadeEfetiva = velocidadeY < 0f ? gravidade * fallGravityScale : gravidade;
+        return velocidadeY - (gravidadeEfetiva * delta);
+    }
+
+    /// <summary>
+    /// A velocidade de saída que alcança exatamente <paramref name="jumpHeight"/> de altura.
+    /// </summary>
+    /// <remarks>
+    /// Derivada da cinemática (v² = 2·g·h), não configurada direto — ver o
+    /// comentário de <c>MovementSettings.JumpHeight</c>. Usa a gravidade BASE,
+    /// nunca a escalada pela queda: a subida do pulo sempre usa a gravidade de
+    /// referência, e é ela que define o pico.
+    /// </remarks>
+    public static float JumpVelocity(float gravidade, float jumpHeight)
+        => Mathf.Sqrt(2f * Mathf.Max(0f, gravidade) * Mathf.Max(0f, jumpHeight));
 }

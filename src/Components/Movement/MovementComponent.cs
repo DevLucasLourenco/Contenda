@@ -43,11 +43,25 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// </remarks>
     [Export(PropertyHint.Range, "0.05,1,0.01")] public float KnockbackDuration { get; set; } = 0.25f;
 
+    /// <summary>Fonte usada para a trava de rotação que o próprio dash aplica em si mesmo.</summary>
+    private const string DashLockSource = "movement.dash";
+
     private CharacterContext? _contexto;
     private KnockbackState _recuo = new(0.25f);
+    private readonly JumpState _pulo = new();
+    private readonly DashState _dash = new();
+    private int _pulosNoArRestantes;
+    private float _dashCooldownRestante;
+    private bool _dashUsadoNoAr;
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
+
+    /// <summary>Se um dash está em andamento agora. Para o probe/depuração.</summary>
+    public bool IsDashing => _dash.IsActive;
+
+    /// <summary>Quanto falta para o dash recarregar, em segundos. Para o probe/depuração.</summary>
+    public float DashCooldownRemaining => _dashCooldownRestante;
 
     public void Bind(CharacterContext contexto) => _contexto = contexto;
 
@@ -69,6 +83,14 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         // aplica KnockbackDuration depois que o campo já teria rodado com o
         // valor padrão do código, ignorando o que a cena pediu.
         _recuo = new KnockbackState(KnockbackDuration);
+
+        // Reconfigurar (troca de arquétipo, tecla de debug do ticket 12) não
+        // deveria deixar um dash em andamento ou uma recarga presa de trás.
+        _pulo.Reset();
+        _dash.Cancel();
+        _pulosNoArRestantes = Settings.MaxAirJumps;
+        _dashCooldownRestante = 0f;
+        _dashUsadoNoAr = false;
     }
 
     /// <summary>
@@ -87,6 +109,20 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var corpo = _contexto.Body;
         var yaw = CameraReference?.YawDegrees ?? 45f;
         var travas = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
+        var noChao = corpo.IsOnFloor();
+
+        // Apoiado: recarrega os pulos extras no ar (zero no estado base) e
+        // libera um dash novo no ar -- as duas coisas são "por pulo", não "por
+        // recarga própria". Ver spec 16 §3-4.
+        if (noChao)
+        {
+            _pulosNoArRestantes = Settings.MaxAirJumps;
+            _dashUsadoNoAr = false;
+        }
+
+        _pulo.Advance(delta, noChao, Settings.CoyoteTime);
+        if (intencao.JumpPressed)
+            _pulo.RequestJump(Settings.JumpBufferTime);
 
         // WASD relativo à CÂMERA. Sem esta conversão, W andaria na diagonal do
         // mundo em vez de para cima na tela — requisito da spec 02 §8.
@@ -98,24 +134,133 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var travado = (travas & ActionLock.Movement) != 0;
         var desejada = travado ? Vector3.Zero : direcao * Settings.MoveSpeed;
 
-        var velocidade = MovementMath.Accelerate(
-            corpo.Velocity, desejada, Settings.Acceleration, Settings.Deceleration, delta);
+        // Controle no ar: mais lento para acelerar E para frear, nunca a
+        // velocidade máxima em si -- "controle reduzido" é sobre redirecionar
+        // no meio do salto, não sobre andar mais devagar no ar. Ver spec 16 §3.
+        var aceleracao = Settings.Acceleration;
+        var desaceleracao = Settings.Deceleration;
+        if (!noChao)
+        {
+            aceleracao *= Settings.AirControlFactor;
+            desaceleracao *= Settings.AirControlFactor;
+        }
+
+        var velocidade = MovementMath.Accelerate(corpo.Velocity, desejada, aceleracao, desaceleracao, delta);
 
         velocidade += _recuo.Current;
         _recuo.Advance(delta);
 
-        // A altura vem de `velocidade`, e não de `corpo.Velocity`: são iguais
-        // hoje, mas quando o pulo entrar (ticket 17) o primeiro passo a mexer em
-        // Y faria a gravidade integrar um valor velho, em silêncio.
-        velocidade.Y = MovementMath.ApplyGravity(
-            velocidade.Y, Settings.Gravity, corpo.IsOnFloor(), delta);
+        // Pulo: o solo/coyote sempre pode; um extra no ar só se ainda sobrar
+        // saldo (zero no estado base, formas futuras concedem mais).
+        var podePular = _pulo.CanJump || _pulosNoArRestantes > 0;
+        if (_pulo.HasBufferedJump && podePular)
+        {
+            if (!_pulo.CanJump)
+                _pulosNoArRestantes--;
+
+            // A velocidade de saída é atribuída direto, SEM passar pela
+            // gravidade deste mesmo quadro -- o pulo é um evento instantâneo;
+            // a gravidade retoma a partir do próximo quadro. Aplicá-la aqui
+            // também comeria uma fração do impulso, silenciosamente.
+            velocidade.Y = MovementMath.JumpVelocity(Settings.Gravity, Settings.JumpHeight);
+            _pulo.Consume();
+        }
+        else
+        {
+            velocidade.Y = MovementMath.ApplyGravity(velocidade.Y, Settings.Gravity, Settings.FallGravityScale, noChao, delta);
+        }
+
+        AtualizarDash(intencao, direcao, travas, noChao, delta, ref velocidade);
 
         corpo.Velocity = velocidade;
         corpo.MoveAndSlide();
         Velocity = corpo.Velocity;
 
-        if ((travas & ActionLock.Rotation) == 0)
+        // Relida, não a `travas` capturada no topo: um dash que começa NESTE
+        // quadro aplica a própria trava de rotação dentro de AtualizarDash,
+        // acima -- checar a variável antiga deixaria a primeira virada do
+        // dash escapar por um quadro, porque a trava passaria a valer só a
+        // partir do PRÓXIMO Tick.
+        var travasAtuais = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
+        if ((travasAtuais & ActionLock.Rotation) == 0)
             Girar(intencao, direcao, delta);
+    }
+
+    /// <remarks>
+    /// Pedido novo, avanço em andamento e recarga moram juntos aqui: os três
+    /// mexem no mesmo relógio (<see cref="DashState"/>) e na mesma decisão de
+    /// "pode começar agora", e separar em métodos menores só espalharia esse
+    /// estado sem isolar nada que precise ser testado sozinho -- o `DashState`
+    /// em si já é a peça extraída e testável.
+    /// </remarks>
+    private void AtualizarDash(in IntentFrame intencao, Vector3 direcaoDoMovimento, ActionLock travas, bool noChao, float delta, ref Vector3 velocidade)
+    {
+        _dashCooldownRestante = Mathf.Max(0f, _dashCooldownRestante - delta);
+
+        // `noChao` sozinho não basta aqui: ele reflete o chão de ANTES deste
+        // quadro mexer em qualquer coisa, então no quadro EXATO em que um
+        // pulo dispara (`velocidade.Y` acabou de virar positivo, um pouco
+        // acima) `noChao` ainda lê "apoiado" -- um dash pedido nesse mesmo
+        // quadro veria `noChao=true` e nunca marcaria `_dashUsadoNoAr`,
+        // liberando um segundo dash de graça no mesmo pulo. Somar a
+        // velocidade vertical já decidida (pulo ou queda) fecha essa brecha
+        // sem precisar reler `IsOnFloor()` depois do MoveAndSlide.
+        //
+        // A mesma defasagem existe no controle aéreo (`aceleracao`/
+        // `desaceleracao` logo acima, que também ramificam em `noChao` cru):
+        // no quadro exato do pulo, ele ainda usa a aceleração de solo por um
+        // quadro só, e se autocorrige no seguinte. Sem consequência aqui
+        // porque nada depende de contar quantas vezes já dashou no ar --
+        // só o dash precisou do remendo.
+        //
+        // `> 0f`, não uma tolerância maior: os únicos dois valores que
+        // `velocidade.Y` assume nesta função são -1 (apoiado, ver
+        // MovementMath.ApplyGravity) e a velocidade de saída de um pulo
+        // (sempre vários m/s) -- não há ruído de ponto flutuante por perto
+        // para justificar uma margem.
+        var realmenteNoAr = !noChao || velocidade.Y > 0f;
+
+        // Bloqueado só por ActionLock.Abilities, nunca por Movement: o dash
+        // PRECISA escapar de recovery de ataque básico e de hitstun (ambos
+        // travam Movement, spec 16 §4), mas não deveria interromper uma
+        // habilidade em execução (que trava Abilities além de Movement).
+        // Atordoamento pesado ainda não existe como sistema -- fica para
+        // quando o M5 introduzir um.
+        var podeComecar = _dashCooldownRestante <= 0f
+            && !_dash.IsActive
+            && (!realmenteNoAr || !_dashUsadoNoAr)
+            && (travas & ActionLock.Abilities) == 0;
+
+        if (intencao.DashPressed && podeComecar)
+        {
+            var corpo = _contexto!.Body;
+            var frenteDoCorpo = -corpo.GlobalTransform.Basis.Z;
+            var direcaoDoDash = direcaoDoMovimento.LengthSquared() > 0.0001f
+                ? direcaoDoMovimento.Normalized()
+                : new Vector3(frenteDoCorpo.X, 0f, frenteDoCorpo.Z).Normalized();
+
+            _dash.Start(direcaoDoDash, Settings.DashDistance, Settings.DashDuration);
+            _dashCooldownRestante = Settings.DashCooldown;
+
+            if (realmenteNoAr)
+                _dashUsadoNoAr = true;
+
+            // Trava só ROTAÇÃO: o dash quer dirigir X/Z sozinho (não dá para
+            // curvar no meio, spec 16 §4), mas ActionLock.Movement pertence à
+            // decisão de "ignorar o WASD" acima -- travá-lo aqui zeraria
+            // `desejada` no PRÓXIMO quadro por engano, mesmo já sobrescrevendo
+            // X/Z logo abaixo.
+            _contexto.Combat?.ApplyLock(DashLockSource, ActionLock.Rotation, Settings.DashDuration);
+            _contexto.Health?.GrantInvulnerability(Settings.DashInvulnerability);
+        }
+
+        if (!_dash.IsActive)
+            return;
+
+        var velocidadeDoDash = _dash.Velocity;
+        velocidade.X = velocidadeDoDash.X;
+        velocidade.Z = velocidadeDoDash.Z;
+        _dash.Advance(delta);
     }
 
     private void Girar(in IntentFrame intencao, Vector3 direcaoDoMovimento, float delta)
