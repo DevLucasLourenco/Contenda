@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Contenda.Components.Abilities;
+using Contenda.Components.AI;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Mana;
@@ -36,6 +37,7 @@ public sealed partial class CharacterController : CharacterBody3D
 
     private readonly List<ICharacterComponent> _componentes = [];
     private PlayerInputController? _entrada;
+    private EnemyBrain? _cerebro;
     private TargetingComponent? _mira;
     private MovementComponent? _movimento;
     private HealthComponent? _vida;
@@ -73,6 +75,13 @@ public sealed partial class CharacterController : CharacterBody3D
         // Movimento é OPCIONAL: um manequim de treino tem vida e atributos, mas
         // não anda. Exigir locomoção obrigaria a inventar um componente inútil só
         // para satisfazer o contêiner.
+
+        // O jogador se anuncia para quem precisar encontrá-lo sem escanear a
+        // árvore por quadro (ticket 22): um EnemyBrain que chamasse
+        // GetNodesInGroup a cada Tick de física alocaria por quadro, proibido
+        // pelas convenções §5.
+        if (Team == Team.Player)
+            ServiceLocator.Session.PlayerBody = this;
     }
 
     /// <summary>
@@ -107,8 +116,9 @@ public sealed partial class CharacterController : CharacterBody3D
         if (Context is null)
             return;
 
-        // 1. entrada bruta
-        var intencao = _entrada?.Poll() ?? IntentFrame.Idle;
+        // 1. entrada bruta -- teclado para o jogador, percepção/estado para
+        //    um inimigo. Nunca os dois num mesmo personagem.
+        var intencao = _entrada?.Poll() ?? _cerebro?.Poll((float)delta) ?? IntentFrame.Idle;
 
         // 2. mira: projeta o cursor e devolve a direção para a intenção
         if (_mira is not null && _entrada is not null)
@@ -245,8 +255,17 @@ public sealed partial class CharacterController : CharacterBody3D
             case DamageFlashComponent f:
                 _flash = f;
                 break;
+            case NavigationMotor nav:
+                Context!.NavigationMotor = nav;
+                break;
+            case AttackTelegraphComponent tel:
+                Context!.AttackTelegraph = tel;
+                break;
             case PlayerInputController e:
                 _entrada = e;
+                break;
+            case EnemyBrain b:
+                _cerebro = b;
                 break;
         }
     }

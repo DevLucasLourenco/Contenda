@@ -1,3 +1,4 @@
+using Contenda.Characters.Base;
 using Godot;
 
 namespace Contenda.Core;
@@ -16,6 +17,19 @@ namespace Contenda.Core;
 /// </remarks>
 public sealed partial class GameSession : Node
 {
+    /// <summary>
+    /// O personagem do jogador na cena atual. Nulo fora de uma partida.
+    /// </summary>
+    /// <remarks>
+    /// Quem se registra é o próprio <c>CharacterController</c> com
+    /// <c>Team.Player</c>, no próprio <c>_Ready</c> -- nós não procuram o
+    /// jogador, ele se anuncia, mesmo espírito do <see cref="ServiceLocator"/>.
+    /// Existe para o ticket 22: um <c>EnemyBrain</c> que precisasse escanear
+    /// <c>GetNodesInGroup</c> a cada quadro de física alocaria por quadro,
+    /// proibido pelas convenções §5 -- uma referência cacheada não.
+    /// </remarks>
+    public CharacterController? PlayerBody { get; set; }
+
     public override void _Ready()
     {
         ServiceLocator.Register(this);
@@ -25,5 +39,6 @@ public sealed partial class GameSession : Node
     /// <summary>Descarta o estado da partida ao voltar para o menu.</summary>
     public void ResetToMenu()
     {
+        PlayerBody = null;
     }
 }

@@ -61,6 +61,33 @@ public static class CameraMath
     }
 
     /// <summary>
+    /// O inverso de <see cref="MovementToWorld"/>: dada uma direção já no
+    /// MUNDO, devolve o eixo de WASD que produziria essa mesma direção sob
+    /// este yaw.
+    /// </summary>
+    /// <remarks>
+    /// A IA (ticket 22) decide para onde quer ir em coordenadas de MUNDO —
+    /// "na direção do jogador" não faz sentido relativo a uma câmera que ela
+    /// nem sempre tem. Mas `MovementComponent.Tick` sempre reaplica
+    /// <see cref="MovementToWorld"/> sobre `IntentFrame.Move`, câmera
+    /// travada ou não (o mesmo yaw de 45° vale para o mundo inteiro, spec 02
+    /// §3) — sem desfazer essa rotação aqui, a IA andaria na diagonal errada.
+    /// </remarks>
+    /// <param name="worldDirection">Direção desejada no mundo, plano XZ.</param>
+    /// <param name="yawDegrees">O MESMO yaw que <see cref="MovementToWorld"/> vai usar depois.</param>
+    public static Vector2 WorldToMovement(Vector3 worldDirection, float yawDegrees)
+    {
+        if (worldDirection.LengthSquared() <= 0f)
+            return Vector2.Zero;
+
+        var yawInverso = new Basis(Vector3.Up, Mathf.DegToRad(-yawDegrees));
+        var local = yawInverso * worldDirection;
+        var eixo = new Vector2(local.X, local.Z);
+
+        return eixo.LengthSquared() > 0.0001f ? eixo.Normalized() : Vector2.Zero;
+    }
+
+    /// <summary>
     /// Aproximação suave e criticamente amortecida, independente de framerate.
     /// </summary>
     /// <remarks>

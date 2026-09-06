@@ -168,4 +168,46 @@ public sealed class CameraMathTests
 
         Assert.Equal(0f, ((w + d).Normalized() - wd).Length(), Tol);
     }
+
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(30f)]
+    [InlineData(45f)]
+    [InlineData(90f)]
+    [InlineData(-20f)]
+    public void WorldToMovement_desfaz_exatamente_o_que_MovementToWorld_fez(float yaw)
+    {
+        // A IA (ticket 22) parte de uma direção de MUNDO; ida e volta pelas
+        // duas conversões tem que devolver a mesma entrada de WASD original.
+        var eixos = new[]
+        {
+            new Vector2(0f, -1f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(-1f, 0f),
+            new Vector2(1f, -1f).Normalized(), new Vector2(-1f, 1f).Normalized(),
+        };
+
+        foreach (var eixo in eixos)
+        {
+            var mundo = CameraMath.MovementToWorld(eixo, yaw);
+            var voltaParaEixo = CameraMath.WorldToMovement(mundo, yaw);
+
+            Assert.Equal(eixo.X, voltaParaEixo.X, Tol);
+            Assert.Equal(eixo.Y, voltaParaEixo.Y, Tol);
+        }
+    }
+
+    [Fact]
+    public void WorldToMovement_de_direcao_nula_nao_produz_eixo_espurio()
+    {
+        Assert.Equal(Vector2.Zero, CameraMath.WorldToMovement(Vector3.Zero, 45f));
+    }
+
+    [Fact]
+    public void WorldToMovement_ignora_componente_vertical()
+    {
+        var comAltura = CameraMath.WorldToMovement(new Vector3(0f, 5f, -1f), 45f);
+        var semAltura = CameraMath.WorldToMovement(new Vector3(0f, 0f, -1f), 45f);
+
+        Assert.Equal(semAltura.X, comAltura.X, Tol);
+        Assert.Equal(semAltura.Y, comAltura.Y, Tol);
+    }
 }

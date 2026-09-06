@@ -1,0 +1,121 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
+[ext_resource type="Script" path="res://src/Components/Stats/StatsComponent.cs" id="2_stats"]
+[ext_resource type="Script" path="res://src/Components/Health/HealthComponent.cs" id="3_vida"]
+[ext_resource type="Script" path="res://src/Components/Health/DamageFlashComponent.cs" id="4_flash"]
+[ext_resource type="Script" path="res://src/Components/Combat/CombatComponent.cs" id="5_cbt"]
+[ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="6_mov"]
+[ext_resource type="Script" path="res://src/Components/AI/AttackTelegraphComponent.cs" id="7_telegrafo"]
+[ext_resource type="Script" path="res://src/Components/AI/NavigationMotor.cs" id="8_navmotor"]
+[ext_resource type="Script" path="res://src/Components/AI/EnemyBrain.cs" id="9_brain"]
+[ext_resource type="Script" path="res://src/UI/HUD/WorldHealthBar.cs" id="10_barra"]
+[ext_resource type="Resource" path="res://data/characters/grunt.tres" id="11_def"]
+[ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="12_cam"]
+[ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="13_ia"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_corpo"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_corpo"]
+albedo_color = Color(0.75, 0.25, 0.22, 1)
+roughness = 0.7
+
+[sub_resource type="CapsuleMesh" id="Mesh_corpo"]
+material = SubResource("Mat_corpo")
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_fundo"]
+albedo_color = Color(0.08, 0.08, 0.1, 1)
+shading_mode = 0
+billboard_mode = 1
+billboard_keep_scale = true
+no_depth_test = true
+
+[sub_resource type="StandardMaterial3D" id="Mat_vida"]
+albedo_color = Color(0.85, 0.25, 0.25, 1)
+shading_mode = 0
+billboard_mode = 1
+billboard_keep_scale = true
+no_depth_test = true
+
+[sub_resource type="QuadMesh" id="Mesh_barra"]
+size = Vector2(1.2, 0.14)
+
+[node name="EnemyGrunt" type="CharacterBody3D" groups=["damageable"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_ctrl")
+Definition = ExtResource("11_def")
+Team = 2
+
+[node name="Colisao" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_corpo")
+
+[node name="Corpo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("Mesh_corpo")
+
+[node name="StatsComponent" type="Node" parent="."]
+script = ExtResource("2_stats")
+BaseDefense = 1.0
+BaseDamage = 1.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_vida")
+
+[node name="DamageFlashComponent" type="Node" parent="."]
+script = ExtResource("4_flash")
+MeshPath = NodePath("../Corpo")
+
+[node name="CombatComponent" type="Node" parent="."]
+script = ExtResource("5_cbt")
+
+[node name="MovementComponent" type="Node" parent="."]
+script = ExtResource("6_mov")
+CameraReference = ExtResource("12_cam")
+
+[node name="AttackTelegraphComponent" type="Node" parent="."]
+script = ExtResource("7_telegrafo")
+MeshPath = NodePath("../Corpo")
+TelegraphColor = Color(1, 0.35, 0.1, 1)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.5
+avoidance_enabled = true
+max_neighbors = 8
+neighbor_distance = 4.0
+path_desired_distance = 0.4
+target_desired_distance = 0.4
+
+[node name="NavigationMotor" type="Node" parent="."]
+script = ExtResource("8_navmotor")
+AgentPath = NodePath("../NavigationAgent3D")
+StoppingDistance = 0.4
+
+[node name="EnemyBrain" type="Node" parent="."]
+script = ExtResource("9_brain")
+Definition = ExtResource("13_ia")
+EyeHeight = 1.0
+
+[node name="WorldHealthBar" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+script = ExtResource("10_barra")
+HealthPath = NodePath("../HealthComponent")
+FillPath = NodePath("Preenchimento")
+BarWidth = 1.2
+HideAfter = 3.0
+
+[node name="Fundo" type="MeshInstance3D" parent="WorldHealthBar"]
+transform = Transform3D(1.05, 0, 0, 0, 1.4, 0, 0, 0, 1, 0, 0, -0.01)
+mesh = SubResource("Mesh_barra")
+material_override = SubResource("Mat_fundo")
+
+[node name="Preenchimento" type="Node3D" parent="WorldHealthBar"]
+
+[node name="Mesh" type="MeshInstance3D" parent="WorldHealthBar/Preenchimento"]
+mesh = SubResource("Mesh_barra")
+material_override = SubResource("Mat_vida")

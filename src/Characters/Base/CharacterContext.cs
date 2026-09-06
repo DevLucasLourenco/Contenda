@@ -1,4 +1,5 @@
 using Contenda.Components.Abilities;
+using Contenda.Components.AI;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Mana;
@@ -59,4 +60,10 @@ public sealed class CharacterContext
 
     /// <summary>Habilidades. Executa uma sequência de WASD confirmada. Nulo para quem não tem nenhuma.</summary>
     public AbilityComponent? Abilities { get; internal set; }
+
+    /// <summary>Pathing até um ponto do mundo. Nulo para quem não persegue ninguém (o jogador, os manequins).</summary>
+    public NavigationMotor? NavigationMotor { get; internal set; }
+
+    /// <summary>Telegrafia visual de golpe. Nulo para quem não avisa antes de bater (o jogador).</summary>
+    public AttackTelegraphComponent? AttackTelegraph { get; internal set; }
 }
