@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_swordsman.tres" id="2_mov"]
@@ -9,6 +9,7 @@
 [ext_resource type="Resource" path="res://data/abilities/rising_slash.tres" id="7_rising"]
 [ext_resource type="Resource" path="res://data/abilities/spin_slash.tres" id="8_spin"]
 [ext_resource type="Resource" path="res://data/abilities/heavy_lunge.tres" id="9_lunge"]
+[ext_resource type="Resource" path="res://data/characters/shared/stats_swordsman.tres" id="10_stats"]
 
 [resource]
 script = ExtResource("1_def")
@@ -18,4 +19,5 @@ Health = ExtResource("3_hp")
 Mana = ExtResource("5_mana")
 Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")
+Stats = ExtResource("10_stats")
 Abilities = [ExtResource("6_dash"), ExtResource("7_rising"), ExtResource("8_spin"), ExtResource("9_lunge")]

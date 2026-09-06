@@ -137,7 +137,14 @@ public sealed class HitscanWeapon : IWeapon
         {
             destino = alvo.GlobalPosition;
 
-            var dano = _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+            // Sorteado aqui, uma vez por tiro -- um hitscan só atinge um
+            // alvo por disparo, então não existe o problema de "loteria" do
+            // corpo a corpo em área. Ticket 18, spec 16 §5.
+            var critico = CritMath.RolarNaStats(_contexto.Stats);
+            var dano = CritMath.AplicarNaStats(
+                _contexto.Stats,
+                _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+                critico);
 
             alvo.Context?.Health?.ApplyDamage(new DamageInfo(
                 Amount: dano,
@@ -147,15 +154,16 @@ public sealed class HitscanWeapon : IWeapon
                 Knockback: _arma.Knockback,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: _arma.Id,
-                IsCritical: false));
+                IsCritical: critico));
 
             alvo.Context?.Movement?.ApplyKnockback(direcao * _arma.Knockback);
 
             // Hitstop nos dois envolvidos -- ticket 11. Sem cadeia de combo
             // aqui, então é sempre a mesma duração; nenhum "finalizador" para
-            // o revólver.
-            _contexto.Health?.ApplyHitstop(_arma.HitstopSeconds);
-            alvo.Context?.Health?.ApplyHitstop(_arma.HitstopSeconds);
+            // o revólver -- exceto o bônus de crítico, ticket 18.
+            var hitstop = _arma.HitstopSeconds + (critico ? _arma.CriticalHitstopBonus : 0f);
+            _contexto.Health?.ApplyHitstop(hitstop);
+            alvo.Context?.Health?.ApplyHitstop(hitstop);
 
             HitLanded?.Invoke(alvo);
         }

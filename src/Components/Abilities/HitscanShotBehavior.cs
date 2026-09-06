@@ -38,7 +38,14 @@ public sealed class HitscanShotBehavior : IAbilityBehavior
         var corpo = ctx.Character.Body;
         var origem = corpo.GlobalPosition;
         var direcao = AbilityGeometry.AimOrFlattenedForward(ctx.AimDirection, corpo.GlobalTransform.Basis);
-        var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
+        // Um tiro perfurante é um golpe só, mesmo atravessando vários alvos:
+        // uma rolagem, reaproveitada por todo mundo no caminho. Ticket 18.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var dano = CritMath.AplicarNaStats(
+            ctx.Character.Stats,
+            ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
         var atingidos = 0;
 
         AbilityTargeting.ForEachValidTarget(corpo.GetTree(), ctx.TargetGroup, corpo, ctx.Character.Team, alvo =>
@@ -58,7 +65,7 @@ public sealed class HitscanShotBehavior : IAbilityBehavior
                 Knockback: ctx.Definition.Knockback,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: ctx.Definition.Id.ToString(),
-                IsCritical: false));
+                IsCritical: critico));
 
             alvo.Context.Movement?.ApplyKnockback(direcao * ctx.Definition.Knockback);
             atingidos++;

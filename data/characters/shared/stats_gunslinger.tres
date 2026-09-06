@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="StatsDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Stats/StatsDefinition.cs" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+CritChance = 0.05
+CritMultiplier = 1.8

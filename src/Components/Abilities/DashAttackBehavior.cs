@@ -66,7 +66,13 @@ public sealed class DashAttackBehavior : IAbilityBehavior
         // Max, não a distância percorrida sozinha: ver o comentário da classe
         // sobre o Quick Step Shot, cujo Range vai bem além do DashDistance.
         var comprimento = Mathf.Max(origem.DistanceTo(destino), ctx.Definition.Range);
-        var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
+        // Uma vez para o dash inteiro -- mesmo motivo do MeleeArcBehavior.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var dano = CritMath.AplicarNaStats(
+            ctx.Character.Stats,
+            ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
         var atingidos = 0;
 
         AbilityTargeting.ForEachValidTarget(corpo.GetTree(), ctx.TargetGroup, corpo, ctx.Character.Team, alvo =>
@@ -84,7 +90,7 @@ public sealed class DashAttackBehavior : IAbilityBehavior
                 Knockback: ctx.Definition.Knockback,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: ctx.Definition.Id.ToString(),
-                IsCritical: false));
+                IsCritical: critico));
 
             alvo.Context.Movement?.ApplyKnockback(frente * ctx.Definition.Knockback);
             atingidos++;

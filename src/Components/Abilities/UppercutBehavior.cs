@@ -40,7 +40,13 @@ public sealed class UppercutBehavior : IAbilityBehavior
 
         var alcanceQuadrado = ctx.Definition.Range * ctx.Definition.Range;
         var cosseno = Mathf.Cos(Mathf.DegToRad(ctx.Definition.Angle));
-        var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
+        // Uma vez para o golpe inteiro -- mesmo motivo do MeleeArcBehavior.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var dano = CritMath.AplicarNaStats(
+            ctx.Character.Stats,
+            ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
         var lancamento = Vector3.Up * ctx.Definition.Knockback;
         var atingidos = 0;
 
@@ -65,7 +71,7 @@ public sealed class UppercutBehavior : IAbilityBehavior
                 Knockback: ctx.Definition.Knockback,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: ctx.Definition.Id.ToString(),
-                IsCritical: false));
+                IsCritical: critico));
 
             alvo.Context.Movement?.ApplyKnockback(lancamento);
             atingidos++;

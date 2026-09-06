@@ -21,6 +21,12 @@ public sealed partial class StatsComponent : Node, ICharacterComponent
 
     private readonly StatBlock _bloco = new();
 
+    // Guardados aqui, não relidos da definição a cada ResetForSpawn: o pool
+    // (M5) reciclariam sem reconfigurar antes -- mesma disciplina do
+    // `_invulnerabilidade` em HealthComponent.
+    private float _baseCritChance;
+    private float _baseCritMultiplier = 1f;
+
     /// <summary>
     /// Avisa quando um atributo muda de valor final.
     /// </summary>
@@ -43,6 +49,14 @@ public sealed partial class StatsComponent : Node, ICharacterComponent
     {
         _bloco.SetBase(StatId.DefenseMultiplier, BaseDefense);
         _bloco.SetBase(StatId.DamageMultiplier, BaseDamage);
+
+        // Nulo (inimigos, por enquanto) vira 0 % de chance -- spec 16 §5:
+        // "Inimigos: 0.00". Nenhum `if` sobre quem é o personagem, só a
+        // ausência do recurso na definição.
+        _baseCritChance = definicao.Stats?.CritChance ?? 0f;
+        _baseCritMultiplier = definicao.Stats?.CritMultiplier ?? 1f;
+        _bloco.SetBase(StatId.CritChance, _baseCritChance);
+        _bloco.SetBase(StatId.CritMultiplier, _baseCritMultiplier);
     }
 
     /// <summary>Valor final de um atributo.</summary>
@@ -63,6 +77,8 @@ public sealed partial class StatsComponent : Node, ICharacterComponent
         _bloco.ClearModifiers();
         _bloco.SetBase(StatId.DefenseMultiplier, BaseDefense);
         _bloco.SetBase(StatId.DamageMultiplier, BaseDamage);
+        _bloco.SetBase(StatId.CritChance, _baseCritChance);
+        _bloco.SetBase(StatId.CritMultiplier, _baseCritMultiplier);
     }
 
 }

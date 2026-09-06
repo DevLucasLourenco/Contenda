@@ -39,7 +39,15 @@ public sealed class MeleeArcBehavior : IAbilityBehavior
 
         var alcanceQuadrado = ctx.Definition.Range * ctx.Definition.Range;
         var cosseno = Mathf.Cos(Mathf.DegToRad(ctx.Definition.Angle));
-        var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
+        // Sorteado uma vez para o golpe inteiro, não por alvo -- um Spin
+        // Slash que acerta cinco inimigos é crítico em todos ou em nenhum.
+        // Ticket 18, spec 16 §5.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var dano = CritMath.AplicarNaStats(
+            ctx.Character.Stats,
+            ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
         var atingidos = 0;
 
         AbilityTargeting.ForEachValidTarget(corpo.GetTree(), ctx.TargetGroup, corpo, ctx.Character.Team, alvo =>
@@ -63,7 +71,7 @@ public sealed class MeleeArcBehavior : IAbilityBehavior
                 Knockback: ctx.Definition.Knockback,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: ctx.Definition.Id.ToString(),
-                IsCritical: false));
+                IsCritical: critico));
 
             alvo.Context.Movement?.ApplyKnockback(direcao * ctx.Definition.Knockback);
             atingidos++;

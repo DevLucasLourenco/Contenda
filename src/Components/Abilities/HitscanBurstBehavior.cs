@@ -80,17 +80,25 @@ public sealed class HitscanBurstBehavior : IAbilityBehavior
         if (melhor is null)
             return;
 
+        // Cada tiro do leque é sorteado por si: são seis disparos em
+        // sequência, não um golpe em área simultâneo como o Spin Slash --
+        // mais parecido com apertar o gatilho do revólver seis vezes
+        // seguidas do que com um cone que acerta cinco alvos de uma vez.
+        // Ticket 18, spec 16 §5.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var danoFinal = CritMath.AplicarNaStats(ctx.Character.Stats, dano, critico);
+
         // `!`: AbilityTargeting só chama o callback acima para alvos com
         // Health vivo -- é a própria checagem que filtra quem vira `melhor`.
         melhor.Context!.Health!.ApplyDamage(new DamageInfo(
-            Amount: dano,
+            Amount: danoFinal,
             Type: DamageType.Physical,
             HitPoint: melhor.GlobalPosition,
             Direction: direcao,
             Knockback: ctx.Definition.Knockback,
             SourceId: corpo.GetInstanceId(),
             SourceTag: ctx.Definition.Id.ToString(),
-            IsCritical: false));
+            IsCritical: critico));
 
         melhor.Context.Movement?.ApplyKnockback(direcao * ctx.Definition.Knockback);
     }

@@ -47,4 +47,15 @@ public sealed partial class MeleeComboStep : Resource
     /// (0,04 s). Aplicado aos dois envolvidos — quem bateu e quem apanhou.
     /// </remarks>
     [Export(PropertyHint.Range, "0,0.3,0.01")] public float HitstopSeconds { get; set; } = 0.04f;
+
+    /// <summary>
+    /// Somado a <see cref="HitstopSeconds"/> quando o golpe sai crítico.
+    /// </summary>
+    /// <remarks>
+    /// Somado ao valor DESTE passo, não um número absoluto -- assim o
+    /// finalizador crítico (0,09 s + 0,05 s) continua mais longo que um jab
+    /// crítico (0,04 s + 0,05 s), e os dois continuam mais longos que a
+    /// versão normal do mesmo passo. Ticket 18, spec 16 §5.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float CriticalHitstopBonus { get; set; } = 0.05f;
 }

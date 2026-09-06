@@ -50,14 +50,35 @@ public sealed partial class DamageNumberPool : Node
     /// <summary>Cor de um número comum.</summary>
     [Export] public Color NormalColor { get; set; } = Colors.White;
 
-    /// <summary>Cor de um número crítico. Sem efeito até o ticket 16 sortear críticos.</summary>
+    /// <summary>Cor de um número crítico.</summary>
     [Export] public Color CriticalColor { get; set; } = Colors.Gold;
+
+    /// <summary>
+    /// Quanto um número crítico cresce em relação ao normal. Spec 16 §5: 1,6×.
+    /// </summary>
+    [Export(PropertyHint.Range, "1,3,0.05")] public float CriticalScale { get; set; } = 1.6f;
+
+    /// <summary>
+    /// Espessura do contorno de um número crítico, em pixels. Zero desliga o
+    /// contorno -- é o "brilho" que separa o crítico do normal além do
+    /// tamanho e da cor, spec 16 §5.
+    /// </summary>
+    [Export(PropertyHint.Range, "0,16,1")] public int CriticalOutlineSize { get; set; } = 8;
+
+    /// <summary>Cor do contorno de um número crítico.</summary>
+    [Export] public Color CriticalOutlineColor { get; set; } = Colors.White;
 
     private readonly List<Label3D> _rotulos = [];
     private readonly List<Vector3> _origens = [];
     private readonly List<float> _decorridos = [];
     private readonly List<bool> _ativos = [];
     private int _proximoIndiceDeSobrescrita;
+
+    /// <summary>Escala aplicada ao último número mostrado. Para o probe/depuração.</summary>
+    public float LastScale { get; private set; } = 1f;
+
+    /// <summary>Espessura de contorno do último número mostrado. Para o probe/depuração.</summary>
+    public int LastOutlineSize { get; private set; }
 
     /// <summary>Quantos números estão visíveis agora. Para o probe/depuração.</summary>
     public int ActiveCount
@@ -142,13 +163,22 @@ public sealed partial class DamageNumberPool : Node
         var origem = evento.Position + new Vector3(0f, SpawnHeightOffset, 0f);
         var rotulo = _rotulos[indice];
 
+        var escala = evento.IsCritical ? CriticalScale : 1f;
+        var contorno = evento.IsCritical ? CriticalOutlineSize : 0;
+
         rotulo.Text = Mathf.RoundToInt(evento.Amount).ToString();
         rotulo.Modulate = evento.IsCritical ? CriticalColor : NormalColor;
+        rotulo.Scale = Vector3.One * escala;
+        rotulo.OutlineSize = contorno;
+        rotulo.OutlineModulate = CriticalOutlineColor;
         rotulo.GlobalPosition = origem;
         rotulo.Visible = true;
 
         _origens[indice] = origem;
         _decorridos[indice] = 0f;
         _ativos[indice] = true;
+
+        LastScale = escala;
+        LastOutlineSize = contorno;
     }
 }

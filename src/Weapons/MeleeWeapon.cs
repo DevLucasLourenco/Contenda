@@ -33,6 +33,7 @@ public sealed class MeleeWeapon : IWeapon
 
     private MeleeComboStep _passoAtual;
     private bool _janelaAberta;
+    private bool _criticoDoGolpeAtual;
 
     public MeleeWeapon(
         WeaponDefinition arma,
@@ -77,6 +78,14 @@ public sealed class MeleeWeapon : IWeapon
         // acerto por alvo por golpe, sem impedir que o próximo golpe da cadeia
         // acerte o mesmo alvo.
         _jaAtingidosNesteGolpe.Clear();
+
+        // Sorteado AQUI, uma vez por golpe -- não em ResolverAcertos(), que
+        // roda a cada Tick() enquanto a janela de acerto (vários quadros)
+        // estiver aberta. Sortear lá rolaria de novo a cada quadro da mesma
+        // janela, e um golpe largo o bastante para acertar alvos em quadros
+        // diferentes da mesma janela poderia sair crítico para um e não para
+        // outro -- exatamente a "loteria" que a spec 16 §5 proíbe. Ticket 18.
+        _criticoDoGolpeAtual = CritMath.RolarNaStats(_contexto.Stats);
 
         // O avanco e distribuido pelo wind-up, e nao aplicado de uma vez: um
         // salto de 1 m num quadro le como teleporte. Espalhado ate a lamina
@@ -195,9 +204,12 @@ public sealed class MeleeWeapon : IWeapon
         var alcanceQuadrado = _arma.Range * _arma.Range;
         var cosseno = Mathf.Cos(Mathf.DegToRad(_arma.HalfAngle));
 
-        var dano = _arma.BaseDamage
-                   * _passoAtual.DamageMultiplier
-                   * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+        var dano = CritMath.AplicarNaStats(
+            _contexto.Stats,
+            _arma.BaseDamage * _passoAtual.DamageMultiplier * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            _criticoDoGolpeAtual);
+
+        var hitstop = _passoAtual.HitstopSeconds + (_criticoDoGolpeAtual ? _passoAtual.CriticalHitstopBonus : 0f);
 
         for (var i = 0; i < _alvos.Count; i++)
         {
@@ -248,7 +260,7 @@ public sealed class MeleeWeapon : IWeapon
                 Knockback: _arma.Knockback * _passoAtual.KnockbackMultiplier,
                 SourceId: corpo.GetInstanceId(),
                 SourceTag: _arma.Id,
-                IsCritical: false));
+                IsCritical: _criticoDoGolpeAtual));
 
             alvo.Context?.Movement?.ApplyKnockback(
                 direcao * _arma.Knockback * _passoAtual.KnockbackMultiplier);
@@ -256,8 +268,9 @@ public sealed class MeleeWeapon : IWeapon
             // Hitstop nos DOIS envolvidos, pela duração DESTE passo -- é só
             // isso que faz o finalizador congelar mais que um golpe normal,
             // sem nenhum código distinguindo "é o último passo". Ticket 11.
-            _contexto.Health?.ApplyHitstop(_passoAtual.HitstopSeconds);
-            vida.ApplyHitstop(_passoAtual.HitstopSeconds);
+            // O bônus de crítico (ticket 18) empilha por cima do mesmo jeito.
+            _contexto.Health?.ApplyHitstop(hitstop);
+            vida.ApplyHitstop(hitstop);
 
             HitLanded?.Invoke(alvo);
         }

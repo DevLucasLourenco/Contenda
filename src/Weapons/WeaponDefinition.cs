@@ -66,4 +66,16 @@ public sealed partial class WeaponDefinition : Resource
     /// </summary>
     /// <remarks>Ver ticket 11. Aplicado aos dois envolvidos — quem atirou e quem apanhou.</remarks>
     [Export(PropertyHint.Range, "0,0.3,0.01")] public float HitstopSeconds { get; set; } = 0.04f;
+
+    /// <summary>
+    /// Somado a <see cref="HitstopSeconds"/> quando o tiro sai crítico.
+    /// </summary>
+    /// <remarks>
+    /// Somado, não substituído: o congelamento do crítico precisa ficar
+    /// SEMPRE maior que o normal, mesmo se algum dia este golpe já tiver um
+    /// `HitstopSeconds` fora do padrão — spec 16 §5 ("crítico é sempre mais
+    /// longo que o normal"). O padrão (0,04 s + 0,05 s = 0,09 s) reproduz a
+    /// tabela da spec.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float CriticalHitstopBonus { get; set; } = 0.05f;
 }

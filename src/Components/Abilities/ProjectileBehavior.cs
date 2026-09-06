@@ -44,7 +44,15 @@ public sealed class ProjectileBehavior : IAbilityBehavior
     {
         var corpo = ctx.Character.Body;
         var direcao = AbilityGeometry.AimOrFlattenedForward(ctx.AimDirection, corpo.GlobalTransform.Basis);
-        var dano = ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
+        // Sorteado no disparo, não na explosão: a explosão em área reaproveita
+        // este mesmo valor para todo mundo que ela atinge -- mesma disciplina
+        // do MeleeArcBehavior. Ticket 18, spec 16 §5.
+        var critico = CritMath.RolarNaStats(ctx.Character.Stats);
+        var dano = CritMath.AplicarNaStats(
+            ctx.Character.Stats,
+            ctx.Definition.Damage * (ctx.Character.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
         var alcance = Mathf.Max(0.1f, ctx.Definition.Range);
 
         ServiceLocator.Events.RaiseProjectileFire(new ProjectileFireEvent(
@@ -59,6 +67,7 @@ public sealed class ProjectileBehavior : IAbilityBehavior
             SourceId: corpo.GetInstanceId(),
             SourceTag: ctx.Definition.Id.ToString(),
             ShooterTeam: ctx.Character.Team,
-            TargetGroup: ctx.TargetGroup));
+            TargetGroup: ctx.TargetGroup,
+            IsCritical: critico));
     }
 }

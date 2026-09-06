@@ -9,7 +9,7 @@ namespace Contenda.Core;
 /// </summary>
 /// <param name="Position">Onde mostrar o número, no mundo.</param>
 /// <param name="Amount">Quanto de dano, já com mitigação aplicada.</param>
-/// <param name="IsCritical">Se foi crítico. Sempre falso até o ticket 16.</param>
+/// <param name="IsCritical">Se foi crítico. Ticket 18, spec 16 §5.</param>
 public readonly record struct DamageNumberEvent(Vector3 Position, float Amount, bool IsCritical);
 
 /// <summary>Um projétil de habilidade precisa nascer, sem que quem pediu segure o nó.</summary>
@@ -25,6 +25,11 @@ public readonly record struct DamageNumberEvent(Vector3 Position, float Amount, 
 /// <param name="SourceTag">O que disparou: `ability.explosive_shot`.</param>
 /// <param name="ShooterTeam">Time de quem disparou. Decide quem a explosão pode ferir.</param>
 /// <param name="TargetGroup">Grupo varrido em busca de alvos ao explodir.</param>
+/// <param name="IsCritical">
+/// Se o disparo saiu crítico. Sorteado no disparo, não na explosão -- a
+/// explosão em área reaproveita o mesmo valor para todo mundo que ela
+/// atinge, mesma disciplina de um golpe corpo a corpo em área. Ticket 18.
+/// </param>
 public readonly record struct ProjectileFireEvent(
     Vector3 Origin,
     Vector3 Direction,
@@ -37,7 +42,8 @@ public readonly record struct ProjectileFireEvent(
     ulong SourceId,
     string SourceTag,
     Team ShooterTeam,
-    StringName TargetGroup);
+    StringName TargetGroup,
+    bool IsCritical);
 
 /// <summary>
 /// Barramento para eventos entre sistemas sem relação direta — o abate de um

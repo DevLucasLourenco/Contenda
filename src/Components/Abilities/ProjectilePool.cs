@@ -44,6 +44,7 @@ public sealed partial class ProjectilePool : Node
     private readonly List<ulong> _fontesId = [];
     private readonly List<string> _fontesTag = [];
     private readonly List<Team> _times = [];
+    private readonly List<bool> _criticos = [];
 
     // Um alvo amostrado UMA VEZ, no disparo -- não a cada quadro. Cada slot
     // reutiliza sempre a MESMA List<T> (limpa e recarregada no disparo
@@ -95,6 +96,7 @@ public sealed partial class ProjectilePool : Node
             _fontesId.Add(0UL);
             _fontesTag.Add(string.Empty);
             _times.Add(Team.Neutral);
+            _criticos.Add(false);
             _alvosEmCache.Add([]);
             _ativos.Add(false);
         }
@@ -165,7 +167,7 @@ public sealed partial class ProjectilePool : Node
                 Knockback: _repulsoes[i],
                 SourceId: _fontesId[i],
                 SourceTag: _fontesTag[i],
-                IsCritical: false));
+                IsCritical: _criticos[i]));
 
             alvo.Context.Movement?.ApplyKnockback(direcao * _repulsoes[i]);
             atingidos++;
@@ -200,6 +202,7 @@ public sealed partial class ProjectilePool : Node
         _fontesId[indice] = evento.SourceId;
         _fontesTag[indice] = evento.SourceTag;
         _times[indice] = evento.ShooterTeam;
+        _criticos[indice] = evento.IsCritical;
         _ativos[indice] = true;
 
         // Amostra o grupo AGORA, uma vez só -- ver o comentário de

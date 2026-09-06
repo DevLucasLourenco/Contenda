@@ -183,7 +183,8 @@ public sealed partial class AbilityCatalogProbe : Node
                 SourceId: 0UL,
                 SourceTag: "catalog_probe",
                 ShooterTeam: Team.Neutral,
-                TargetGroup: new StringName("damageable")));
+                TargetGroup: new StringName("damageable"),
+                IsCritical: false));
         }
 
         Verificar(_projeteis.GetChildCount() == slots,
