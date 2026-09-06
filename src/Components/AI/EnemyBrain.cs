@@ -119,8 +119,16 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         // vai terminar) para decidir sair de Attack.
         var (ataqueTerminou, pedirAtaqueAgora) = AtualizarPreparoDoGolpe(delta);
 
+        // `IsGroundedConfiavel`, não `IsGrounded` cru -- este último fica um
+        // quadro atrasado bem no quadro exato de um lançamento vertical
+        // (golpe que lança um grunt PARADO no chão), o que derrubaria de
+        // volta para `Chase` antes mesmo do corpo sair do chão de verdade.
+        // Ver o próprio `MovementComponent.IsGroundedConfiavel` e ticket 24,
+        // spec 16 §6.
+        var estaNoChao = _contexto.Movement?.IsGroundedConfiavel ?? true;
+
         var estadoAntes = _maquina.Estado;
-        _maquina.Advance(delta, alvoVisivel, dentroDoAlcance, ataqueTerminou);
+        _maquina.Advance(delta, alvoVisivel, dentroDoAlcance, ataqueTerminou, estaNoChao);
 
         if (_maquina.Estado != estadoAntes)
             AoTrocarDeEstado(estadoAntes, _maquina.Estado);
@@ -186,10 +194,13 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         }
 
         // Encara o alvo em qualquer estado que não seja Idle -- "vira para o
-        // alvo" já vale desde o Alert, spec 09 §2.
+        // alvo" já vale desde o Alert, spec 09 §2. No ar (ticket 24) também
+        // não: "não ataca nem recalcula rota" inclui não ficar se virando
+        // para quem golpeou enquanto voa sem controle nenhum.
         var direcaoParaAlvo = new Vector3(
             alvo.GlobalPosition.X - corpo.GlobalPosition.X, 0f, alvo.GlobalPosition.Z - corpo.GlobalPosition.Z);
-        var temMira = _maquina.Estado != EnemyState.Idle && direcaoParaAlvo.LengthSquared() > 0.0001f;
+        var temMira = _maquina.Estado is not (EnemyState.Idle or EnemyState.Airborne)
+            && direcaoParaAlvo.LengthSquared() > 0.0001f;
 
         return new IntentFrame(
             Move: move,
@@ -216,10 +227,20 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     /// tanto um golpe já pedido (janela de acerto da arma) quanto um windup
     /// que nem chegou a pedir nada ainda (que não é `IsAttacking` para o
     /// `CombatComponent`, mas ainda precisa apagar o próprio aviso visual).
+    ///
+    /// "Lançamento vertical" (ticket 24) é lido do PRÓPRIO golpe, sem
+    /// nenhum campo novo em <c>DamageInfo</c>: o anti-aéreo (Rising Slash/
+    /// Uppercut) já golpeia com <c>Direction = Vector3.Up</c>, enquanto todo
+    /// golpe comum (inclusive os do combo aéreo que SUSTENTA um inimigo já
+    /// no ar) golpeia com uma direção majoritariamente horizontal -- o
+    /// impulso vertical desses é aplicado à parte, via `ApplyKnockback`, sem
+    /// aparecer aqui. `> 0.7`, não `> 0`: uma folga generosa contra qualquer
+    /// direção só um pouco inclinada para cima continuar contando como
+    /// golpe comum.
     /// </remarks>
     private void AoApanhar(DamageInfo golpe)
     {
-        _maquina.RegistrarGolpeRecebido();
+        _maquina.RegistrarGolpeRecebido(lancamentoVertical: golpe.Direction.Y > 0.7f);
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
     }

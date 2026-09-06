@@ -25,4 +25,12 @@ public enum EnemyState : byte
 
     /// <summary>Atordoado por ter apanhado. Sai sozinho, de volta para <see cref="Chase"/>.</summary>
     Staggered,
+
+    /// <summary>
+    /// Lançado no ar por um golpe vertical (anti-aéreo ou combo aéreo, ticket
+    /// 19). Sem navegação, sem ataque, sujeito só à gravidade -- sai ao
+    /// tocar o chão, de volta para <see cref="Staggered"/> (que se recompõe
+    /// sozinho, de volta para <see cref="Chase"/>). Ver ticket 24, spec 16 §6.
+    /// </summary>
+    Airborne,
 }

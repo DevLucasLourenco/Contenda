@@ -178,7 +178,7 @@ public sealed class EnemyStateMachineTests
         var maquina = Nova();
         IrPara(maquina, partida);
 
-        maquina.RegistrarGolpeRecebido();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false);
 
         Assert.Equal(EnemyState.Staggered, maquina.Estado);
     }
@@ -187,7 +187,7 @@ public sealed class EnemyStateMachineTests
     public void Atordoamento_volta_a_perseguir_sozinho()
     {
         var maquina = Nova();
-        maquina.RegistrarGolpeRecebido();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false);
 
         var quadros = (int)System.Math.Ceiling(Atordoamento / Passo) + 1;
         for (var i = 0; i < quadros; i++)
@@ -200,13 +200,13 @@ public sealed class EnemyStateMachineTests
     public void Golpes_seguidos_refrescam_o_atordoamento_em_vez_de_somar()
     {
         var maquina = Nova();
-        maquina.RegistrarGolpeRecebido();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false);
 
         var metade = (int)(Atordoamento / Passo / 2);
         for (var i = 0; i < metade; i++)
             maquina.Advance(Passo, false, false, false);
 
-        maquina.RegistrarGolpeRecebido(); // refresca no meio do caminho
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false); // refresca no meio do caminho
 
         for (var i = 0; i < metade; i++)
             maquina.Advance(Passo, false, false, false);
@@ -214,6 +214,93 @@ public sealed class EnemyStateMachineTests
         // Sem o refresco, a soma dos dois trechos já teria estourado o
         // atordoamento original.
         Assert.Equal(EnemyState.Staggered, maquina.Estado);
+    }
+
+    [Theory]
+    [InlineData(EnemyState.Idle)]
+    [InlineData(EnemyState.Alert)]
+    [InlineData(EnemyState.Chase)]
+    [InlineData(EnemyState.Attack)]
+    [InlineData(EnemyState.Recover)]
+    [InlineData(EnemyState.Staggered)]
+    public void Lancamento_vertical_manda_para_o_ar_a_partir_de_qualquer_estado(EnemyState partida)
+    {
+        var maquina = Nova();
+        IrPara(maquina, partida);
+
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        Assert.Equal(EnemyState.Airborne, maquina.Estado);
+    }
+
+    [Fact]
+    public void No_ar_nao_sai_sozinho_por_tempo_nenhum()
+    {
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        // Bem mais tempo que qualquer outro estado temporizado deste
+        // arquivo -- "no ar" só sai ao tocar o chão, nunca por relógio.
+        for (var i = 0; i < 600; i++)
+            maquina.Advance(Passo, alvoVisivel: true, dentroDoAlcanceDeAtaque: true, ataqueTerminou: false, estaNoChao: false);
+
+        Assert.Equal(EnemyState.Airborne, maquina.Estado);
+    }
+
+    [Fact]
+    public void Tocar_o_chao_tira_do_ar_e_atordoa()
+    {
+        // Spec 16 §6: "voltando a Staggered ao tocar o chão" -- não direto
+        // para Chase. Staggered já se recompõe sozinho (ver
+        // Atordoamento_volta_a_perseguir_sozinho), então "volta a perseguir
+        // normalmente" do ticket 24 continua valendo, só que com a mesma
+        // janela de vulnerabilidade de qualquer outro golpe recebido.
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        maquina.Advance(Passo, alvoVisivel: true, dentroDoAlcanceDeAtaque: true, ataqueTerminou: false, estaNoChao: true);
+
+        Assert.Equal(EnemyState.Staggered, maquina.Estado);
+    }
+
+    [Fact]
+    public void Aterrissar_atordoado_ainda_se_recompoe_sozinho()
+    {
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+        maquina.Advance(Passo, alvoVisivel: true, dentroDoAlcanceDeAtaque: true, ataqueTerminou: false, estaNoChao: true);
+
+        var quadros = (int)System.Math.Ceiling(Atordoamento / Passo) + 1;
+        for (var i = 0; i < quadros; i++)
+            maquina.Advance(Passo, true, false, false, estaNoChao: true);
+
+        Assert.Equal(EnemyState.Chase, maquina.Estado);
+    }
+
+    [Fact]
+    public void Golpe_comum_no_ar_nao_interrompe_para_atordoado()
+    {
+        // O combo aéreo do ticket 19 sustenta o inimigo no alto com vários
+        // acertos comuns (horizontais) -- só o impulso vertical, aplicado à
+        // parte, é o que conta como "sustentar"; a MÁQUINA de estado só
+        // precisa não sair do ar por causa desses acertos comuns.
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false);
+
+        Assert.Equal(EnemyState.Airborne, maquina.Estado);
+    }
+
+    [Fact]
+    public void Novo_lancamento_vertical_no_ar_refresca_sem_erro()
+    {
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        Assert.Equal(EnemyState.Airborne, maquina.Estado);
     }
 
     private static void ChegarEmChase(EnemyStateMachine maquina)

@@ -50,7 +50,12 @@ public sealed class EnemyStateMachine
     /// </param>
     /// <param name="dentroDoAlcanceDeAtaque">Se o alvo já está perto o bastante para golpear.</param>
     /// <param name="ataqueTerminou">Se o golpe em andamento (estado <see cref="EnemyState.Attack"/>) já acabou.</param>
-    public void Advance(float delta, bool alvoVisivel, bool dentroDoAlcanceDeAtaque, bool ataqueTerminou)
+    /// <param name="estaNoChao">
+    /// Se o inimigo está apoiado no chão AGORA -- só importa para
+    /// <see cref="EnemyState.Airborne"/> sair sozinho ao aterrissar.
+    /// </param>
+    public void Advance(
+        float delta, bool alvoVisivel, bool dentroDoAlcanceDeAtaque, bool ataqueTerminou, bool estaNoChao = true)
     {
         _tempoNoEstado += delta;
 
@@ -88,24 +93,48 @@ public sealed class EnemyStateMachine
                     TransicionarPara(EnemyState.Chase);
                 break;
 
+            case EnemyState.Airborne:
+                if (estaNoChao)
+                    TransicionarPara(EnemyState.Staggered);
+                break;
+
             default:
                 break;
         }
     }
 
     /// <summary>
-    /// Um golpe conectou -- interrompe qualquer estado e atordoa.
+    /// Um golpe conectou -- interrompe qualquer estado e atordoa ou lança no
+    /// ar, dependendo do tipo de golpe.
     /// </summary>
+    /// <param name="lancamentoVertical">
+    /// Se este golpe é um lançamento vertical (anti-aéreo, ticket 24) em vez
+    /// de um golpe comum.
+    /// </param>
     /// <remarks>
     /// Golpes seguidos REFRESCAM o atordoamento em vez de somar duração: um
     /// combo de três do jogador não deveria travar o inimigo por três vezes
     /// o tempo, só mantê-lo atordoado enquanto os golpes continuarem
     /// conectando. Mesma disciplina do "nunca somar, sempre tomar o maior ou
     /// resetar" já usada em <c>ActionLockSet</c>.
+    ///
+    /// Um golpe comum enquanto já está <see cref="EnemyState.Airborne"/> NÃO
+    /// interrompe para <see cref="EnemyState.Staggered"/>: é exatamente o
+    /// combo aéreo do ticket 19 sustentando o inimigo no alto com uma
+    /// sequência de golpes -- só tocar o chão (visto por <see cref="Advance"/>)
+    /// tira alguém do ar. Um lançamento vertical, por outro lado, entra em
+    /// <see cref="EnemyState.Airborne"/> a partir de QUALQUER estado, mesmo
+    /// já atordoado ou já no ar (refresca, não empilha).
     /// </remarks>
-    public void RegistrarGolpeRecebido()
+    public void RegistrarGolpeRecebido(bool lancamentoVertical)
     {
-        if (Estado == EnemyState.Staggered)
+        if (lancamentoVertical)
+        {
+            TransicionarPara(EnemyState.Airborne);
+            return;
+        }
+
+        if (Estado is EnemyState.Airborne or EnemyState.Staggered)
         {
             _tempoNoEstado = 0f;
             return;

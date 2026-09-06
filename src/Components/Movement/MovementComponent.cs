@@ -78,6 +78,27 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     public bool IsGrounded { get; private set; } = true;
 
     /// <summary>
+    /// Apoiado no chão de verdade, sem a defasagem de um quadro que
+    /// <see cref="IsGrounded"/> sozinho carrega bem no quadro de um impulso
+    /// vertical nascendo agora.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IsGrounded"/> reflete <c>IsOnFloor()</c> lido ANTES de somar
+    /// o recuo deste quadro (ver <c>Tick</c>) -- então o quadro exato de um
+    /// lançamento (recuo para cima aplicado por fora, via
+    /// <see cref="ApplyKnockback"/>) ainda vê <see cref="IsGrounded"/> como
+    /// verdadeiro. <see cref="Velocity"/>, por outro lado, já inclui esse
+    /// recuo (lido DEPOIS do <c>MoveAndSlide</c> do próprio quadro), então
+    /// "subindo" sempre desmente um <see cref="IsGrounded"/> que ainda não se
+    /// atualizou. Mesma disciplina do <c>realmenteNoAr</c> que
+    /// <see cref="AtualizarDash"/> já calcula por conta própria (com a
+    /// velocidade ainda local, não commitada) -- esta property expõe o mesmo
+    /// sinal para quem está FORA deste componente, como o <c>EnemyBrain</c>
+    /// (ticket 24), que só enxerga o estado já commitado do quadro anterior.
+    /// </remarks>
+    public bool IsGroundedConfiavel => IsGrounded && Velocity.Y <= 0f;
+
+    /// <summary>
     /// Multiplicador extra de gravidade, imposto de fora — o golpe aéreo e a
     /// estocada de queda (ticket 19, spec 16 §6) usam isto para "segurar" o
     /// personagem no ar ou acelerar a queda. 1 é neutro.
