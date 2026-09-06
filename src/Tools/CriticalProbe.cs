@@ -46,6 +46,20 @@ public sealed partial class CriticalProbe : Node
     private const int TentativasDeArea = 10;
     private const int QuadrosPorTentativa = 25;
 
+    /// <summary>
+    /// Folga antes do primeiro pedido de ataque de cada fase.
+    /// </summary>
+    /// <remarks>
+    /// A primeira chamada de <see cref="TickCriticoOuNormal"/> acontece bem
+    /// no início da árvore -- sem isto, pedir o golpe já no quadro 1 corre o
+    /// risco de pegar o jogador antes do primeiro `MoveAndSlide` de verdade,
+    /// quando `MovementComponent.IsGrounded` ainda não se acomodou. Golpe de
+    /// solo pedido "no ar" por engano rotearia para o combo AÉREO (ticket
+    /// 19, mais fraco) assim que `sword.tres` passou a ter um definido --
+    /// mesma causa raiz já corrigida em <c>CombatProbe</c>/<c>ImpactProbe</c>.
+    /// </remarks>
+    private const int QuadroDoPedido = 5;
+
     private enum Fase { Dados, Critico, Normal, Area }
 
     private readonly List<string> _falhas = [];
@@ -195,8 +209,9 @@ public sealed partial class CriticalProbe : Node
         if (combate.IsAttacking)
             Reposicionar(_alvo1!);
 
-        if (_quadroDaFase == 1)
+        if (_quadroDaFase == QuadroDoPedido)
         {
+            Reposicionar(_alvo1!);
             _golpeAlvo1 = null;
             _quadrosCongelado = 0;
             stats.SetBase(StatId.CritChance, forcarCritico ? 1f : 0f);
@@ -206,7 +221,7 @@ public sealed partial class CriticalProbe : Node
         if (_alvo1!.Context!.Health!.TimeScale <= 0f)
             _quadrosCongelado++;
 
-        if (_quadroDaFase < QuadrosPorTentativa)
+        if (_quadroDaFase < QuadroDoPedido + QuadrosPorTentativa)
             return;
 
         var rotulo = forcarCritico ? "crítico" : "normal";

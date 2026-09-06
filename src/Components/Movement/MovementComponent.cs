@@ -57,6 +57,43 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
 
+    /// <summary>
+    /// Se o personagem está apoiado no chão, segundo o <c>Tick</c> mais
+    /// recente.
+    /// </summary>
+    /// <remarks>
+    /// Cacheado aqui em vez de quem precisar chamar `corpo.IsOnFloor()`
+    /// direto: um `CharacterBody3D` que ainda não rodou nenhum
+    /// `MoveAndSlide` (o primeiro quadro da própria existência) devolve
+    /// falso ali -- e "acabei de nascer" é indistinguível de "estou caindo"
+    /// para quem só olha de fora. Partir de <c>true</c> é o padrão mais
+    /// seguro: um personagem parado no instante em que entra na árvore está
+    /// infinitamente mais perto de "no chão" do que de "no ar". O ticket 19
+    /// expôs isto: um probe pedindo um ataque no MESMO quadro em que o
+    /// personagem nasceu via `CombatComponent.RequestBasicAttack` direto
+    /// (sem passar pelo fluxo normal de intenção) via `IsOnFloor()` cru e
+    /// concluía "no ar" por engano, roteando o golpe de solo para o combo
+    /// aéreo.
+    /// </remarks>
+    public bool IsGrounded { get; private set; } = true;
+
+    /// <summary>
+    /// Multiplicador extra de gravidade, imposto de fora — o golpe aéreo e a
+    /// estocada de queda (ticket 19, spec 16 §6) usam isto para "segurar" o
+    /// personagem no ar ou acelerar a queda. 1 é neutro.
+    /// </summary>
+    /// <remarks>
+    /// Property simples, sem decaimento próprio: quem pede precisa devolver a
+    /// 1 quando acabar — <c>MeleeWeapon</c> escreve um valor definido (a
+    /// redução, a aceleração ou 1) em TODO `Tick`, nunca só quando o efeito
+    /// está ativo, para nunca deixar um valor preso de trás. Como este
+    /// `Tick` roda ANTES de <c>CombatComponent.Tick</c> no mesmo quadro
+    /// (spec 01 §6, <c>CharacterController</c>), o efeito só aparece 1
+    /// quadro depois de pedido — imperceptível numa janela de vários
+    /// quadros.
+    /// </remarks>
+    public float ExternalGravityScale { get; set; } = 1f;
+
     /// <summary>Se um dash está em andamento agora. Para o probe/depuração.</summary>
     public bool IsDashing => _dash.IsActive;
 
@@ -91,6 +128,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         _pulosNoArRestantes = Settings.MaxAirJumps;
         _dashCooldownRestante = 0f;
         _dashUsadoNoAr = false;
+        ExternalGravityScale = 1f;
+        IsGrounded = true;
     }
 
     /// <summary>
@@ -110,6 +149,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var yaw = CameraReference?.YawDegrees ?? 45f;
         var travas = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
         var noChao = corpo.IsOnFloor();
+        IsGrounded = noChao;
 
         // Apoiado: recarrega os pulos extras no ar (zero no estado base) e
         // libera um dash novo no ar -- as duas coisas são "por pulo", não "por
@@ -118,6 +158,13 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         {
             _pulosNoArRestantes = Settings.MaxAirJumps;
             _dashUsadoNoAr = false;
+
+            // Todo combo aéreo de verdade termina em aterrissagem: zerar o
+            // teto de juggle a cada quadro parado no chão é mais simples que
+            // detectar a borda exata de "acabou de aterrissar", e igualmente
+            // correto -- ninguém é lançado de novo sem antes deixar de estar
+            // no chão. Ticket 19, spec 16 §6.
+            _contexto.Health?.ResetAerialJuggle();
         }
 
         _pulo.Advance(delta, noChao, Settings.CoyoteTime);
@@ -167,7 +214,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         }
         else
         {
-            velocidade.Y = MovementMath.ApplyGravity(velocidade.Y, Settings.Gravity, Settings.FallGravityScale, noChao, delta);
+            velocidade.Y = MovementMath.ApplyGravity(
+                velocidade.Y, Settings.Gravity * ExternalGravityScale, Settings.FallGravityScale, noChao, delta);
         }
 
         AtualizarDash(intencao, direcao, travas, noChao, delta, ref velocidade);

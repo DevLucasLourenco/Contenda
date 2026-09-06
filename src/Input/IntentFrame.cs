@@ -23,8 +23,11 @@ namespace Contenda.Input;
 /// <param name="HasAim">Se há mira válida; falso quando o cursor passa do horizonte.</param>
 /// <param name="AttackPressed">Ataque básico neste tique — a borda de subida do clique.</param>
 /// <param name="AttackHeld">
-/// Se o botão de ataque básico segue pressionado agora. Corpo a corpo ignora;
-/// hitscan atira em cadência enquanto for true — spec 07 §5, ticket 09.
+/// Se o botão de ataque básico segue pressionado agora. Hitscan atira em
+/// cadência enquanto for true (spec 07 §5, ticket 09); corpo a corpo ignora
+/// para o combo em si, mas usa para decidir a estocada de queda — segurado
+/// depois do pico do pulo, sem golpe em andamento, vira mergulho (ticket 19,
+/// spec 16 §6).
 /// </param>
 /// <param name="ConfirmPressed">Confirmação de sequência neste tique.</param>
 /// <param name="CommandUpPressed">

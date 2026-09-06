@@ -23,6 +23,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
 
     private readonly Queue<DamageInfo> _fila = new();
     private readonly HitstopState _hitstop = new();
+    private readonly AerialJuggleState _juggleAereo = new();
     private HealthState _estado = new(100f);
     private CharacterContext? _contexto;
     private StatsComponent? _stats;
@@ -132,6 +133,28 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     public void GrantInvulnerability(float duration)
         => _restanteDeInvulnerabilidadeConcedida = Mathf.Max(_restanteDeInvulnerabilidadeConcedida, duration);
 
+    /// <summary>
+    /// Registra mais um acerto aéreo consecutivo sofrido.
+    /// </summary>
+    /// <remarks>
+    /// Ticket 19, spec 16 §6. Chamado pela arma de quem golpeou, uma vez por
+    /// alvo atingido por um golpe aéreo -- nunca pelo golpe de solo.
+    /// </remarks>
+    /// <returns>
+    /// Se ainda está sob o teto de <see cref="AerialJuggleState.LimiteDeAcertos"/>
+    /// -- quem golpeou só deveria empurrar para cima (o alvo e a si mesmo)
+    /// enquanto isto for true. Sem o teto, um combo aéreo prenderia o alvo no
+    /// ar para sempre.
+    /// </returns>
+    public bool RegistrarAcertoAereo() => _juggleAereo.RegistrarAcerto();
+
+    /// <summary>
+    /// Zera o contador de juggle aéreo. Chamado por <c>MovementComponent</c>
+    /// ao tocar o chão -- um combo aéreo de verdade sempre termina em
+    /// aterrissagem, e o próximo lançamento deveria começar do zero.
+    /// </summary>
+    public void ResetAerialJuggle() => _juggleAereo.Reset();
+
     /// <summary>Enfileira um golpe fatal, resolvido no ponto único do quadro.</summary>
     public void Kill(string origem)
         => ApplyDamage(new DamageInfo(
@@ -200,6 +223,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
         _restanteDeInvulnerabilidadeConcedida = 0f;
         _estado.Reset();
         _hitstop.Reset();
+        _juggleAereo.Reset();
     }
 
     // --- privados ------------------------------------------------------------

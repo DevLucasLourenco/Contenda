@@ -1,9 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
 [ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_1.tres" id="2_s1"]
 [ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_2.tres" id="3_s2"]
 [ext_resource type="Resource" path="res://data/weapons/combo/sword_slash_3.tres" id="4_s3"]
+[ext_resource type="Resource" path="res://data/weapons/combo/sword_air_slash_1.tres" id="5_a1"]
+[ext_resource type="Resource" path="res://data/weapons/combo/sword_air_slash_2.tres" id="6_a2"]
 
 [resource]
 script = ExtResource("1_arma")
@@ -15,3 +17,17 @@ Range = 2.6
 HalfAngle = 60.0
 Knockback = 2.0
 ComboSteps = [ExtResource("2_s1"), ExtResource("3_s2"), ExtResource("4_s3")]
+AerialComboSteps = [ExtResource("5_a1"), ExtResource("6_a2")]
+AerialRange = 2.0
+AerialHalfAngle = 45.0
+AerialVerticalReach = 4.0
+AerialVerticalKnockback = 0.8
+AerialGravityScale = 0.35
+DiveDamage = 105.0
+DiveRadius = 3.5
+DiveKnockback = 6.0
+DiveGravityScale = 3.5
+DiveForwardSpeed = 6.0
+DiveHitstopSeconds = 0.09
+DiveCriticalHitstopBonus = 0.05
+DiveRecoverySeconds = 0.4

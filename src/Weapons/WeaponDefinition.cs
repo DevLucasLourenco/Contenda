@@ -78,4 +78,78 @@ public sealed partial class WeaponDefinition : Resource
     /// tabela da spec.
     /// </remarks>
     [Export(PropertyHint.Range, "0,0.3,0.01")] public float CriticalHitstopBonus { get; set; } = 0.05f;
+
+    // --- combate aéreo (ticket 19, spec 16 §6) — só corpo a corpo ------------
+
+    /// <summary>
+    /// A cadeia de golpes no ar. Vazia (padrão) significa que esta arma não
+    /// tem ataque aéreo — o corpo a corpo se recusa a atacar no ar.
+    /// </summary>
+    [Export] public MeleeComboStep[] AerialComboSteps { get; set; } = [];
+
+    /// <summary>Alcance do golpe aéreo, em metros. Menor que <see cref="Range"/> — spec 16 §6.</summary>
+    [Export(PropertyHint.Range, "0.5,30,0.1")] public float AerialRange { get; set; } = 2f;
+
+    /// <summary>Meia-abertura do cone de acerto aéreo, em graus.</summary>
+    [Export(PropertyHint.Range, "10,180,5")] public float AerialHalfAngle { get; set; } = 45f;
+
+    /// <summary>
+    /// Diferença de altura tolerada no ar, em metros — maior que a de solo
+    /// (<c>CombatComponent.VerticalReach</c>): um alvo em pleno combo aéreo
+    /// sobe e desce mais do que a folga vertical de um golpe no chão prevê.
+    /// </summary>
+    [Export(PropertyHint.Range, "0.5,8,0.1")] public float AerialVerticalReach { get; set; } = 4f;
+
+    /// <summary>
+    /// Impulso vertical aplicado ao alvo E a quem golpeia, em cada acerto
+    /// aéreo — spec 16 §6: "0.8 m/s", é o que sustenta o combo no ar.
+    /// </summary>
+    [Export(PropertyHint.Range, "0,5,0.1")] public float AerialVerticalKnockback { get; set; } = 0.8f;
+
+    /// <summary>
+    /// Multiplicador de gravidade enquanto a janela de acerto aérea estiver
+    /// aberta — spec 16 §6: "0.35×", o golpe "segura" no ar sem virar voo.
+    /// </summary>
+    [Export(PropertyHint.Range, "0.05,1,0.05")] public float AerialGravityScale { get; set; } = 0.35f;
+
+    // --- estocada de queda (ticket 19, spec 16 §6) — só corpo a corpo --------
+
+    /// <summary>
+    /// Dano da estocada de queda ao aterrissar.
+    /// </summary>
+    /// <remarks>
+    /// Autoral, não derivado em código: a spec 16 §6 define "1.4× do golpe
+    /// pesado de solo" (Heavy Lunge, 75 de dano — 75 × 1.4 = 105), mas
+    /// cravar essa RELAÇÃO em `.cs` faria o valor da estocada derivar
+    /// silenciosamente se alguém rebalancear Heavy Lunge depois — regra 4 do
+    /// CLAUDE.md, balanceamento vive em `.tres`.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,300,1")] public float DiveDamage { get; set; } = 105f;
+
+    /// <summary>Raio da área de dano ao aterrissar, em metros — spec 16 §6: "3.5 m".</summary>
+    [Export(PropertyHint.Range, "0.5,10,0.1")] public float DiveRadius { get; set; } = 3.5f;
+
+    /// <summary>Repulsão radial aplicada a cada alvo atingido pelo pouso.</summary>
+    [Export(PropertyHint.Range, "0,20,0.5")] public float DiveKnockback { get; set; } = 6f;
+
+    /// <summary>
+    /// Multiplicador de gravidade durante o mergulho — bem maior que 1, para
+    /// acelerar a queda em vez de segurá-la (o oposto de <see cref="AerialGravityScale"/>).
+    /// </summary>
+    [Export(PropertyHint.Range, "1,8,0.1")] public float DiveGravityScale { get; set; } = 3.5f;
+
+    /// <summary>Velocidade de avanço horizontal durante o mergulho, em m/s — é o que faz a queda ser DIAGONAL.</summary>
+    [Export(PropertyHint.Range, "0,15,0.5")] public float DiveForwardSpeed { get; set; } = 6f;
+
+    /// <summary>Congelamento ao aterrissar, em segundos.</summary>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float DiveHitstopSeconds { get; set; } = 0.09f;
+
+    /// <summary>Somado a <see cref="DiveHitstopSeconds"/> quando o pouso sai crítico. Mesma disciplina de <see cref="CriticalHitstopBonus"/>.</summary>
+    [Export(PropertyHint.Range, "0,0.3,0.01")] public float DiveCriticalHitstopBonus { get; set; } = 0.05f;
+
+    /// <summary>
+    /// Recuperação ao aterrissar, em segundos — trava Movimento e Rotação.
+    /// </summary>
+    /// <remarks>É o risco que equilibra o poder da estocada — spec 16 §6.</remarks>
+    [Export(PropertyHint.Range, "0,2,0.05")] public float DiveRecoverySeconds { get; set; } = 0.4f;
 }
