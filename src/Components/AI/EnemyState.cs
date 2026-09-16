@@ -33,4 +33,12 @@ public enum EnemyState : byte
     /// sozinho, de volta para <see cref="Chase"/>). Ver ticket 24, spec 16 §6.
     /// </summary>
     Airborne,
+
+    /// <summary>
+    /// A vida chegou a zero. Entra a partir de qualquer estado, inclusive
+    /// <see cref="Airborne"/>, e nunca sai sozinho -- só a reciclagem do pool
+    /// (<c>ResetForSpawn</c>) tira daqui, construindo uma máquina nova em
+    /// <see cref="Idle"/>. Ver ticket 25, spec 09 §2 e §8.
+    /// </summary>
+    Death,
 }

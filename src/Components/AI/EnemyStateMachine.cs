@@ -40,6 +40,13 @@ public sealed class EnemyStateMachine
     public float TempoNoEstado => _tempoNoEstado;
 
     /// <summary>
+    /// Se já morreu. Centraliza a checagem usada em mais de um lugar como
+    /// defesa contra golpe/morte repetidos -- ver <see cref="RegistrarMorte"/>
+    /// e <see cref="RegistrarGolpeRecebido"/>.
+    /// </summary>
+    private bool EstaMorto => Estado == EnemyState.Death;
+
+    /// <summary>
     /// Avança um quadro.
     /// </summary>
     /// <param name="delta">Tempo do quadro, em segundos.</param>
@@ -98,9 +105,26 @@ public sealed class EnemyStateMachine
                     TransicionarPara(EnemyState.Staggered);
                 break;
 
+            case EnemyState.Death:
+                break;
+
             default:
                 break;
         }
+    }
+
+    /// <summary>
+    /// A vida chegou a zero -- interrompe TUDO e entra em
+    /// <see cref="EnemyState.Death"/>, de onde só a reciclagem do pool
+    /// (<c>ResetForSpawn</c>, construindo uma máquina nova) sai. Ver ticket
+    /// 25, spec 09 §2 e §8.
+    /// </summary>
+    public void RegistrarMorte()
+    {
+        if (EstaMorto)
+            return;
+
+        TransicionarPara(EnemyState.Death);
     }
 
     /// <summary>
@@ -128,6 +152,15 @@ public sealed class EnemyStateMachine
     /// </remarks>
     public void RegistrarGolpeRecebido(bool lancamentoVertical)
     {
+        // Defesa extra, não o caminho normal: `HealthState.Apply` já descarta
+        // todo golpe contra quem não `IsAlive`, então `Damaged`/`Died` nunca
+        // deveriam refirar depois da morte. Mas esta máquina é pública e não
+        // deveria confiar em quem chama para nunca golpear um cadáver -- a
+        // mesma disciplina de "morte é idempotente" do HealthState, um nível
+        // acima.
+        if (EstaMorto)
+            return;
+
         if (lancamentoVertical)
         {
             TransicionarPara(EnemyState.Airborne);

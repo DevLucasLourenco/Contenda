@@ -303,6 +303,68 @@ public sealed class EnemyStateMachineTests
         Assert.Equal(EnemyState.Airborne, maquina.Estado);
     }
 
+    [Theory]
+    [InlineData(EnemyState.Idle)]
+    [InlineData(EnemyState.Alert)]
+    [InlineData(EnemyState.Chase)]
+    [InlineData(EnemyState.Attack)]
+    [InlineData(EnemyState.Recover)]
+    [InlineData(EnemyState.Staggered)]
+    public void Morte_interrompe_qualquer_estado(EnemyState partida)
+    {
+        var maquina = Nova();
+        IrPara(maquina, partida);
+
+        maquina.RegistrarMorte();
+
+        Assert.Equal(EnemyState.Death, maquina.Estado);
+    }
+
+    [Fact]
+    public void Morte_no_ar_tambem_funciona()
+    {
+        // O finalizador de um combo aéreo pode matar um inimigo ainda
+        // lançado -- a morte precisa valer a partir de QUALQUER estado,
+        // Airborne incluso, e não só dos seis do teste acima.
+        var maquina = Nova();
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+
+        maquina.RegistrarMorte();
+
+        Assert.Equal(EnemyState.Death, maquina.Estado);
+    }
+
+    [Fact]
+    public void Morto_nao_sai_sozinho_por_tempo_nenhum()
+    {
+        var maquina = Nova();
+        maquina.RegistrarMorte();
+
+        // Bem mais tempo que qualquer estado temporizado deste arquivo --
+        // "morto" só sai por reciclagem (ResetForSpawn), nunca por relógio
+        // nem por qualquer sinal que Advance receba.
+        for (var i = 0; i < 600; i++)
+            maquina.Advance(Passo, alvoVisivel: true, dentroDoAlcanceDeAtaque: true, ataqueTerminou: true, estaNoChao: true);
+
+        Assert.Equal(EnemyState.Death, maquina.Estado);
+    }
+
+    [Fact]
+    public void Golpe_depois_de_morto_nao_faz_nada()
+    {
+        // Defesa de sobra: `HealthState.Apply` já descarta todo golpe contra
+        // quem não está vivo, então isto não deveria acontecer de verdade --
+        // mas a própria máquina não deveria confiar só nisso.
+        var maquina = Nova();
+        maquina.RegistrarMorte();
+
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: false);
+        Assert.Equal(EnemyState.Death, maquina.Estado);
+
+        maquina.RegistrarGolpeRecebido(lancamentoVertical: true);
+        Assert.Equal(EnemyState.Death, maquina.Estado);
+    }
+
     private static void ChegarEmChase(EnemyStateMachine maquina)
     {
         maquina.Advance(Passo, true, false, false);

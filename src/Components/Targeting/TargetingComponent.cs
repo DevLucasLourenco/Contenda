@@ -45,6 +45,15 @@ public sealed partial class TargetingComponent : Node, ICharacterComponent
     }
 
     /// <summary>
+    /// Vazio de propósito: o jogador nunca é reciclado pelo pool de inimigos
+    /// (ticket 25) -- só existe para satisfazer o contrato de
+    /// <see cref="ICharacterComponent"/>, que vale para todo mundo.
+    /// </summary>
+    public void ResetForSpawn()
+    {
+    }
+
+    /// <summary>
     /// Projeta o cursor no plano do torso usando a câmera ativa.
     /// </summary>
     /// <remarks>

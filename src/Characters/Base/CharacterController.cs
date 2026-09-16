@@ -85,6 +85,21 @@ public sealed partial class CharacterController : CharacterBody3D
     }
 
     /// <summary>
+    /// Devolve todo componente ao estado de recém-criado. Chamado pelo
+    /// <c>EnemyPool</c> ao reaproveitar este inimigo (ticket 25).
+    /// </summary>
+    /// <remarks>
+    /// Uma única passada: ao contrário de <c>Bind</c>/<c>Configure</c>,
+    /// <see cref="ICharacterComponent.ResetForSpawn"/> não depende de nenhum
+    /// componente irmão já reiniciado -- cada um zera só o próprio estado.
+    /// </remarks>
+    public void ResetForSpawn()
+    {
+        foreach (var componente in _componentes)
+            componente.ResetForSpawn();
+    }
+
+    /// <summary>
     /// Troca a definição em runtime, reconfigurando todos os componentes.
     /// </summary>
     /// <remarks>
@@ -266,6 +281,7 @@ public sealed partial class CharacterController : CharacterBody3D
                 break;
             case EnemyBrain b:
                 _cerebro = b;
+                Context!.EnemyBrain = b;
                 break;
         }
     }

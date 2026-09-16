@@ -34,6 +34,7 @@ SceneRouter="*res://src/Core/SceneRouter.cs"
 AudioDirector="*res://src/Core/AudioDirector.cs"
 DamageNumberPool="*res://src/Vfx/DamageNumberPool.cs"
 ProjectilePool="*res://src/Components/Abilities/ProjectilePool.cs"
+EnemyPool="*res://src/Components/AI/EnemyPool.cs"
 GameBootstrap="*res://src/Core/GameBootstrap.cs"
 
 [display]

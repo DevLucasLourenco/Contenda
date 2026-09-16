@@ -1,3 +1,4 @@
+using Contenda.Characters.Base;
 using Contenda.Components.Health;
 using Godot;
 
@@ -14,8 +15,15 @@ namespace Contenda.UI.HUD;
 ///
 /// Vida de inimigo fica sobre o inimigo, e não no HUD central: em modo horda são
 /// muitos, e o jogador precisa saber de qual está perto de derrubar.
+///
+/// Implementa <see cref="ICharacterComponent"/> só para entrar na varredura
+/// do <c>CharacterController</c> e ganhar <see cref="ResetForSpawn"/> de
+/// graça na reciclagem do pool (ticket 25) -- continua resolvendo
+/// <see cref="HealthPath"/> sozinha, do próprio jeito, em vez de passar a
+/// depender de <c>CharacterContext.Health</c>: isto não é o problema que este
+/// ticket precisa resolver.
 /// </remarks>
-public sealed partial class WorldHealthBar : Node3D
+public sealed partial class WorldHealthBar : Node3D, ICharacterComponent
 {
     /// <summary>De quem esta barra mostra a vida.</summary>
     [Export] public NodePath HealthPath { get; set; } = new();
@@ -39,6 +47,16 @@ public sealed partial class WorldHealthBar : Node3D
     private HealthComponent? _vida;
     private Node3D? _preenchimento;
     private float _esconderEm;
+
+    /// <summary>Vazio de propósito: continua resolvendo tudo em <see cref="_Ready"/>, por caminho próprio. Ver o remark da classe.</summary>
+    public void Bind(CharacterContext contexto)
+    {
+    }
+
+    /// <summary>Vazio de propósito: ver o remark da classe.</summary>
+    public void Configure(CharacterDefinition definicao)
+    {
+    }
 
     public override void _Ready()
     {

@@ -137,6 +137,27 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         if (definicao.Movement is not null)
             Settings = definicao.Movement;
 
+        ReiniciarEstadoTransiente();
+    }
+
+    /// <summary>Devolve ao estado de recém-criado. Contrato do pool, no M5 (ticket 25).</summary>
+    /// <remarks>
+    /// Não recebe <c>CharacterDefinition</c>: ao contrário de <c>Configure</c>,
+    /// que troca <see cref="Settings"/> (chamado também na troca de arquétipo
+    /// do ticket 12), a reciclagem do pool reaproveita a MESMA definição --
+    /// só o estado transiente (recuo, pulo, dash) precisa zerar.
+    /// </remarks>
+    public void ResetForSpawn() => ReiniciarEstadoTransiente();
+
+    /// <remarks>
+    /// Compartilhado por <see cref="Configure"/> e <see cref="ResetForSpawn"/>:
+    /// as duas situações (trocar de arquétipo; reciclar do pool) precisam
+    /// zerar exatamente o mesmo estado transiente, e duplicar a lista aqui e
+    /// ali é o tipo de coisa que diverge silenciosamente na próxima vez que
+    /// alguém mexe só numa das duas.
+    /// </remarks>
+    private void ReiniciarEstadoTransiente()
+    {
         // Reconstruído aqui, não no inicializador de campo: [Export] só
         // aplica KnockbackDuration depois que o campo já teria rodado com o
         // valor padrão do código, ignorando o que a cena pediu.
@@ -151,6 +172,16 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         _dashUsadoNoAr = false;
         ExternalGravityScale = 1f;
         IsGrounded = true;
+
+        // `Velocity` é só um espelho do `corpo.Velocity` de depois do último
+        // `Tick` -- sem zerar os dois aqui, um inimigo reciclado herdaria o
+        // impulso físico de um golpe da vida anterior por um quadro inteiro,
+        // até o próprio `Tick` recalcular. Ticket 25: a reciclagem precisa
+        // estar limpa ANTES do primeiro quadro pós-`Acquire`, não só a partir
+        // do segundo.
+        Velocity = Vector3.Zero;
+        if (_contexto is not null)
+            _contexto.Body.Velocity = Vector3.Zero;
     }
 
     /// <summary>

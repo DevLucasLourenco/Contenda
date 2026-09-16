@@ -38,19 +38,36 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
 
     private float _windupRestante;
     private bool _golpeSolicitado;
+    private float _temporizadorDeMorte;
+    private bool _liberado;
 
     /// <summary>Em qual fase da percepção/combate este inimigo está. Para o probe/depuração.</summary>
     public EnemyState Estado => _maquina.Estado;
 
+    /// <summary>
+    /// Quem devolve este inimigo ao estoque ao fim da morte. Nulo até o
+    /// <c>EnemyPool</c> que o instanciou marcar a própria referência aqui --
+    /// não vem do <c>CharacterContext</c> porque não é uma relação ENTRE
+    /// componentes do mesmo personagem, é o dono externo que o criou. Ver
+    /// ticket 25, spec 09 §8.
+    /// </summary>
+    internal EnemyPool? Pool { get; set; }
+
     public void Bind(CharacterContext contexto)
     {
         if (_contexto?.Health is not null)
+        {
             _contexto.Health.Damaged -= AoApanhar;
+            _contexto.Health.Died -= AoMorrer;
+        }
 
         _contexto = contexto;
 
         if (_contexto.Health is not null)
+        {
             _contexto.Health.Damaged += AoApanhar;
+            _contexto.Health.Died += AoMorrer;
+        }
 
         _percepcao ??= new Perception(this);
     }
@@ -74,7 +91,10 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     public override void _ExitTree()
     {
         if (_contexto?.Health is not null)
+        {
             _contexto.Health.Damaged -= AoApanhar;
+            _contexto.Health.Died -= AoMorrer;
+        }
     }
 
     /// <summary>Devolve ao estado de recém-criado. Contrato do pool, no M5.</summary>
@@ -84,6 +104,8 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             Definition.AlertDuration, Definition.AttackCooldown, Definition.StaggerDuration, Definition.LoseTargetDelay);
         _windupRestante = 0f;
         _golpeSolicitado = false;
+        _temporizadorDeMorte = 0f;
+        _liberado = false;
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
     }
@@ -97,6 +119,14 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     /// </remarks>
     public IntentFrame Poll(float delta)
     {
+        // Morto não percebe, não persegue, não ataca -- só espera o próprio
+        // corpo terminar de "animar" (o placeholder do ticket 25, sem arte
+        // ainda) antes de voltar ao pool. Fora daqui de propósito: mesmo sem
+        // alvo nenhum, o resto de Poll() ainda tentaria ler `_contexto.Body`
+        // normalmente, e não há percepção nenhuma para rodar num cadáver.
+        if (_maquina.Estado == EnemyState.Death)
+            return AtualizarMorte(delta);
+
         var alvo = ServiceLocator.Session.PlayerBody;
         if (alvo is null || !GodotObject.IsInstanceValid(alvo) || alvo.Context?.Health is not { IsAlive: true })
             return IntentFrame.Idle;
@@ -134,6 +164,41 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             AoTrocarDeEstado(estadoAntes, _maquina.Estado);
 
         return MontarIntencao(corpo, alvo, pedirAtaqueAgora);
+    }
+
+    /// <summary>
+    /// Conta o tempo de corpo caído e pede ao pool para me devolver ao
+    /// estoque assim que passar de <see cref="EnemyDefinition.DeathDuration"/>.
+    /// </summary>
+    /// <remarks>
+    /// `_liberado` evita pedir de novo a cada quadro depois do primeiro
+    /// pedido -- <c>Pool.Release</c> desliga <c>ProcessMode</c> deste nó, o
+    /// que já impediria um novo <c>Poll</c> no quadro seguinte, mas nada
+    /// garante que a desativação seja síncrona em toda situação, e pedir
+    /// duas vezes seria devolver o mesmo inimigo duas vezes à pilha livre.
+    ///
+    /// `Release` é chamado ADIADO (<c>CallDeferred</c>), nunca direto daqui:
+    /// isto roda dentro do PRÓPRIO <c>Poll</c>, que é só o PRIMEIRO passo do
+    /// <c>_PhysicsProcess</c> do contêiner (spec 01 §6) -- `Movement.Tick`
+    /// (passo 3) ainda roda DEPOIS, no mesmo quadro. `Release` zera
+    /// colisão/`ProcessMode` na hora; chamado síncrono aqui, o corpo perderia
+    /// o espaço físico ANTES do próprio `MoveAndSlide` deste quadro rodar --
+    /// "body->get_space() is null". Adiar para depois do quadro inteiro
+    /// terminar evita a corrida.
+    /// </remarks>
+    private IntentFrame AtualizarMorte(float delta)
+    {
+        if (_liberado)
+            return IntentFrame.Idle;
+
+        _temporizadorDeMorte += delta;
+        if (_temporizadorDeMorte >= Definition.DeathDuration)
+        {
+            _liberado = true;
+            Pool?.CallDeferred(nameof(EnemyPool.Release), _contexto!.Owner);
+        }
+
+        return IntentFrame.Idle;
     }
 
     /// <summary>
@@ -243,5 +308,30 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _maquina.RegistrarGolpeRecebido(lancamentoVertical: golpe.Direction.Y > 0.7f);
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
+    }
+
+    /// <remarks>
+    /// <c>HealthState.Died</c> dispara no máximo uma vez por vida (é
+    /// idempotente), então isto só roda de verdade uma vez por reciclagem.
+    ///
+    /// Desliga a colisão JÁ, não só ao devolver ao pool: o corpo ainda fica
+    /// visível por <see cref="EnemyDefinition.DeathDuration"/> (a "animação de
+    /// morte" -- sem modelo/`AnimationPlayer` de verdade ainda, ADR-010), mas
+    /// não deveria continuar bloqueando passagem nem sendo alvo de raycast
+    /// nenhum enquanto isso. `EnemyPool.Release`, ao fim do temporizador,
+    /// zera de novo por garantia (cinto e suspensório), e é ele quem lembra
+    /// os valores originais para restaurar na próxima <c>Acquire</c>.
+    /// </remarks>
+    private void AoMorrer(DamageInfo golpe)
+    {
+        _maquina.RegistrarMorte();
+        _contexto?.AttackTelegraph?.DesligarAviso();
+        _contexto?.Combat?.Cancel();
+
+        _contexto!.Body.CollisionLayer = 0;
+        _contexto.Body.CollisionMask = 0;
+
+        _temporizadorDeMorte = 0f;
+        _liberado = false;
     }
 }

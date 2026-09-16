@@ -12,3 +12,4 @@ AttackRange = 2.2
 AttackWindup = 0.45
 AttackCooldown = 1.4
 StaggerDuration = 0.5
+DeathDuration = 1.2

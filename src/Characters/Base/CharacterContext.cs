@@ -66,4 +66,17 @@ public sealed class CharacterContext
 
     /// <summary>Telegrafia visual de golpe. Nulo para quem não avisa antes de bater (o jogador).</summary>
     public AttackTelegraphComponent? AttackTelegraph { get; internal set; }
+
+    /// <summary>
+    /// Produz a intenção deste inimigo a partir de percepção e estado. Nulo
+    /// para quem não é IA (o jogador).
+    /// </summary>
+    /// <remarks>
+    /// Adicionado no ticket 25: o <c>EnemyPool</c> precisa alcançar o
+    /// <see cref="Contenda.Components.AI.EnemyBrain"/> de um inimigo recém-
+    /// instanciado para lhe entregar a própria referência (quem devolve este
+    /// inimigo ao estoque ao fim da morte) -- sem isto, seria um `GetNode`
+    /// por caminho de fora do personagem, proibido pelas convenções §2.
+    /// </remarks>
+    public EnemyBrain? EnemyBrain { get; internal set; }
 }

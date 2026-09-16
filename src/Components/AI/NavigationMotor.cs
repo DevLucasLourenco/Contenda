@@ -53,6 +53,21 @@ public sealed partial class NavigationMotor : Node, ICharacterComponent
     {
     }
 
+    /// <summary>
+    /// Vazio de propósito: sem estado próprio de vida longa. Contrato do
+    /// pool, no M5 (ticket 25).
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SetTarget"/> é chamado a cada quadro em
+    /// <see cref="EnemyState.Chase"/>, e ninguém lê
+    /// <see cref="GetDesiredDirection"/> fora disso -- um `TargetPosition`
+    /// antigo apontando para onde o alvo estava na vida anterior nunca chega
+    /// a ser consultado antes do próximo <c>SetTarget</c> sobrescrever.
+    /// </remarks>
+    public void ResetForSpawn()
+    {
+    }
+
     public override void _Ready()
     {
         _agente = GetNodeOrNull<NavigationAgent3D>(AgentPath);

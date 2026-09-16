@@ -179,32 +179,54 @@ Pooling desde o M5, não como otimização posterior.
 ```csharp
 public sealed class EnemyPool : Node
 {
-    public void Prewarm(EnemyDefinition def, int count);
-    public EnemyController Acquire(EnemyDefinition def, Vector3 position);
-    public void Release(EnemyController enemy);
+    public void Prewarm(PackedScene scene, EnemyDefinition def, int count);
+    public CharacterController Acquire(EnemyDefinition def, Vector3 position);
+    public void Release(CharacterController enemy);
     public int ActiveCount { get; }
 }
 ```
 
+`Prewarm`/`Acquire` recebem a `PackedScene` explícita, não só a
+`EnemyDefinition`: o roster completo do §5 (`ModelScene` na própria
+definição) é dos tickets 26/29/34, que ainda não existem em código (ticket
+25 implementa só `grunt`) -- até lá, identidade de cena e dados de
+comportamento chegam por parâmetros separados, exatamente como qualquer
+outra cena `EnemyGrunt.tscn`/`data/enemies/grunt.tres` já são hoje. Também
+não existe `EnemyController`: um inimigo é um `CharacterController` comum
+(§1), sem subclasse nenhuma.
+
 ```
 Pool["grunt"]  → [ Enemy01, Enemy02, ..., Enemy60 ]  (inativos)
 Spawn:  Acquire -> ResetForSpawn -> reposiciona -> ativa processo e colisão
-Morte:  anim de morte -> 1.2 s -> Release -> desativa, tira da navmesh, esconde
+Morte:  anim de morte -> DeathDuration -> Release -> desativa, esconde
 ```
 
 ### Contrato de reciclagem (fonte de bugs, então explícito)
 
 Ao `Release`, o inimigo **obrigatoriamente**:
 
-1. desassina todos os eventos (`_ExitTree` não roda — o nó continua na árvore);
+1. não deixa nenhum aviso de evento pendurado de uma vida anterior;
 2. zera `HealthComponent`, `CombatComponent.Locks`, fila de dano, i-frames;
 3. cancela habilidades/ataques em execução e remove hitboxes ativas;
-4. reseta `AnimationTree` para `Idle`;
+4. reseta a "animação" de morte para o estado parado (hoje só um temporizador
+   -- sem modelo/`AnimationPlayer` de verdade ainda, ADR-010; vira
+   `AnimationTree` de fato no ticket 34);
 5. desliga `ProcessMode`, `Visible`, `CollisionLayer` e `CollisionMask`;
 6. remove modificadores de stat de qualquer fonte.
 
-`ResetForSpawn()` em cada componente cobre isso; um teste GdUnit4 verifica que
-um inimigo reciclado 100 vezes tem exatamente o mesmo estado do recém-criado.
+**Item 1 não é literal "desassinar no `Release`":** como `_ExitTree` nunca
+roda para um nó pooled, `Bind`/`Configure` também nunca rodam de novo depois
+do primeiro `_Ready` -- cada assinatura de evento (`Health.Damaged`,
+`Health.Died`, ...) é feita UMA VEZ, no nascimento da instância, e dura pela
+vida inteira do nó pooled, nunca desligada nem religada por `Release`/
+`Acquire`. O que garante "nenhum aviso pendurado de uma vida anterior" não é
+desassinar e reassinar, é `ResetForSpawn()` zerando só os DADOS que cada
+assinatura consome -- o handler continua vivo e correto porque ele reage ao
+estado atual, já resetado, não a um resquício da vida anterior.
+
+`ResetForSpawn()` em cada componente cobre isso; um probe headless
+(`EnemyPoolProbe`, ticket 25) verifica na árvore de nós real que um inimigo
+reciclado 100 vezes tem exatamente o mesmo estado do recém-criado.
 
 ### Dimensionamento
 

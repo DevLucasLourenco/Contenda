@@ -8,8 +8,8 @@ namespace Contenda.Components.AI;
 /// <remarks>
 /// Deliberadamente pequeno: o roster completo (spec 09 §5 —
 /// `ModelScene`/`AnimationSet`/`AttackKind`/`ScoreValue`/`IsElite`/
-/// `EliteTint`/`StaggerResistance`) pertence a tickets futuros (25, 26, 29,
-/// 34), que ainda não existem em código. Adicionar esses campos agora seria
+/// `EliteTint`/`StaggerResistance`) pertence a tickets futuros (26, 29, 34),
+/// que ainda não existem em código. Adicionar esses campos agora seria
 /// balanceamento para um sistema que não roda ainda -- regra do CLAUDE.md
 /// contra desenhar para necessidade hipotética. Dano e alcance de ataque não
 /// entram aqui: já vêm do <see cref="Contenda.Weapons.WeaponDefinition"/> da
@@ -59,4 +59,16 @@ public sealed partial class EnemyDefinition : Resource
 
     /// <summary>Duração do atordoamento ao apanhar, em segundos.</summary>
     [Export(PropertyHint.Range, "0.1,3,0.05")] public float StaggerDuration { get; set; } = 0.5f;
+
+    /// <summary>
+    /// Quanto tempo o corpo fica visível, sem colisão, antes de voltar ao
+    /// pool, em segundos.
+    /// </summary>
+    /// <remarks>
+    /// Espaço reservado para a "animação de morte" de verdade (ticket 34):
+    /// sem modelo/`AnimationPlayer` ainda (ADR-010), o placeholder de hoje é
+    /// só este tempo de espera com a colisão já desligada -- o suficiente
+    /// para o contrato de reciclagem do ticket 25 valer sem esperar arte.
+    /// </remarks>
+    [Export(PropertyHint.Range, "0,5,0.05")] public float DeathDuration { get; set; } = 1.2f;
 }
