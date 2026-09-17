@@ -38,6 +38,9 @@ public sealed partial class HudController : CanvasLayer
     /// <summary>O guia de combos a alimentar.</summary>
     [Export] public NodePath AbilityGuidePath { get; set; } = new();
 
+    /// <summary>A barra do chefe a alimentar.</summary>
+    [Export] public NodePath BossBarPath { get; set; } = new();
+
     /// <summary>
     /// Arquétipos alternáveis pela tecla de debug, nesta ordem.
     /// </summary>
@@ -50,7 +53,9 @@ public sealed partial class HudController : CanvasLayer
     private HealthBar? _barraDeVida;
     private ManaBar? _barraDeMana;
     private AbilityGuide? _guiaDeHabilidades;
+    private BossHealthBar? _barraDoChefe;
     private CharacterController? _jogador;
+    private CharacterController? _chefeAtual;
     private int _indiceArquetipo;
 
     public override void _Ready()
@@ -58,12 +63,13 @@ public sealed partial class HudController : CanvasLayer
         _barraDeVida = GetNodeOrNull<HealthBar>(HealthBarPath);
         _barraDeMana = GetNodeOrNull<ManaBar>(ManaBarPath);
         _guiaDeHabilidades = GetNodeOrNull<AbilityGuide>(AbilityGuidePath);
+        _barraDoChefe = GetNodeOrNull<BossHealthBar>(BossBarPath);
 
-        if (_barraDeVida is null || _barraDeMana is null || _guiaDeHabilidades is null)
+        if (_barraDeVida is null || _barraDeMana is null || _guiaDeHabilidades is null || _barraDoChefe is null)
         {
             // Falhar alto: um HUD "quase ligado" pareceria funcionar e nunca
             // atualizaria nada. Convenções §9.
-            GD.PushError($"{Name}: HealthBarPath, ManaBarPath ou AbilityGuidePath não resolveram.");
+            GD.PushError($"{Name}: HealthBarPath, ManaBarPath, AbilityGuidePath ou BossBarPath não resolveram.");
             SetPhysicsProcess(false);
         }
     }
@@ -80,10 +86,15 @@ public sealed partial class HudController : CanvasLayer
     public override void _PhysicsProcess(double delta)
     {
         if (_jogador is null)
-        {
             ProcurarJogador();
+
+        // Ao contrário do jogador (procurado uma vez e nunca mais), o chefe
+        // pode nascer e morrer no meio da partida -- precisa checar todo
+        // quadro, não só até achar a primeira vez.
+        AtualizarChefe();
+
+        if (_jogador is null)
             return;
-        }
 
         // Godot.Input, plenamente qualificado: Contenda.Input (o namespace de
         // IntentFrame) sombreia o nome, mesma armadilha do PlayerInputController.
@@ -107,6 +118,40 @@ public sealed partial class HudController : CanvasLayer
         _barraDeVida?.Bind(vida);
         _barraDeMana?.Bind(mana);
         _guiaDeHabilidades?.Bind(habilidades, mana);
+    }
+
+    /// <remarks>
+    /// Lê <c>GameSession.BossBody</c> (o inimigo se anuncia, ticket 26) --
+    /// nunca <c>GetNodesInGroup</c> por quadro, proibido pelas convenções §5.
+    /// Ao contrário de <see cref="ProcurarJogador"/>, roda TODO quadro: o
+    /// chefe pode morrer (o campo some) ou nascer bem depois do jogador, e a
+    /// barra precisa reagir aos dois sentidos, não só aparecer uma vez.
+    /// </remarks>
+    private void AtualizarChefe()
+    {
+        var chefe = ServiceLocator.Session.BossBody;
+        var vivo = chefe is not null && GodotObject.IsInstanceValid(chefe) && chefe.Context?.Health is { IsAlive: true };
+
+        if (!vivo)
+        {
+            if (_chefeAtual is not null)
+            {
+                _barraDoChefe?.Unbind();
+                _chefeAtual = null;
+            }
+
+            return;
+        }
+
+        if (ReferenceEquals(chefe, _chefeAtual))
+            return;
+
+        // `!` de `chefe`/`.Context`/`.Health`: garantidos pela variável `vivo`
+        // acima, que só chega `true` com os três não nulos -- o compilador não
+        // enxerga essa relação através da variável local, mas o guard já
+        // aconteceu.
+        _chefeAtual = chefe;
+        _barraDoChefe?.Bind(chefe!.Context!.Health!, chefe.Definition?.DisplayName ?? "Chefe");
     }
 
     /// <remarks>

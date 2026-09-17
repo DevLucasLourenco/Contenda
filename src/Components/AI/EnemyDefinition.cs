@@ -6,14 +6,14 @@ namespace Contenda.Components.AI;
 /// Os parâmetros de percepção e comportamento de um inimigo.
 /// </summary>
 /// <remarks>
-/// Deliberadamente pequeno: o roster completo (spec 09 §5 —
-/// `ModelScene`/`AnimationSet`/`AttackKind`/`ScoreValue`/`IsElite`/
-/// `EliteTint`/`StaggerResistance`) pertence a tickets futuros (26, 29, 34),
-/// que ainda não existem em código. Adicionar esses campos agora seria
-/// balanceamento para um sistema que não roda ainda -- regra do CLAUDE.md
-/// contra desenhar para necessidade hipotética. Dano e alcance de ataque não
-/// entram aqui: já vêm do <see cref="Contenda.Weapons.WeaponDefinition"/> da
-/// arma equipada, a MESMA que o jogador usa (ticket 22 exige isso).
+/// Deliberadamente pequeno: o resto do roster completo (spec 09 §5 —
+/// `ModelScene`/`AnimationSet`/`AttackKind`/`ScoreValue`/`StaggerResistance`)
+/// pertence a tickets futuros (29, 34), que ainda não existem em código.
+/// Adicionar esses campos agora seria balanceamento para um sistema que não
+/// roda ainda -- regra do CLAUDE.md contra desenhar para necessidade
+/// hipotética. Dano e alcance de ataque não entram aqui: já vêm do
+/// <see cref="Contenda.Weapons.WeaponDefinition"/> da arma equipada, a MESMA
+/// que o jogador usa (ticket 22 exige isso).
 /// </remarks>
 [GlobalClass]
 public sealed partial class EnemyDefinition : Resource
@@ -71,4 +71,23 @@ public sealed partial class EnemyDefinition : Resource
     /// para o contrato de reciclagem do ticket 25 valer sem esperar arte.
     /// </remarks>
     [Export(PropertyHint.Range, "0,5,0.05")] public float DeathDuration { get; set; } = 1.2f;
+
+    /// <summary>Se é uma elite -- mais perigoso, e precisa se anunciar como tal de longe.</summary>
+    /// <remarks>Ticket 26, spec 09 §5. Vale a pena além do tamanho da própria barra: ver <see cref="EliteTint"/>.</remarks>
+    [Export] public bool IsElite { get; set; }
+
+    /// <summary>
+    /// Cor de destaque de uma elite -- tingimento emissivo na própria malha,
+    /// já que o projeto ainda não tem modelo/textura de verdade (ADR-010).
+    /// </summary>
+    /// <remarks>"Elite dourado" é a convenção de cor de time da spec 11 §4; o padrão aqui só a repete.</remarks>
+    [Export] public Color EliteTint { get; set; } = Colors.Gold;
+
+    /// <summary>Se é o chefe da onda -- ganha barra própria no alto da tela, com nome.</summary>
+    /// <remarks>
+    /// Ticket 26. O nome exibido vem do <c>CharacterDefinition.DisplayName</c>
+    /// deste inimigo, não daqui -- nome é identidade do PERSONAGEM, o mesmo
+    /// campo que qualquer arquétipo do jogador já usa.
+    /// </remarks>
+    [Export] public bool IsBoss { get; set; }
 }

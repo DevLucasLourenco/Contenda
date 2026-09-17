@@ -13,3 +13,6 @@ AttackWindup = 0.45
 AttackCooldown = 1.4
 StaggerDuration = 0.5
 DeathDuration = 1.2
+IsElite = false
+EliteTint = Color(1, 0.843137, 0, 1)
+IsBoss = false

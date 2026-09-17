@@ -31,6 +31,7 @@ public sealed partial class DamageFlashComponent : Node, ICharacterComponent
 
     private MeshInstance3D? _malha;
     private StandardMaterial3D? _materialFlash;
+    private CharacterContext? _contexto;
     private HealthComponent? _vida;
     private float _restante;
 
@@ -48,6 +49,8 @@ public sealed partial class DamageFlashComponent : Node, ICharacterComponent
 
     public void Bind(CharacterContext contexto)
     {
+        _contexto = contexto;
+
         // Desassinar antes de assinar: Bind pode rodar de novo num nó
         // reciclado pelo pool.
         if (_vida is not null)
@@ -107,9 +110,11 @@ public sealed partial class DamageFlashComponent : Node, ICharacterComponent
         _malha.MaterialOverride = _materialFlash;
     }
 
-    private void Desligar()
-    {
-        if (_malha is not null)
-            _malha.MaterialOverride = null;
-    }
+    /// <remarks>
+    /// <see cref="CharacterContext.RestaurarMaterialDaMalha"/>, não
+    /// <c>null</c> direto: para a maioria (sem material de base) os dois são
+    /// o mesmo, mas uma elite (ticket 26) tem um tingimento permanente por
+    /// baixo do flash -- apagar para <c>null</c> apagaria o tingimento junto.
+    /// </remarks>
+    private void Desligar() => _contexto?.RestaurarMaterialDaMalha(_malha);
 }

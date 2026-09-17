@@ -79,4 +79,37 @@ public sealed class CharacterContext
     /// por caminho de fora do personagem, proibido pelas convenções §2.
     /// </remarks>
     public EnemyBrain? EnemyBrain { get; internal set; }
+
+    /// <summary>
+    /// O material "de repouso" da malha do corpo, por baixo de qualquer
+    /// flash/telegrafia temporário. Nulo para a maioria (usa o material da
+    /// própria malha); não-nulo só para uma elite (ticket 26).
+    /// </summary>
+    /// <remarks>
+    /// Existe porque <c>DamageFlashComponent</c> e <c>AttackTelegraphComponent</c>
+    /// já disputam <c>MeshInstance3D.MaterialOverride</c> na mesma malha
+    /// (ticket 07/09) -- os dois "desligam" escrevendo <c>null</c> direto,
+    /// que é certo enquanto não existe NENHUM material de base. Uma elite
+    /// (<see cref="Contenda.Components.AI.EliteMarkerComponent"/>) precisa de
+    /// um tingimento PERMANENTE por baixo dos dois; sem isto, o primeiro
+    /// flash ou windup apagaria o tingimento para sempre. Quem restaura ao
+    /// "desligar" lê este campo em vez de escrever <c>null</c> direto.
+    /// </remarks>
+    public Material? BodyBaseMaterial { get; internal set; }
+
+    /// <summary>
+    /// Restaura o <c>MaterialOverride</c> de uma malha ao material de base
+    /// (<see cref="BodyBaseMaterial"/>), em vez de a <c>null</c> direto.
+    /// </summary>
+    /// <remarks>
+    /// Ponto único: <c>DamageFlashComponent.Desligar</c> e
+    /// <c>AttackTelegraphComponent.DesligarAviso</c> precisavam exatamente
+    /// da mesma linha -- duplicá-la nos dois é o tipo de coisa que diverge
+    /// silenciosamente na próxima vez que só um dos dois for editado.
+    /// </remarks>
+    public void RestaurarMaterialDaMalha(MeshInstance3D? malha)
+    {
+        if (malha is not null)
+            malha.MaterialOverride = BodyBaseMaterial;
+    }
 }

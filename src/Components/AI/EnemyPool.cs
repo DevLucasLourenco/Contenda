@@ -112,7 +112,7 @@ public sealed partial class EnemyPool : Node
 
         for (var i = 0; i < quantidade; i++)
         {
-            var instancia = CriarInstancia(cena, especie);
+            var instancia = CriarInstancia(cena, definicao, especie);
             especie.Livres.Push(instancia);
         }
     }
@@ -141,7 +141,7 @@ public sealed partial class EnemyPool : Node
             // caminho raro, não como caminho normal (daí o aviso, não um erro
             // silencioso).
             GD.PushWarning($"{Name}: estoque esgotado, instanciando além do prewarm.");
-            instancia = CriarInstancia(especie.Cena, especie);
+            instancia = CriarInstancia(especie.Cena, definicao, especie);
         }
 
         instancia.ResetForSpawn();
@@ -187,7 +187,7 @@ public sealed partial class EnemyPool : Node
         _ativos.Remove(inimigo);
     }
 
-    private CharacterController CriarInstancia(PackedScene cena, Especie especie)
+    private CharacterController CriarInstancia(PackedScene cena, EnemyDefinition definicao, Especie especie)
     {
         var instancia = (CharacterController)cena.Instantiate();
         AddChild(instancia);
@@ -199,9 +199,26 @@ public sealed partial class EnemyPool : Node
         especie.ColisaoOriginalPorInstancia[instancia] = new ColisaoOriginal(instancia.CollisionLayer, instancia.CollisionMask);
 
         if (instancia.Context?.EnemyBrain is { } cerebro)
+        {
             cerebro.Pool = this;
+
+            // A cena traz sua PRÓPRIA `EnemyBrain.Definition` (ex.:
+            // `EnemyGrunt.tscn` já vem com `grunt.tres`) -- mas quem chama
+            // `Prewarm`/`Acquire` decide qual definição esta espécie É,
+            // e as duas podem divergir de propósito (a mesma cena servindo
+            // de base para uma variante elite/chefe via um `.tres` diferente,
+            // ticket 26, sem precisar de uma cena nova por variante). A do
+            // parâmetro sempre vence. `AddChild`, acima, já rodou `Bind` e
+            // `Configure` com a definição ANTIGA (a da cena) -- por isso
+            // `Acquire` sempre chama `ResetForSpawn` de novo depois de criar,
+            // que reconstrói tudo (máquina de estado, tingimento de elite,
+            // anúncio de chefe) a partir da definição já trocada aqui.
+            cerebro.Definition = definicao;
+        }
         else
+        {
             GD.PushError($"{Name}: {instancia.Name} não tem EnemyBrain -- só inimigos de verdade entram neste pool.");
+        }
 
         Desativar(instancia);
 

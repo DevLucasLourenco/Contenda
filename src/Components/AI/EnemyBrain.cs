@@ -86,6 +86,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _windupRestante = 0f;
         _golpeSolicitado = false;
         _contexto?.AttackTelegraph?.DesligarAviso();
+        AnunciarComoChefeSeForCaso();
     }
 
     public override void _ExitTree()
@@ -108,6 +109,24 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _liberado = false;
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
+        AnunciarComoChefeSeForCaso();
+    }
+
+    /// <summary>
+    /// Se esta <see cref="EnemyDefinition"/> marca <see cref="EnemyDefinition.IsBoss"/>,
+    /// anuncia-se em <see cref="GameSession.BossBody"/> -- mesmo espírito de
+    /// <c>PlayerBody</c> (o personagem se anuncia, ninguém procura por
+    /// caminho), mas repetido tanto em <see cref="Configure"/> (nascimento)
+    /// quanto em <see cref="ResetForSpawn"/> (reciclagem): ao contrário de
+    /// <c>Bind</c>/<c>Configure</c>, que só rodam uma vez na vida inteira de
+    /// um nó pooled, <c>ResetForSpawn</c> roda de novo a CADA reaproveitamento
+    /// -- sem repetir aqui, um chefe reciclado para servir de chefe de novo
+    /// (onda futura) nunca voltaria a se anunciar. Ticket 26.
+    /// </summary>
+    private void AnunciarComoChefeSeForCaso()
+    {
+        if (Definition.IsBoss)
+            ServiceLocator.Session.BossBody = _contexto?.Owner;
     }
 
     /// <summary>
@@ -330,6 +349,12 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
 
         _contexto!.Body.CollisionLayer = 0;
         _contexto.Body.CollisionMask = 0;
+
+        // O chefe morreu: some da barra própria. Só limpa se AINDA sou eu lá
+        // -- outro chefe pode já ter se anunciado depois de mim (onda
+        // seguinte), e eu não deveria apagar a referência de outro inimigo.
+        if (Definition.IsBoss && ReferenceEquals(ServiceLocator.Session.BossBody, _contexto.Owner))
+            ServiceLocator.Session.BossBody = null;
 
         _temporizadorDeMorte = 0f;
         _liberado = false;

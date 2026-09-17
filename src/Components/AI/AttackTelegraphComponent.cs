@@ -31,6 +31,7 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     /// <summary>Cor emissiva da telegrafia.</summary>
     [Export] public Color TelegraphColor { get; set; } = new(1f, 0.35f, 0.1f);
 
+    private CharacterContext? _contexto;
     private MeshInstance3D? _malha;
     private StandardMaterial3D? _materialAviso;
 
@@ -45,12 +46,15 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     }
 
     /// <remarks>
-    /// Vazio de propósito: ver o comentário equivalente em <c>NavigationMotor.Bind</c>
-    /// -- quem me registra em <c>CharacterContext.AttackTelegraph</c> é o
-    /// <c>Registrar</c> do <c>CharacterController</c>, antes de qualquer <c>Bind</c> rodar.
+    /// Só guarda o contexto (para <see cref="DesligarAviso"/> restaurar o
+    /// material de base de uma elite depois, ticket 26) -- quem me registra
+    /// em <c>CharacterContext.AttackTelegraph</c> é o <c>Registrar</c> do
+    /// <c>CharacterController</c>, antes de qualquer <c>Bind</c> rodar, o
+    /// mesmo motivo do comentário equivalente em <c>NavigationMotor.Bind</c>.
     /// </remarks>
     public void Bind(CharacterContext contexto)
     {
+        _contexto = contexto;
     }
 
     public void Configure(CharacterDefinition definicao)
@@ -76,12 +80,25 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     }
 
     /// <summary>Apaga o aviso. Chamado ao golpear de verdade ou ao cancelar.</summary>
+    /// <remarks>
+    /// De propósito um NO-OP se já estava apagado: <c>EnemyBrain.AoApanhar</c>
+    /// chama isto INCONDICIONALMENTE em todo golpe recebido, só por garantia
+    /// de cancelar um windup em andamento -- na maioria das vezes não há
+    /// nenhum. Sem este guard, restaurar o material toda vez apagaria o
+    /// flash de dano que <c>DamageFlashComponent</c> (assinante do MESMO
+    /// evento <c>Health.Damaged</c>) acabou de acender, no mesmo despacho
+    /// síncrono -- o flash nunca chegaria a aparecer.
+    /// <see cref="CharacterContext.RestaurarMaterialDaMalha"/>, não
+    /// <c>null</c> direto, quando HÁ de verdade o que apagar: uma elite
+    /// (ticket 26) tem um tingimento permanente por baixo do aviso.
+    /// </remarks>
     public void DesligarAviso()
     {
-        IsWarning = false;
+        if (!IsWarning)
+            return;
 
-        if (_malha is not null)
-            _malha.MaterialOverride = null;
+        IsWarning = false;
+        _contexto?.RestaurarMaterialDaMalha(_malha);
     }
 
     /// <summary>Devolve ao estado de recém-criado. Contrato do pool, no M5.</summary>

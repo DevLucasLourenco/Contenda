@@ -30,6 +30,21 @@ public sealed partial class GameSession : Node
     /// </remarks>
     public CharacterController? PlayerBody { get; set; }
 
+    /// <summary>
+    /// O chefe da onda atual, se houver um. Nulo na maior parte da partida.
+    /// </summary>
+    /// <remarks>
+    /// Mesmo espírito de <see cref="PlayerBody"/>, mas quem se anuncia é o
+    /// próprio <c>EnemyBrain</c> quando a <c>EnemyDefinition</c> marca
+    /// <c>IsBoss</c> (ticket 26) -- ao <c>Configure</c> (nascimento) e a
+    /// cada <c>ResetForSpawn</c> (reciclagem do pool, já que só o primeiro
+    /// roda de novo, nunca o segundo). Ao contrário do jogador, que vive a
+    /// partida inteira, um chefe pode morrer -- <c>EnemyBrain.AoMorrer</c>
+    /// zera este campo, e o <c>HudController</c> reage escondendo a própria
+    /// barra.
+    /// </remarks>
+    public CharacterController? BossBody { get; set; }
+
     public override void _Ready()
     {
         ServiceLocator.Register(this);
@@ -40,5 +55,6 @@ public sealed partial class GameSession : Node
     public void ResetToMenu()
     {
         PlayerBody = null;
+        BossBody = null;
     }
 }

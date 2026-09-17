@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
 [ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
@@ -6,12 +6,14 @@
 [ext_resource type="Resource" path="res://data/characters/swordsman.tres" id="4_sw"]
 [ext_resource type="Resource" path="res://data/characters/gunslinger.tres" id="5_gs"]
 [ext_resource type="Script" path="res://src/UI/HUD/AbilityGuide.cs" id="6_guia"]
+[ext_resource type="Script" path="res://src/UI/HUD/BossHealthBar.cs" id="7_chefe"]
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
 HealthBarPath = NodePath("Vida")
 ManaBarPath = NodePath("Mana")
 AbilityGuidePath = NodePath("Habilidades")
+BossBarPath = NodePath("Chefe")
 DebugArchetypes = [ExtResource("4_sw"), ExtResource("5_gs")]
 
 [node name="Vida" type="Control" parent="."]
@@ -80,3 +82,39 @@ offset_top = 76.0
 offset_right = 340.0
 offset_bottom = 176.0
 script = ExtResource("6_guia")
+
+[node name="Chefe" type="Control" parent="."]
+offset_left = 660.0
+offset_top = 20.0
+offset_right = 1260.0
+offset_bottom = 70.0
+script = ExtResource("7_chefe")
+FillPath = NodePath("Preenchimento")
+DamageLayerPath = NodePath("CamadaDeDano")
+NameLabelPath = NodePath("Nome")
+BarWidth = 600.0
+BarHeight = 24.0
+
+[node name="Nome" type="Label" parent="Chefe"]
+offset_right = 600.0
+offset_bottom = 20.0
+horizontal_alignment = 1
+text = "Chefe"
+
+[node name="Fundo" type="ColorRect" parent="Chefe"]
+offset_top = 24.0
+offset_right = 600.0
+offset_bottom = 48.0
+color = Color(0.1, 0.1, 0.12, 1)
+
+[node name="CamadaDeDano" type="ColorRect" parent="Chefe"]
+offset_top = 24.0
+offset_right = 600.0
+offset_bottom = 48.0
+color = Color(0.9, 0.85, 0.3, 1)
+
+[node name="Preenchimento" type="ColorRect" parent="Chefe"]
+offset_top = 24.0
+offset_right = 600.0
+offset_bottom = 48.0
+color = Color(0.6, 0.1, 0.5, 1)
