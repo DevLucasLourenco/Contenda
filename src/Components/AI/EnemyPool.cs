@@ -65,6 +65,41 @@ public sealed partial class EnemyPool : Node
     public int ActiveCount => _ativos.Count;
 
     /// <summary>
+    /// Preenche <paramref name="destino"/> (limpo primeiro) com a posição de
+    /// cada inimigo ativo agora, de qualquer espécie, exceto
+    /// <paramref name="excluir"/>.
+    /// </summary>
+    /// <remarks>
+    /// Usado pela força de separação (ticket 23, spec 09 §4): cada inimigo em
+    /// <c>Chase</c> precisa da posição dos OUTROS para não se amontoar, e o
+    /// pool já é a única fonte de verdade de "quem está ativo agora" -- sem
+    /// isto, cada <c>EnemyBrain</c> teria que descobrir os vizinhos por conta
+    /// própria (um grupo `Node`, uma query de física), duplicando o que o
+    /// pool já sabe.
+    ///
+    /// Recebe o buffer do CHAMADOR (não devolve uma lista nova) e itera
+    /// <c>_ativos</c> pelo próprio tipo concreto (`HashSet&lt;T&gt;`), não por
+    /// `IEnumerable&lt;T&gt;`/`IReadOnlyCollection&lt;T&gt;` -- convenções §5 e spec 15
+    /// §3 proíbem alocação por quadro no hot path, e isto roda a cada
+    /// <c>EnemyBrain.Poll</c> em `Chase`: uma lista nova por chamada E o
+    /// enumerador de `HashSet&lt;T&gt;` boxed (só acontece quando iterado por trás
+    /// de uma interface) seriam duas alocações por quadro, por inimigo.
+    /// <paramref name="excluir"/> existe porque o próprio chamador está em
+    /// <c>_ativos</c> -- sem excluir a si mesmo, todo inimigo se
+    /// "separaria" da própria posição, distância zero.
+    /// </remarks>
+    public void ObterPosicoesAtivas(CharacterController excluir, List<Vector3> destino)
+    {
+        destino.Clear();
+
+        foreach (var ativo in _ativos)
+        {
+            if (!ReferenceEquals(ativo, excluir) && GodotObject.IsInstanceValid(ativo))
+                destino.Add(ativo.GlobalPosition);
+        }
+    }
+
+    /// <summary>
     /// Se o prewarm padrão (grunt, no boot) já terminou. Falso por um ou dois
     /// quadros logo no início -- ver o remark de <see cref="_Ready"/>.
     /// </summary>

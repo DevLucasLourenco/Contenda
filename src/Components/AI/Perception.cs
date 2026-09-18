@@ -18,6 +18,17 @@ public sealed class Perception
 {
     private readonly Node _dono;
 
+    /// <remarks>
+    /// Reaproveitado entre chamadas, nunca recriado -- um por inimigo, para
+    /// a vida inteira dele, em vez de um `PhysicsRayQueryParameters3D.Create`
+    /// novo a cada quadro (ticket 23: com uma horda inteira em `Chase` ao
+    /// mesmo tempo, cada um chamando isto todo quadro, o volume de objetos
+    /// `RefCounted` de vida curtíssima expunha um "Leaked unsafe reference"
+    /// do runtime C#/Godot em desligamento -- benigno isolado, mas
+    /// observável demais para ignorar nesta escala).
+    /// </remarks>
+    private PhysicsRayQueryParameters3D? _parametros;
+
     public Perception(Node dono)
     {
         _dono = dono;
@@ -39,10 +50,14 @@ public sealed class Perception
     private bool LinhaDeVisaoLivre(Vector3 origem, Vector3 alvo, uint mascara)
     {
         var espaco = _dono.GetViewport().World3D.DirectSpaceState;
-        var parametros = PhysicsRayQueryParameters3D.Create(origem, alvo, mascara);
+
+        _parametros ??= PhysicsRayQueryParameters3D.Create(origem, alvo, mascara);
+        _parametros.From = origem;
+        _parametros.To = alvo;
+        _parametros.CollisionMask = mascara;
 
         // Fronteira com a engine: Godot.Collections.Dictionary só aqui.
-        var resultado = espaco.IntersectRay(parametros);
+        var resultado = espaco.IntersectRay(_parametros);
         return resultado.Count == 0;
     }
 }

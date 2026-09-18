@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Contenda.Camera;
 using Contenda.Characters.Base;
 using Contenda.Components.Health;
@@ -36,10 +37,43 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     private EnemyStateMachine _maquina = null!;
     private Perception _percepcao = null!;
 
+    /// <summary>
+    /// Além de quantos metros o inimigo passa a "pensar" a
+    /// <see cref="IntervaloDeLodSegundos"/> em vez de todo quadro. Ver spec
+    /// 09 §9, ticket 23.
+    /// </summary>
+    [Export(PropertyHint.Range, "5,60,1")] public float DistanciaDeLod { get; set; } = 35f;
+
+    /// <summary>Intervalo de "pensamento" para um inimigo distante -- 0,2 s = 5 Hz. Ver spec 09 §9.</summary>
+    [Export(PropertyHint.Range, "0.05,1,0.05")] public float IntervaloDeLodSegundos { get; set; } = 0.2f;
+
+    /// <summary>Raio de separação entre inimigos próximos, em metros. Ver spec 09 §4.</summary>
+    [Export(PropertyHint.Range, "0.1,5,0.1")] public float RaioDeSeparacao { get; set; } = 1.2f;
+
+    /// <summary>Peso da força de separação. Ver spec 09 §4.</summary>
+    [Export(PropertyHint.Range, "0,1,0.05")] public float PesoDeSeparacao { get; set; } = 0.35f;
+
     private float _windupRestante;
     private bool _golpeSolicitado;
     private float _temporizadorDeMorte;
     private bool _liberado;
+
+    /// <remarks>
+    /// Nasce já "vencido" (maior que <see cref="IntervaloDeLodSegundos"/>),
+    /// não em zero -- o primeiro <see cref="Poll"/> da vida de um inimigo
+    /// sempre pensa de verdade, mesmo que já nasça longe do jogador.
+    /// </remarks>
+    private float _relogioDePensamento = float.PositiveInfinity;
+    private IntentFrame _ultimaIntencao = IntentFrame.Idle;
+
+    /// <summary>
+    /// Reaproveitado a cada <see cref="CalcularForcaDeSeparacao"/>, nunca uma
+    /// `List` nova por quadro -- ver o remark daquele método.
+    /// </summary>
+    private readonly List<Vector3> _vizinhosBuffer = [];
+
+    /// <summary>Quantas vezes este inimigo pensou de verdade (não reaproveitou o quadro anterior). Para o probe.</summary>
+    public int PensamentosCompletos { get; private set; }
 
     /// <summary>Em qual fase da percepção/combate este inimigo está. Para o probe/depuração.</summary>
     public EnemyState Estado => _maquina.Estado;
@@ -85,6 +119,9 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _maquina = new EnemyStateMachine(def.AlertDuration, def.AttackCooldown, def.StaggerDuration, def.LoseTargetDelay);
         _windupRestante = 0f;
         _golpeSolicitado = false;
+        _relogioDePensamento = float.PositiveInfinity;
+        _ultimaIntencao = IntentFrame.Idle;
+        PensamentosCompletos = 0;
         _contexto?.AttackTelegraph?.DesligarAviso();
         AnunciarComoChefeSeForCaso();
     }
@@ -107,6 +144,9 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _golpeSolicitado = false;
         _temporizadorDeMorte = 0f;
         _liberado = false;
+        _relogioDePensamento = float.PositiveInfinity;
+        _ultimaIntencao = IntentFrame.Idle;
+        PensamentosCompletos = 0;
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
         AnunciarComoChefeSeForCaso();
@@ -151,9 +191,32 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             return IntentFrame.Idle;
 
         var corpo = _contexto!.Body;
+        var distancia = corpo.GlobalPosition.DistanceTo(alvo.GlobalPosition);
+
+        // LOD de IA (spec 09 §9, ticket 23): distante, pensa a
+        // IntervaloDeLodSegundos (5 Hz) em vez de todo quadro (60 Hz) --
+        // reaproveita a ÚLTIMA intenção calculada em vez de recalcular
+        // percepção (um raycast) e rota a cada quadro para um inimigo que o
+        // jogador mal consegue ver na tela. `_relogioDePensamento` nasce
+        // "vencido" (Configure/ResetForSpawn), então o primeiro Poll da vida
+        // sempre pensa de verdade, mesmo já nascendo longe.
+        _relogioDePensamento += delta;
+        if (distancia > DistanciaDeLod && _relogioDePensamento < IntervaloDeLodSegundos)
+            return _ultimaIntencao;
+
+        // Tempo desde o ÚLTIMO pensamento de verdade, não só este quadro: um
+        // inimigo que só pensou de novo depois de 5 quadros pulados (LOD)
+        // precisa alimentar `Advance`/o preparo do golpe com os 5 quadros
+        // INTEIROS -- se recebessem só o delta deste quadro, o cronômetro
+        // interno de LoseTargetDelay (por exemplo) andaria 5x mais devagar
+        // que o relógio de verdade, e um inimigo distante nunca desistiria
+        // de perseguir dentro do prazo da spec.
+        var deltaEfetivo = _relogioDePensamento;
+        _relogioDePensamento = 0f;
+        PensamentosCompletos++;
+
         var origemVisao = corpo.GlobalPosition + (Vector3.Up * EyeHeight);
         var alvoVisao = alvo.GlobalPosition + (Vector3.Up * EyeHeight);
-        var distancia = corpo.GlobalPosition.DistanceTo(alvo.GlobalPosition);
 
         // Enquanto ainda não percebeu ninguém, a peneira é o raio de detecção
         // (menor); depois de já estar de olho, vale o raio de perda (maior) --
@@ -166,7 +229,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         // pode ser exatamente o que termina o windup e pede o golpe de
         // verdade, e a máquina precisa saber se o golpe JÁ terminou (não se
         // vai terminar) para decidir sair de Attack.
-        var (ataqueTerminou, pedirAtaqueAgora) = AtualizarPreparoDoGolpe(delta);
+        var (ataqueTerminou, pedirAtaqueAgora) = AtualizarPreparoDoGolpe(deltaEfetivo);
 
         // `IsGroundedConfiavel`, não `IsGrounded` cru -- este último fica um
         // quadro atrasado bem no quadro exato de um lançamento vertical
@@ -177,12 +240,13 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         var estaNoChao = _contexto.Movement?.IsGroundedConfiavel ?? true;
 
         var estadoAntes = _maquina.Estado;
-        _maquina.Advance(delta, alvoVisivel, dentroDoAlcance, ataqueTerminou, estaNoChao);
+        _maquina.Advance(deltaEfetivo, alvoVisivel, dentroDoAlcance, ataqueTerminou, estaNoChao);
 
         if (_maquina.Estado != estadoAntes)
             AoTrocarDeEstado(estadoAntes, _maquina.Estado);
 
-        return MontarIntencao(corpo, alvo, pedirAtaqueAgora);
+        _ultimaIntencao = MontarIntencao(corpo, alvo, pedirAtaqueAgora, deltaEfetivo);
+        return _ultimaIntencao;
     }
 
     /// <summary>
@@ -262,19 +326,40 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         }
     }
 
-    private IntentFrame MontarIntencao(CharacterBody3D corpo, CharacterController alvo, bool pedirAtaqueAgora)
+    private IntentFrame MontarIntencao(CharacterBody3D corpo, CharacterController alvo, bool pedirAtaqueAgora, float delta)
     {
         var move = Vector2.Zero;
+        var pedirPulo = false;
 
         // Só anda perseguindo -- "para" ao alertar, ao atacar e ao descansar
         // é o próprio pedido do ticket 22 ("persegue, PARA ao chegar perto").
         if (_maquina.Estado == EnemyState.Chase)
         {
-            _contexto!.NavigationMotor?.SetTarget(alvo.GlobalPosition);
+            _contexto!.NavigationMotor?.SetTarget(alvo.GlobalPosition, delta);
             var direcaoMundo = _contexto.NavigationMotor?.GetDesiredDirection(corpo.GlobalPosition) ?? Vector3.Zero;
+
+            // Força de separação (spec 09 §4): sem isto, a horda que a
+            // navegação já traz até perto do jogador vira uma bola de corpos
+            // sobrepostos -- evitação de colisão sozinha não resolve, precisa
+            // desta força leve por cima, somada à direção de perseguição
+            // ANTES de normalizar para movimento (desvia a direção, não
+            // troca a velocidade -- WorldToMovement normaliza de qualquer
+            // jeito).
+            direcaoMundo += CalcularForcaDeSeparacao(corpo.GlobalPosition);
 
             var yaw = _contexto!.Movement?.CameraReference?.YawDegrees ?? 45f;
             move = CameraMath.WorldToMovement(direcaoMundo, yaw);
+
+            // "Sobem nos objetos escaláveis pelas ligações de navegação, sem
+            // travar" (ticket 23): uma ligação de navegação é um caminho
+            // GEOMÉTRICO válido, mas o corpo não sobe 1+ m parado no lugar
+            // sozinho -- precisa de um pulo de verdade, o MESMO
+            // `IntentFrame.JumpPressed` que o jogador usa (spec 09 §1, um
+            // único sistema de locomoção). `JumpState.RequestJump` só
+            // enfileira um pedido (consumido quando `CanJump`, com coyote
+            // time) -- pedir de novo todo quadro enquanto ainda precisar não
+            // duplica o pulo nem interrompe um já em andamento.
+            pedirPulo = _contexto.NavigationMotor?.PrecisaPular(corpo.GlobalPosition) ?? false;
         }
 
         // Encara o alvo em qualquer estado que não seja Idle -- "vira para o
@@ -301,8 +386,34 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             CommandRightPressed: false,
             FormScrollDelta: 0,
             FormActivatePressed: false,
-            JumpPressed: false,
+            JumpPressed: pedirPulo,
             DashPressed: false);
+    }
+
+    /// <summary>
+    /// Empurrão para longe de outros inimigos ativos e próximos. Ver
+    /// <see cref="SeparationMath"/> e spec 09 §4.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Pool"/> é nulo para um inimigo que nunca passou por
+    /// <c>EnemyPool.Acquire</c> (o probe de percepção/estado deste ticket 22
+    /// instancia a cena direto) -- sem vizinhos conhecidos, força zero, nunca
+    /// uma exceção.
+    ///
+    /// <see cref="_vizinhosBuffer"/> é reaproveitado entre quadros, nunca uma
+    /// `List` nova por chamada -- convenções §5/spec 15 §3 proíbem alocação
+    /// por quadro no hot path, e isto roda a cada <c>Poll</c> em `Chase`. Ver
+    /// <see cref="EnemyPool.ObterPosicoesAtivas"/> para a outra metade da
+    /// mesma disciplina (o pool também não aloca nem faz boxing ao iterar).
+    /// </remarks>
+    private Vector3 CalcularForcaDeSeparacao(Vector3 posicao)
+    {
+        if (Pool is null)
+            return Vector3.Zero;
+
+        Pool.ObterPosicoesAtivas(_contexto!.Owner, _vizinhosBuffer);
+
+        return SeparationMath.ComputeForce(posicao, _vizinhosBuffer, RaioDeSeparacao, PesoDeSeparacao);
     }
 
     /// <remarks>

@@ -103,11 +103,18 @@ target_desired_distance = 0.4
 script = ExtResource("8_navmotor")
 AgentPath = NodePath("../NavigationAgent3D")
 StoppingDistance = 0.4
+RepathInterval = 0.25
+RepathDistance = 1.5
+LimiarDeSalto = 0.5
 
 [node name="EnemyBrain" type="Node" parent="."]
 script = ExtResource("9_brain")
 Definition = ExtResource("13_ia")
 EyeHeight = 1.0
+DistanciaDeLod = 35.0
+IntervaloDeLodSegundos = 0.2
+RaioDeSeparacao = 1.2
+PesoDeSeparacao = 0.35
 
 [node name="EliteMarkerComponent" type="Node" parent="."]
 script = ExtResource("14_elite")

@@ -34,7 +34,39 @@ public sealed partial class NavigationMotor : Node, ICharacterComponent
     /// <summary>Distância do alvo do caminho para considerar "chegou". Ver spec 09 §4.</summary>
     [Export(PropertyHint.Range, "0.1,3,0.05")] public float StoppingDistance { get; set; } = 0.4f;
 
+    /// <summary>Intervalo mínimo entre recálculos de rota, em segundos. Ver spec 09 §4.</summary>
+    [Export(PropertyHint.Range, "0.05,2,0.05")] public float RepathInterval { get; set; } = 0.25f;
+
+    /// <summary>
+    /// Quanto o alvo precisa ter andado, desde o último recálculo de verdade,
+    /// para forçar um novo antes do intervalo vencer. Ver spec 09 §4.
+    /// </summary>
+    [Export(PropertyHint.Range, "0.1,10,0.1")] public float RepathDistance { get; set; } = 1.5f;
+
+    /// <summary>
+    /// A partir de qual subida no próximo ponto do caminho vale pedir um
+    /// pulo, em vez de só andar. Ver <see cref="PrecisaPular"/>.
+    /// </summary>
+    [Export(PropertyHint.Range, "0.1,3,0.05")] public float LimiarDeSalto { get; set; } = 0.5f;
+
     private NavigationAgent3D? _agente;
+
+    /// <remarks>
+    /// Ver <see cref="NavigationTimingMath"/>: repath só quando o intervalo
+    /// vencer OU o alvo tiver andado <see cref="RepathDistance"/> desde o
+    /// último recálculo de verdade -- nunca a cada quadro, mesmo que
+    /// <see cref="SetTarget"/> seja chamado a cada quadro (é).
+    ///
+    /// <c>_relogio</c> nasce numa fase ALEATÓRIA (não em zero) dentro de
+    /// <see cref="RepathInterval"/> -- é o escalonamento em si: com 40
+    /// inimigos, todos com relógio zerado, todos cruzariam o intervalo no
+    /// MESMO quadro; uma fase aleatória por instância espalha os primeiros
+    /// recálculos ao longo do próprio intervalo.
+    /// </remarks>
+    private float _relogio;
+    private Vector3 _ultimoAlvoRepathado;
+    private Vector3 _ultimoAlvoBruto;
+    private bool _temRepathAnterior;
 
     /// <remarks>
     /// Vazio de propósito: quem me registra em <c>CharacterContext.NavigationMotor</c>
@@ -54,18 +86,17 @@ public sealed partial class NavigationMotor : Node, ICharacterComponent
     }
 
     /// <summary>
-    /// Vazio de propósito: sem estado próprio de vida longa. Contrato do
-    /// pool, no M5 (ticket 25).
+    /// Rearma o relógio de repath com uma nova fase aleatória -- um inimigo
+    /// reciclado (ticket 25) que renascesse com o relógio zerado voltaria a
+    /// sincronizar com qualquer outro que também tivesse acabado de nascer no
+    /// mesmo quadro (um respawn em lote de uma onda inteira, por exemplo),
+    /// exatamente o "todos recalculando no mesmo quadro" que o escalonamento
+    /// existe para evitar.
     /// </summary>
-    /// <remarks>
-    /// <see cref="SetTarget"/> é chamado a cada quadro em
-    /// <see cref="EnemyState.Chase"/>, e ninguém lê
-    /// <see cref="GetDesiredDirection"/> fora disso -- um `TargetPosition`
-    /// antigo apontando para onde o alvo estava na vida anterior nunca chega
-    /// a ser consultado antes do próximo <c>SetTarget</c> sobrescrever.
-    /// </remarks>
     public void ResetForSpawn()
     {
+        _relogio = (float)GD.RandRange(0f, RepathInterval);
+        _temRepathAnterior = false;
     }
 
     public override void _Ready()
@@ -78,13 +109,36 @@ public sealed partial class NavigationMotor : Node, ICharacterComponent
         }
 
         _agente.TargetDesiredDistance = StoppingDistance;
+
+        // Mesma fase aleatória de ResetForSpawn -- cobre quem nunca passa
+        // pelo pool (o probe/debug que instancia a cena direto).
+        _relogio = (float)GD.RandRange(0f, RepathInterval);
     }
 
-    /// <summary>Onde o agente deveria estar tentando chegar.</summary>
-    public void SetTarget(Vector3 posicaoNoMundo)
+    /// <summary>
+    /// Onde o agente deveria estar tentando chegar -- mas só recalcula a
+    /// rota de verdade quando <see cref="NavigationTimingMath.ShouldRepath"/>
+    /// manda, mesmo chamado a cada quadro (é). Ver spec 09 §4.
+    /// </summary>
+    public void SetTarget(Vector3 posicaoNoMundo, float delta)
     {
-        if (_agente is not null)
-            _agente.TargetPosition = posicaoNoMundo;
+        _relogio += delta;
+        _ultimoAlvoBruto = posicaoNoMundo;
+
+        if (_agente is null)
+            return;
+
+        var distanciaDoUltimoRepath = _temRepathAnterior
+            ? posicaoNoMundo.DistanceTo(_ultimoAlvoRepathado)
+            : float.PositiveInfinity; // primeiro pedido desta vida: sempre repatha
+
+        if (!NavigationTimingMath.ShouldRepath(_relogio, distanciaDoUltimoRepath, RepathInterval, RepathDistance))
+            return;
+
+        _agente.TargetPosition = posicaoNoMundo;
+        _ultimoAlvoRepathado = posicaoNoMundo;
+        _temRepathAnterior = true;
+        _relogio = 0f;
     }
 
     /// <summary>
@@ -95,14 +149,59 @@ public sealed partial class NavigationMotor : Node, ICharacterComponent
     /// quem consome isto é <c>IntentFrame.Move</c>, que é puramente
     /// horizontal -- a altura já é resolvida à parte, pela gravidade do
     /// <c>MovementComponent</c>.
+    ///
+    /// Sem caminho válido (<see cref="NavigationAgent3D.IsTargetReachable"/>
+    /// falso -- um alvo fora da malha, ou temporariamente isolado por uma
+    /// geometria em obra), anda em linha reta na direção CRUA do alvo em vez
+    /// de congelar: "um inimigo sem caminho válido não trava, avança na
+    /// direção do jogador e tenta de novo" (ticket 23). O próprio
+    /// <see cref="SetTarget"/> já vai tentar um repath de verdade de novo
+    /// assim que o intervalo vencer -- não é preciso pedir de novo aqui.
     /// </remarks>
     public Vector3 GetDesiredDirection(Vector3 posicaoAtual)
     {
-        if (_agente is null || _agente.IsNavigationFinished())
+        if (_agente is null)
             return Vector3.Zero;
+
+        if (_agente.IsNavigationFinished())
+            return Vector3.Zero;
+
+        if (!_agente.IsTargetReachable())
+            return DirecaoCruaAoAlvo(posicaoAtual);
 
         var proximoPonto = _agente.GetNextPathPosition();
         var direcao = proximoPonto - posicaoAtual;
+        direcao.Y = 0f;
+
+        return direcao.LengthSquared() > 0.0001f ? direcao.Normalized() : Vector3.Zero;
+    }
+
+    /// <summary>
+    /// Se o próximo trecho do caminho sobe alto demais para o desnível normal
+    /// de rampa/degrau chegar sozinho (o próprio `MoveAndSlide`/colagem ao
+    /// chão do <c>MovementComponent</c> já resolve isso) -- uma ligação de
+    /// navegação (`NavigationLink3D`) pulando de rua para cima de um objeto
+    /// escalável, por exemplo. Ver ticket 23, spec 09 §4/§5: "inimigos sobem
+    /// nos objetos escaláveis pelas ligações de navegação, sem travar".
+    /// </summary>
+    /// <remarks>
+    /// O caminho geométrico já existe (o agente encontra o `NavigationLink3D`
+    /// sozinho); o que faltava é o CORPO saber que precisa de um pulo de
+    /// verdade para acompanhar -- sem isto, o inimigo anda até a base do
+    /// objeto e para ali, esbarrando na parede vertical dele, achando que
+    /// "travou" (o sintoma que este ticket existe para eliminar).
+    /// </remarks>
+    public bool PrecisaPular(Vector3 posicaoAtual)
+    {
+        if (_agente is null || _agente.IsNavigationFinished())
+            return false;
+
+        return _agente.GetNextPathPosition().Y - posicaoAtual.Y > LimiarDeSalto;
+    }
+
+    private Vector3 DirecaoCruaAoAlvo(Vector3 posicaoAtual)
+    {
+        var direcao = _ultimoAlvoBruto - posicaoAtual;
         direcao.Y = 0f;
 
         return direcao.LengthSquared() > 0.0001f ? direcao.Normalized() : Vector3.Zero;
