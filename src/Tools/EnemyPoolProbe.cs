@@ -47,7 +47,12 @@ public sealed partial class EnemyPoolProbe : Node
     /// <c>LoseTargetRadius</c> -- mas ainda EM CIMA do chão, não flutuando no
     /// vazio: testar reciclagem precisa de um grunt que realmente assenta.
     /// </summary>
-    private static readonly Vector3 Longe = new(25f, 0.1f, 25f);
+    // RuaNorteOeste (Arena.tscn, ticket 21): chão real, plano, x ∈ [-16, -7],
+    // z ∈ [-19, -8] -- (25, 25) caía dentro do prédio da quina SE da arena
+    // urbana, e um grunt reaquirido lá nunca assentava (chão sólido demais
+    // perto, IsGrounded nunca virava true, "impulso de vida anterior" nunca
+    // zerava).
+    private static readonly Vector3 Longe = new(-14f, 0.1f, -17f);
 
     private readonly List<string> _falhas = [];
     private EnemyPool? _pool;

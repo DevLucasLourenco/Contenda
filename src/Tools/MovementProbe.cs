@@ -27,10 +27,9 @@ namespace Contenda.Tools;
 /// ambíguo entre "bloqueado pela recarga" e "bloqueado por já ter usado" — uma
 /// recarga bem mais curta isola a regra que este probe realmente quer testar.
 ///
-/// A "Plataforma" de <c>Arena.tscn</c> (12×12 m, topo a 1,5 m) faz o papel da
-/// borda para o teste de coyote time: o personagem é teleportado para o ar
-/// logo depois da borda, sem passar pela varredura de <c>WASD</c> relativa à
-/// câmera.
+/// O teste de coyote time não depende de nenhuma borda de verdade em
+/// <c>Arena.tscn</c>: o personagem é teleportado direto para o ar, sem passar
+/// pela varredura de <c>WASD</c> relativa à câmera.
 ///
 /// <code>
 /// godot --headless --path . --scene res://scenes/debug/MovementProbe.tscn
@@ -235,8 +234,9 @@ public sealed partial class MovementProbe : Node
     {
         if (_quadroDaFase == 1)
         {
-            // Logo além da borda leste da Plataforma (topo em X=-10, Y=1,5) --
-            // ar aberto, chão de verdade uns 1,5 m abaixo.
+            // Solto no ar sobre a RuaNorteOeste (chão real em Y=0,0) -- não
+            // precisa de uma borda de verdade embaixo, só ar aberto com chão
+            // real ~1,5 m abaixo para simular ter acabado de sair dele.
             TeleportarParado(new Vector3(-9.5f, 1.5f, -16f));
             return;
         }
@@ -384,7 +384,10 @@ public sealed partial class MovementProbe : Node
     {
         if (_quadroDaFase == 1)
         {
-            TeleportarParado(new Vector3(0f, 0.1f, 10f));
+            // Braço sul, longe da faixa da rampa (x ∈ [-3, 3]) -- um dash de
+            // verdade percorre ~5 m, e perto da rampa ele esbarra nos degraus
+            // e para curto.
+            TeleportarParado(new Vector3(15f, 0.1f, 6f));
             _manaAntes = _jogador!.Context!.Mana!.Current;
             _posicaoAntes = _jogador.GlobalPosition;
             _dashDetectado = false;
@@ -454,7 +457,7 @@ public sealed partial class MovementProbe : Node
     {
         if (_quadroDaFase == 1)
         {
-            TeleportarParado(new Vector3(0f, 0.1f, 10f));
+            TeleportarParado(new Vector3(15f, 0.1f, 6f));
             _dashDetectado = false;
 
             // A recarga da fase anterior (0,05 s de teste) já passou de sobra.
@@ -503,7 +506,7 @@ public sealed partial class MovementProbe : Node
     {
         if (_quadroDaFase == 1)
         {
-            TeleportarParado(new Vector3(0f, 0.1f, 10f));
+            TeleportarParado(new Vector3(15f, 0.1f, 6f));
             PressionarEsoltar(InputActionNames.Jump);
             _fase6Etapa = 0;
             return;

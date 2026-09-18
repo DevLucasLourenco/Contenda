@@ -57,8 +57,11 @@ public sealed partial class CriticalProbe : Node
     /// solo pedido "no ar" por engano rotearia para o combo AÉREO (ticket
     /// 19, mais fraco) assim que `sword.tres` passou a ter um definido --
     /// mesma causa raiz já corrigida em <c>CombatProbe</c>/<c>ImpactProbe</c>.
+    /// 10, não 5: a arena urbana (ticket 21) tem bem mais colisores estáticos
+    /// para o servidor de física assentar no boot, e `IsGrounded` (1 quadro
+    /// atrás de `IsOnFloor()` por design) levava mais tempo para acompanhar.
     /// </remarks>
-    private const int QuadroDoPedido = 5;
+    private const int QuadroDoPedido = 10;
 
     private enum Fase { Dados, Critico, Normal, Area }
 

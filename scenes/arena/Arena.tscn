@@ -1,11 +1,12 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=60 format=3]
 
 [ext_resource type="Script" path="res://src/Camera/CameraRig.cs" id="1_rig"]
 [ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
-[ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="3_set"]
+[ext_resource type="Resource" path="res://data/camera/urban_arena_camera.tres" id="3_set"]
 [ext_resource type="NavigationMesh" path="res://data/navmesh/arena_nav.tres" id="4_nav"]
 [ext_resource type="PackedScene" path="res://scenes/characters/Character.tscn" id="5_pj"]
 [ext_resource type="PackedScene" path="res://scenes/debug/TrainingDummy.tscn" id="6_alvo"]
+[ext_resource type="Script" path="res://src/Camera/CameraOcclusionFader.cs" id="7_fade"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
 sky_top_color = Color(0.35, 0.45, 0.62, 1)
@@ -26,48 +27,216 @@ ssao_enabled = true
 ssao_radius = 1.5
 ssao_intensity = 1.2
 
-[sub_resource type="StandardMaterial3D" id="Mat_chao"]
-albedo_color = Color(0.26, 0.28, 0.31, 1)
+[sub_resource type="StandardMaterial3D" id="Mat_praca"]
+albedo_color = Color(0.22, 0.26, 0.35, 1)
 roughness = 0.95
 
-[sub_resource type="StandardMaterial3D" id="Mat_obst"]
-albedo_color = Color(0.52, 0.55, 0.6, 1)
-roughness = 0.8
+[sub_resource type="StandardMaterial3D" id="Mat_rua"]
+albedo_color = Color(0.35, 0.35, 0.37, 1)
+roughness = 0.9
 
-[sub_resource type="StandardMaterial3D" id="Mat_plat"]
-albedo_color = Color(0.46, 0.56, 0.58, 1)
+[sub_resource type="StandardMaterial3D" id="Mat_calcada"]
+albedo_color = Color(0.55, 0.52, 0.48, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_predio"]
+albedo_color = Color(0.42, 0.42, 0.46, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_prop"]
+albedo_color = Color(0.55, 0.35, 0.2, 1)
 roughness = 0.75
 
-[sub_resource type="BoxMesh" id="Mesh_chao"]
-material = SubResource("Mat_chao")
+[sub_resource type="StandardMaterial3D" id="Mat_andaime"]
+albedo_color = Color(0.4, 0.44, 0.5, 1)
+roughness = 0.6
+metallic = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Mat_telhado"]
+albedo_color = Color(0.4, 0.22, 0.2, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_rampa"]
+albedo_color = Color(0.3, 0.32, 0.36, 1)
+roughness = 0.9
+
+; --- chão dos quatro braços da rua + praça. Ladrilhamento sem sobreposição:
+; braços norte/sul cobrem a largura TOTAL nas próprias faixas de Z (incluindo
+; as quinas), braços oeste/leste só a faixa central (mesma faixa de Z da
+; praça) -- ver a Implementação do ticket 21. Braço norte é mais profundo que
+; os outros três (11 m, não 8) para caber rampa + objetos + andaime + telhado
+; sem disputar o mesmo espaço. ---
+
+[sub_resource type="BoxMesh" id="Mesh_praca"]
+material = SubResource("Mat_praca")
+size = Vector3(16, 0.5, 16)
+
+[sub_resource type="BoxShape3D" id="Shape_praca"]
+size = Vector3(16, 0.5, 16)
+
+; Cada braço vira 3 caixas (2 laterais + 1 fechando a ponta), não 1: a laje
+; plana original cobria por cima o próprio vão dos degraus da rampa, ficando
+; mais alta (0,0) que os degraus (até -0,125), e o recast sempre bakeia só a
+; superfície mais alta de cada coluna de voxel -- os degraus ficavam
+; soterrados e o navmesh nunca descia. O buraco deixado aqui é exatamente a
+; pegada da rampa; ela mesma tapa o vão.
+
+[sub_resource type="BoxMesh" id="Mesh_arm_norte_o"]
+material = SubResource("Mat_rua")
+size = Vector3(9, 0.5, 11)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_norte_o"]
+size = Vector3(9, 0.5, 11)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_norte_l"]
+material = SubResource("Mat_rua")
+size = Vector3(17, 0.5, 11)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_norte_l"]
+size = Vector3(17, 0.5, 11)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_notch_norte"]
+material = SubResource("Mat_rua")
+size = Vector3(6, 0.5, 5)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_notch_norte"]
+size = Vector3(6, 0.5, 5)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_side_sul"]
+material = SubResource("Mat_rua")
+size = Vector3(13, 0.5, 8)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_side_sul"]
+size = Vector3(13, 0.5, 8)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_notch_sul"]
+material = SubResource("Mat_rua")
+size = Vector3(6, 0.5, 2)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_notch_sul"]
+size = Vector3(6, 0.5, 2)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_side_lo"]
+material = SubResource("Mat_rua")
+size = Vector3(8, 0.5, 5)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_side_lo"]
+size = Vector3(8, 0.5, 5)
+
+[sub_resource type="BoxMesh" id="Mesh_arm_notch_lo"]
+material = SubResource("Mat_rua")
+size = Vector3(2, 0.5, 6)
+
+[sub_resource type="BoxShape3D" id="Shape_arm_notch_lo"]
+size = Vector3(2, 0.5, 6)
+
+[sub_resource type="BoxMesh" id="Mesh_calcada"]
+material = SubResource("Mat_calcada")
+size = Vector3(2, 0.5, 16)
+
+[sub_resource type="BoxShape3D" id="Shape_calcada"]
+size = Vector3(2, 0.5, 16)
+
+; Rampas construídas como micro-degraus de 1 m de corrida por 0,125 m de
+; subida (8 degraus = 8 m de corrida para 1 m, ~7°): uma única caixa
+; inclinada não bakeia como superfície conectada no navmesh do Godot/recast
+; em cell_size=0,2 (confirmado isoladamente em scenes/debug/RampTest.tscn --
+; o bake produzia só uma lasca desconectada e MapGetPath nunca atravessava).
+; Degraus baixos e planos são a técnica que o recast realmente conecta, e um
+; riser de 12,5 cm continua indistinguível de uma rampa lisa para o jogador
+; e para o inimigo -- "rampas, não degraus" na spec é sobre não travar
+; ninguém numa quina visível, não sobre lisura matemática literal.
+
+[sub_resource type="BoxMesh" id="Mesh_degrau_ns"]
+material = SubResource("Mat_rampa")
+size = Vector3(6, 0.5, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_degrau_ns"]
+size = Vector3(6, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_degrau_lo"]
+material = SubResource("Mat_rampa")
+size = Vector3(1, 0.5, 6)
+
+[sub_resource type="BoxShape3D" id="Shape_degrau_lo"]
+size = Vector3(1, 0.5, 6)
+
+; --- prédios (limite intransponível, fora da área jogável) ---
+
+[sub_resource type="BoxMesh" id="Mesh_predio_ns"]
+material = SubResource("Mat_predio")
+size = Vector3(60, 10, 14)
+
+[sub_resource type="BoxShape3D" id="Shape_predio_ns"]
+size = Vector3(60, 10, 14)
+
+[sub_resource type="BoxMesh" id="Mesh_predio_lo"]
+material = SubResource("Mat_predio")
+size = Vector3(14, 10, 32)
+
+[sub_resource type="BoxShape3D" id="Shape_predio_lo"]
+size = Vector3(14, 10, 32)
+
+; --- objetos escaláveis por pulo simples ---
+
+[sub_resource type="BoxMesh" id="Mesh_onibus"]
+material = SubResource("Mat_prop")
+size = Vector3(5, 1.3, 2.5)
+
+[sub_resource type="BoxShape3D" id="Shape_onibus"]
+size = Vector3(5, 1.3, 2.5)
+
+[sub_resource type="BoxMesh" id="Mesh_conteiner"]
+material = SubResource("Mat_prop")
+size = Vector3(5, 1.5, 2.5)
+
+[sub_resource type="BoxShape3D" id="Shape_conteiner"]
+size = Vector3(5, 1.5, 2.5)
+
+[sub_resource type="BoxMesh" id="Mesh_cacamba"]
+material = SubResource("Mat_prop")
+size = Vector3(3, 1.2, 2)
+
+[sub_resource type="BoxShape3D" id="Shape_cacamba"]
+size = Vector3(3, 1.2, 2)
+
+[sub_resource type="BoxMesh" id="Mesh_andaime"]
+material = SubResource("Mat_andaime")
+size = Vector3(3, 1.5, 3)
+
+[sub_resource type="BoxShape3D" id="Shape_andaime"]
+size = Vector3(3, 1.5, 3)
+
+[sub_resource type="BoxMesh" id="Mesh_saliencia"]
+material = SubResource("Mat_andaime")
+size = Vector3(3, 2.2, 3)
+
+[sub_resource type="BoxShape3D" id="Shape_saliencia"]
+size = Vector3(3, 2.2, 3)
+
+; --- telhado: uma varanda baixa, fora da NavigationRegion3D de propósito
+; (nó mais abaixo) e fora da massa sólida do prédio (que agora recua até
+; z=-19 exatamente para abrir espaço para isto) -- senão o "telhado"
+; ficaria enterrado dentro do prédio, inacessível mesmo pulando. ---
+
+[sub_resource type="BoxMesh" id="Mesh_telhado"]
+material = SubResource("Mat_telhado")
+size = Vector3(3, 0.3, 3)
+
+[sub_resource type="BoxShape3D" id="Shape_telhado"]
+size = Vector3(3, 0.3, 3)
+
+; --- viela estreita (parede baixa que aperta a passagem no braço oeste) ---
+
+[sub_resource type="BoxMesh" id="Mesh_viela"]
+material = SubResource("Mat_predio")
+size = Vector3(1, 3, 7)
+
+[sub_resource type="BoxShape3D" id="Shape_viela"]
+size = Vector3(1, 3, 7)
+
+[sub_resource type="BoxShape3D" id="Shape_chao_full"]
 size = Vector3(60, 0.5, 60)
-
-[sub_resource type="BoxShape3D" id="Shape_chao"]
-size = Vector3(60, 0.5, 60)
-
-[sub_resource type="BoxMesh" id="Mesh_obst"]
-material = SubResource("Mat_obst")
-size = Vector3(2.5, 3, 2.5)
-
-[sub_resource type="BoxShape3D" id="Shape_obst"]
-size = Vector3(2.5, 3, 2.5)
-
-[sub_resource type="BoxMesh" id="Mesh_plat"]
-material = SubResource("Mat_plat")
-size = Vector3(12, 1.5, 12)
-
-[sub_resource type="BoxShape3D" id="Shape_plat"]
-size = Vector3(12, 1.5, 12)
-
-[sub_resource type="BoxMesh" id="Mesh_rampa"]
-material = SubResource("Mat_plat")
-size = Vector3(6, 0.4, 8.2)
-
-[sub_resource type="BoxShape3D" id="Shape_rampa"]
-size = Vector3(6, 0.4, 8.2)
-
-[sub_resource type="BoxShape3D" id="Shape_parede"]
-size = Vector3(62, 6, 1)
 
 [node name="Arena" type="Node3D"]
 
@@ -83,192 +252,537 @@ directional_shadow_max_distance = 80.0
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = ExtResource("4_nav")
 
-[node name="Chao" type="StaticBody3D" parent="NavigationRegion3D"]
+; ── PRAÇA (nível −1.0 m) ───────────────────────────────────────────────
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Chao"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
-mesh = SubResource("Mesh_chao")
+[node name="Praca" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Chao"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
-shape = SubResource("Shape_chao")
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Praca"]
+mesh = SubResource("Mesh_praca")
 
-[node name="Plataforma" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0.75, -16)
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Praca"]
+shape = SubResource("Shape_praca")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Plataforma"]
-mesh = SubResource("Mesh_plat")
+[node name="RampaNorte_D0" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -1.125, -6.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D0"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D0"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Plataforma"]
-shape = SubResource("Shape_plat")
+[node name="RampaNorte_D1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -1.0, -7.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D1"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D1"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Rampa" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 0.9829, 0.1843, 0, -0.1843, 0.9829, -16, 0.548, -6.007)
+[node name="RampaNorte_D2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.875, -8.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D2"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D2"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Rampa"]
-mesh = SubResource("Mesh_rampa")
+[node name="RampaNorte_D3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.75, -9.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D3"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D3"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Rampa"]
-shape = SubResource("Shape_rampa")
+[node name="RampaNorte_D4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.625, -10.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D4"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D4"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Obstaculo1" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -4)
+[node name="RampaNorte_D5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.5, -11.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D5"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D5"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo1"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaNorte_D6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.375, -12.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D6"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D6"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo1"]
-shape = SubResource("Shape_obst")
+[node name="RampaNorte_D7" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.25, -13.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaNorte_D7"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaNorte_D7"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Obstaculo2" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.5, 9)
+[node name="RampaSul_D0" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.125, 6.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D0"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D0"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo2"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaSul_D1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.0, 7.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D1"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D1"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo2"]
-shape = SubResource("Shape_obst")
+[node name="RampaSul_D2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.875, 8.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D2"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D2"]
+shape = SubResource("Shape_degrau_ns")
 
+[node name="RampaSul_D3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, 9.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D3"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D3"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Obstaculo4" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 1.5, -3)
+[node name="RampaSul_D4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.625, 10.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D4"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D4"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo4"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaSul_D5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 11.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D5"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D5"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo4"]
-shape = SubResource("Shape_obst")
+[node name="RampaSul_D6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.375, 12.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D6"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D6"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Obstaculo5" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.5, -14)
+[node name="RampaSul_D7" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 13.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaSul_D7"]
+mesh = SubResource("Mesh_degrau_ns")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaSul_D7"]
+shape = SubResource("Shape_degrau_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo5"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaLeste_D0" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, -1.125, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D0"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D0"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo5"]
-shape = SubResource("Shape_obst")
+[node name="RampaLeste_D1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, -1.0, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D1"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D1"]
+shape = SubResource("Shape_degrau_lo")
 
+[node name="RampaLeste_D2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, -0.875, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D2"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D2"]
+shape = SubResource("Shape_degrau_lo")
 
+[node name="RampaLeste_D3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, -0.75, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D3"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D3"]
+shape = SubResource("Shape_degrau_lo")
 
+[node name="RampaLeste_D4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, -0.625, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D4"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D4"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Obstaculo9" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.5, -6)
+[node name="RampaLeste_D5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, -0.5, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D5"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D5"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo9"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaLeste_D6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, -0.375, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D6"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D6"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo9"]
-shape = SubResource("Shape_obst")
+[node name="RampaLeste_D7" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, -0.25, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaLeste_D7"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaLeste_D7"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Obstaculo10" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1.5, 1.5)
+[node name="RampaOeste_D0" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, -1.125, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D0"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D0"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo10"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaOeste_D1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, -1.0, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D1"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D1"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo10"]
-shape = SubResource("Shape_obst")
+[node name="RampaOeste_D2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, -0.875, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D2"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D2"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Obstaculo11" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1.5, -9.5)
+[node name="RampaOeste_D3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, -0.75, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D3"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D3"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo11"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaOeste_D4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, -0.625, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D4"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D4"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo11"]
-shape = SubResource("Shape_obst")
+[node name="RampaOeste_D5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.5, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D5"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D5"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Obstaculo12" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -7)
+[node name="RampaOeste_D6" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, -0.375, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D6"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D6"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo12"]
-mesh = SubResource("Mesh_obst")
+[node name="RampaOeste_D7" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, -0.25, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RampaOeste_D7"]
+mesh = SubResource("Mesh_degrau_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RampaOeste_D7"]
+shape = SubResource("Shape_degrau_lo")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo12"]
-shape = SubResource("Shape_obst")
+; ── RUAS (nível 0.0 m) ─────────────────────────────────────────────────
 
-[node name="Obstaculo13" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 1.5, 8.5)
+[node name="RuaNorteOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.25, -13.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteOeste"]
+mesh = SubResource("Mesh_arm_norte_o")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaNorteOeste"]
+shape = SubResource("Shape_arm_norte_o")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo13"]
-mesh = SubResource("Mesh_obst")
+[node name="RuaNorteLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, -0.25, -13.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteLeste"]
+mesh = SubResource("Mesh_arm_norte_l")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaNorteLeste"]
+shape = SubResource("Shape_arm_norte_l")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo13"]
-shape = SubResource("Shape_obst")
+[node name="RuaNorteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.25, -16.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteNotch"]
+mesh = SubResource("Mesh_arm_notch_norte")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaNorteNotch"]
+shape = SubResource("Shape_arm_notch_norte")
 
-[node name="Obstaculo14" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.5, -10)
+[node name="RuaSulOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, -0.25, 12)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulOeste"]
+mesh = SubResource("Mesh_arm_side_sul")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaSulOeste"]
+shape = SubResource("Shape_arm_side_sul")
 
-[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Obstaculo14"]
-mesh = SubResource("Mesh_obst")
+[node name="RuaSulLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, -0.25, 12)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulLeste"]
+mesh = SubResource("Mesh_arm_side_sul")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaSulLeste"]
+shape = SubResource("Shape_arm_side_sul")
 
-[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Obstaculo14"]
-shape = SubResource("Shape_obst")
+[node name="RuaSulNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 15)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulNotch"]
+mesh = SubResource("Mesh_arm_notch_sul")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaSulNotch"]
+shape = SubResource("Shape_arm_notch_sul")
 
-[node name="Bounds" type="StaticBody3D" parent="."]
+[node name="RuaOesteSul" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.25, -5.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteSul"]
+mesh = SubResource("Mesh_arm_side_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaOesteSul"]
+shape = SubResource("Shape_arm_side_lo")
 
-[node name="Norte" type="CollisionShape3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -30.5)
-shape = SubResource("Shape_parede")
+[node name="RuaOesteNorte" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.25, 5.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteNorte"]
+mesh = SubResource("Mesh_arm_side_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaOesteNorte"]
+shape = SubResource("Shape_arm_side_lo")
 
-[node name="Sul" type="CollisionShape3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 30.5)
-shape = SubResource("Shape_parede")
+[node name="RuaOesteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, -0.25, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteNotch"]
+mesh = SubResource("Mesh_arm_notch_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaOesteNotch"]
+shape = SubResource("Shape_arm_notch_lo")
 
-[node name="Oeste" type="CollisionShape3D" parent="Bounds"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -30.5, 3, 0)
-shape = SubResource("Shape_parede")
+[node name="RuaLesteSul" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, -5.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteSul"]
+mesh = SubResource("Mesh_arm_side_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaLesteSul"]
+shape = SubResource("Shape_arm_side_lo")
 
-[node name="Leste" type="CollisionShape3D" parent="Bounds"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 30.5, 3, 0)
-shape = SubResource("Shape_parede")
+[node name="RuaLesteNorte" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, 5.5)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteNorte"]
+mesh = SubResource("Mesh_arm_side_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaLesteNorte"]
+shape = SubResource("Shape_arm_side_lo")
+
+[node name="RuaLesteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -0.25, 0)
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteNotch"]
+mesh = SubResource("Mesh_arm_notch_lo")
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/RuaLesteNotch"]
+shape = SubResource("Shape_arm_notch_lo")
+
+; ── CALÇADAS (nível +0.2 m), flanqueando a praça a leste/oeste ─────────
+
+[node name="CalcadaOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, -0.05, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/CalcadaOeste"]
+mesh = SubResource("Mesh_calcada")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/CalcadaOeste"]
+shape = SubResource("Shape_calcada")
+
+[node name="CalcadaLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, -0.05, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/CalcadaLeste"]
+mesh = SubResource("Mesh_calcada")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/CalcadaLeste"]
+shape = SubResource("Shape_calcada")
+
+; ── OBJETOS ESCALÁVEIS (rua norte / rua sul) ────────────────────────────
+; Cada um fica numa faixa de X própria, sem disputar espaço com a RampaNorte
+; (que ocupa x ∈ [-7,-1]) -- ver a Implementação do ticket 21.
+
+[node name="Conteiner" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.75, -12)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Conteiner"]
+mesh = SubResource("Mesh_conteiner")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Conteiner"]
+shape = SubResource("Shape_conteiner")
+
+[node name="Onibus" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.65, -12)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Onibus"]
+mesh = SubResource("Mesh_onibus")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Onibus"]
+shape = SubResource("Shape_onibus")
+
+[node name="Andaime" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.75, -11.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Andaime"]
+mesh = SubResource("Mesh_andaime")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Andaime"]
+shape = SubResource("Shape_andaime")
+
+[node name="Saliencia" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.1, -14.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Saliencia"]
+mesh = SubResource("Mesh_saliencia")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Saliencia"]
+shape = SubResource("Shape_saliencia")
+
+[node name="Cacamba" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.6, 12)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Cacamba"]
+mesh = SubResource("Mesh_cacamba")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/Cacamba"]
+shape = SubResource("Shape_cacamba")
+
+; ── VIELA ESTREITA (aperta o braço oeste perto da esquina sul) ─────────
+
+[node name="VielaParede" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 1.5, 12.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/VielaParede"]
+mesh = SubResource("Mesh_viela")
+
+[node name="Col" type="CollisionShape3D" parent="NavigationRegion3D/VielaParede"]
+shape = SubResource("Shape_viela")
+
+; ── ligações de navegação para os saltos que os inimigos também fazem ──
+
+[node name="LigacaoRuaOnibus" type="NavigationLink3D" parent="NavigationRegion3D"]
+start_position = Vector3(6, 0.2, -10)
+end_position = Vector3(6, 1.3, -12)
+bidirectional = true
+
+[node name="LigacaoRuaConteiner" type="NavigationLink3D" parent="NavigationRegion3D"]
+start_position = Vector3(-11, 0.2, -10)
+end_position = Vector3(-11, 1.5, -12)
+bidirectional = true
+
+[node name="LigacaoOnibusAndaime" type="NavigationLink3D" parent="NavigationRegion3D"]
+start_position = Vector3(8.5, 1.3, -12)
+end_position = Vector3(9.5, 1.5, -11.5)
+bidirectional = true
+
+; Sem ligação do andaime até a saliência de propósito: a saliência é o
+; último degrau da rota do JOGADOR até o telhado (spec 17 §5 -- "refúgio
+; real do jogador, alcançável só por ele"). Deixar o inimigo subir até ali
+; também o colocaria literalmente encostado na borda do telhado, esvaziando
+; o refúgio mesmo sem pisar nele.
+
+[node name="LigacaoRuaCacamba" type="NavigationLink3D" parent="NavigationRegion3D"]
+start_position = Vector3(6, 0.2, 10)
+end_position = Vector3(6, 1.2, 12)
+bidirectional = true
+
+; ── PRÉDIOS (limite; fora da área jogável, sem parede invisível) ───────
+; PredioNorte recua até z=-19 (não -16 como os outros três) para abrir o
+; espaço da varanda/telhado sem enterrá-la dentro da massa sólida.
+
+[node name="PredioNorte" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -26)
+
+[node name="Mesh" type="MeshInstance3D" parent="PredioNorte"]
+mesh = SubResource("Mesh_predio_ns")
+
+[node name="Col" type="CollisionShape3D" parent="PredioNorte"]
+shape = SubResource("Shape_predio_ns")
+
+[node name="PredioSul" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 23)
+
+[node name="Mesh" type="MeshInstance3D" parent="PredioSul"]
+mesh = SubResource("Mesh_predio_ns")
+
+[node name="Col" type="CollisionShape3D" parent="PredioSul"]
+shape = SubResource("Shape_predio_ns")
+
+[node name="PredioOeste" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="PredioOeste"]
+mesh = SubResource("Mesh_predio_lo")
+
+[node name="Col" type="CollisionShape3D" parent="PredioOeste"]
+shape = SubResource("Shape_predio_lo")
+
+[node name="PredioLeste" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="PredioLeste"]
+mesh = SubResource("Mesh_predio_lo")
+
+[node name="Col" type="CollisionShape3D" parent="PredioLeste"]
+shape = SubResource("Shape_predio_lo")
+
+; ── TELHADO -- de propósito FORA da NavigationRegion3D (spec 17 §5): ───
+; refúgio real do jogador, nunca do bake do inimigo. Encostado na fachada
+; recuada do PredioNorte (z=-19) e tocando a Saliencia (z=-16) sem
+; sobrepor nenhuma das duas -- ver o comentário do Mesh_telhado acima.
+
+[node name="Telhado" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 2.85, -17.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="Telhado"]
+mesh = SubResource("Mesh_telhado")
+
+[node name="Col" type="CollisionShape3D" parent="Telhado"]
+shape = SubResource("Shape_telhado")
 
 [node name="GroundPlane" type="Area3D" parent="."]
 collision_layer = 256
 collision_mask = 0
 
 [node name="Col" type="CollisionShape3D" parent="GroundPlane"]
-shape = SubResource("Shape_chao")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+shape = SubResource("Shape_chao_full")
 
 [node name="PlayerSpawn" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.1, 12)
 
 [node name="SpawnPoints" type="Node3D" parent="."]
 
 [node name="Spawn1" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, -12)
 
 [node name="Spawn2" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.1, -12)
 
 [node name="Spawn3" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.1, 0)
 
 [node name="Spawn4" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, 0)
 
 [node name="Spawn5" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.1, 12)
 
 [node name="Spawn6" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, 14)
 
 [node name="Spawn7" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
 
 [node name="Spawn8" type="Marker3D" parent="SpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -17.5)
 
 [node name="Jogador" parent="." instance=ExtResource("5_pj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.1, 12)
 
 [node name="Manequim1" parent="." instance=ExtResource("6_alvo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.1, 10)
 
 [node name="Manequim2" parent="." instance=ExtResource("6_alvo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.1, -12)
 
 [node name="Manequim3" parent="." instance=ExtResource("6_alvo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, -12)
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("1_rig")
@@ -278,3 +792,8 @@ CameraPath = NodePath("CombatCamera")
 
 [node name="CombatCamera" type="Camera3D" parent="CameraRig"]
 script = ExtResource("2_cam")
+
+[node name="CameraOcclusionFader" type="Node" parent="CameraRig"]
+script = ExtResource("7_fade")
+CameraPath = NodePath("../CombatCamera")
+TargetPath = NodePath("../../Jogador")

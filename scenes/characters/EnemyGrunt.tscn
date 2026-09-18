@@ -84,12 +84,19 @@ script = ExtResource("7_telegrafo")
 MeshPath = NodePath("../Corpo")
 TelegraphColor = Color(1, 0.35, 0.1, 1)
 
+; path_desired_distance 1.0, não o padrão 0.4 m: o navmesh bakeado arredonda
+; a altura pelo cell_height do recast (ticket 21, arena com praça rebaixada
+; a -1.0 m bakeando a ~-0.5 m) -- com 0.4 m, esse desnível de verdade x
+; navmesh sozinho já excede a distância "cheguei", e o agente nunca avança
+; do primeiro ponto do caminho (fica parado onde nasceu). 1.0 m dá folga
+; confortável acima do pior desnível observado, sem afetar a distância de
+; PARADA de verdade (target_desired_distance, abaixo, cobre isso).
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 radius = 0.5
 avoidance_enabled = true
 max_neighbors = 8
 neighbor_distance = 4.0
-path_desired_distance = 0.4
+path_desired_distance = 1.0
 target_desired_distance = 0.4
 
 [node name="NavigationMotor" type="Node" parent="."]

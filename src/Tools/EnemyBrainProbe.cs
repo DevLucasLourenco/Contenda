@@ -161,13 +161,13 @@ public sealed partial class EnemyBrainProbe : Node
             // em vez de nunca perceber através da parede.
             Resetar();
 
-            // Obstaculo1 (Arena.tscn): caixa de 2,5×3×2,5 m centrada em
-            // (8, 1.5, -4) -- alta o bastante para bloquear a visão na
-            // altura dos olhos. Jogador e grunt em lados opostos, 6 m do
-            // centro cada, 12 m entre si -- dentro do raio de detecção
+            // VielaParede (Arena.tscn, ticket 21): parede de 1×3×7 m em
+            // x ∈ [-12, -11] -- alta o bastante para bloquear a visão na
+            // altura dos olhos. Jogador e grunt em lados opostos dela, 6 m
+            // do centro cada, 6 m entre si -- dentro do raio de detecção
             // (22 m), mas sem linha de visão nenhuma.
-            Teleportar(_jogador!, new Vector3(8f, 0.1f, -10f));
-            Teleportar(_grunt!, new Vector3(8f, 0.1f, 2f));
+            Teleportar(_jogador!, new Vector3(-14f, 0.1f, 12.5f));
+            Teleportar(_grunt!, new Vector3(-8f, 0.1f, 12.5f));
             return;
         }
 

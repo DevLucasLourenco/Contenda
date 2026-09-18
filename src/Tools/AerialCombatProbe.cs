@@ -43,6 +43,15 @@ public sealed partial class AerialCombatProbe : Node
     private const int QuadrosParaResolverGolpe = 30;
     private const int QuadrosDeTimeoutDoMergulho = 180;
 
+    /// <summary>
+    /// Ponto de chão plano e livre na RuaLesteNorte (Arena.tscn, ticket 21) --
+    /// longe da praça rebaixada (que cobre a origem do mundo, -1,0 m, não
+    /// 0,0 m) e das quatro rampas, com folga de sobra para os testes deste
+    /// probe caírem/derivarem alguns metros sem sair do chão plano nem
+    /// encostar no prédio leste (x = 16).
+    /// </summary>
+    private static readonly Vector3 AreaAberta = new(13f, 0f, 6f);
+
     private enum Fase { Dados, SoloVsAereo, ImpulsoEGravidade, TetoDeJuggle, Mergulho }
 
     private readonly List<string> _falhas = [];
@@ -149,8 +158,11 @@ public sealed partial class AerialCombatProbe : Node
         // acabou de entrar na árvore (Arena.tscn) e o `IsGrounded` cacheado
         // do MovementComponent só reflete o chão de verdade depois de pelo
         // menos um MoveAndSlide -- pedir o golpe cedo demais correria o
-        // risco de pegar esse acomodamento inicial no meio.
-        const int quadroDoPedido = 5;
+        // risco de pegar esse acomodamento inicial no meio. 10, não 5: a
+        // arena urbana (ticket 21) tem bem mais colisores estáticos para o
+        // servidor de física assentar no boot (ver o mesmo ajuste em
+        // CriticalProbe).
+        const int quadroDoPedido = 10;
 
         if (_quadroDaFase == quadroDoPedido)
         {
@@ -197,8 +209,8 @@ public sealed partial class AerialCombatProbe : Node
 
         if (_quadroDaFase == 1)
         {
-            TeleportarNoAr(_jogador!, new Vector3(0f, 8f, 0f));
-            TeleportarNoAr(_alvo!, new Vector3(0f, 8f, -1.2f));
+            TeleportarNoAr(_jogador!, AreaAberta + new Vector3(0f, 8f, 0f));
+            TeleportarNoAr(_alvo!, AreaAberta + new Vector3(0f, 8f, -1.2f));
             return;
         }
 
@@ -351,9 +363,9 @@ public sealed partial class AerialCombatProbe : Node
             // parado no lugar, aguenta -- colocá-lo bem embaixo do início da
             // queda cobre a deriva inteira com folga, sem precisar prever a
             // física exatamente.
-            TeleportarNoAr(_jogador!, new Vector3(0f, 3f, 0f));
+            TeleportarNoAr(_jogador!, AreaAberta + new Vector3(0f, 3f, 0f));
             _jogador!.Rotation = Vector3.Zero;
-            TeleportarNoAr(_alvo!, new Vector3(0f, 0.1f, 0f));
+            TeleportarNoAr(_alvo!, AreaAberta + new Vector3(0f, 0.1f, 0f));
             return;
         }
 
@@ -405,9 +417,9 @@ public sealed partial class AerialCombatProbe : Node
     private void TeleportarNoChao()
     {
         _jogador!.Velocity = Vector3.Zero;
-        _jogador.GlobalPosition = new Vector3(0f, 0.1f, 0f);
+        _jogador.GlobalPosition = AreaAberta + new Vector3(0f, 0.1f, 0f);
         _alvo!.Velocity = Vector3.Zero;
-        _alvo.GlobalPosition = new Vector3(0f, 0.1f, 1.5f);
+        _alvo.GlobalPosition = AreaAberta + new Vector3(0f, 0.1f, 1.5f);
     }
 
     private void Reposicionar()
