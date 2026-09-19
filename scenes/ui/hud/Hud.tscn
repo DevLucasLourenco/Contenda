@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
 [ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://data/characters/gunslinger.tres" id="5_gs"]
 [ext_resource type="Script" path="res://src/UI/HUD/AbilityGuide.cs" id="6_guia"]
 [ext_resource type="Script" path="res://src/UI/HUD/BossHealthBar.cs" id="7_chefe"]
+[ext_resource type="Script" path="res://src/UI/HUD/WaveBanner.cs" id="8_onda"]
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -118,3 +119,19 @@ offset_top = 24.0
 offset_right = 600.0
 offset_bottom = 48.0
 color = Color(0.6, 0.1, 0.5, 1)
+
+[node name="Onda" type="Control" parent="."]
+offset_left = 440.0
+offset_top = 160.0
+offset_right = 840.0
+offset_bottom = 220.0
+script = ExtResource("8_onda")
+LabelPath = NodePath("Texto")
+
+[node name="Texto" type="Label" parent="Onda"]
+offset_right = 400.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "ONDA 1"

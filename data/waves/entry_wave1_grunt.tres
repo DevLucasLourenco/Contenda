@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EnemySpawnEntry" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/GameModes/Horde/EnemySpawnEntry.cs" id="1_entry"]
+[ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="2_grunt"]
+
+[resource]
+script = ExtResource("1_entry")
+Enemy = ExtResource("2_grunt")
+Count = 5
+Weight = 1.0
+DelayBeforeFirst = 0.0

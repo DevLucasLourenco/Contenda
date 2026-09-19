@@ -88,7 +88,7 @@ public sealed partial class EnemyPool : Node
     /// <c>_ativos</c> -- sem excluir a si mesmo, todo inimigo se
     /// "separaria" da própria posição, distância zero.
     /// </remarks>
-    public void ObterPosicoesAtivas(CharacterController excluir, List<Vector3> destino)
+    public void ObterPosicoesAtivas(CharacterController? excluir, List<Vector3> destino)
     {
         destino.Clear();
 

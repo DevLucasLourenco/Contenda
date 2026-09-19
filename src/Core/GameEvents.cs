@@ -46,6 +46,27 @@ public readonly record struct ProjectileFireEvent(
     bool IsCritical);
 
 /// <summary>
+/// Um inimigo morreu. Sem identidade nem posição de propósito -- o único
+/// assinante hoje (<c>WaveDirector</c>, ticket 27) só precisa CONTAR, nunca
+/// SABER QUEM; spec 09 §4/10 §4 é explícita que a contagem é "por evento
+/// EnemyKilled do GameEvents, não por varredura de cena a cada frame" -- o
+/// evento em si, não os dados que carrega, é o que resolve isso. Campos
+/// entram quando um assinante de verdade precisar deles (pontuação, ticket
+/// 29, por exemplo) -- adicioná-los agora seria dado para uma necessidade
+/// que ainda não existe.
+/// </summary>
+public readonly record struct EnemyKilledEvent;
+
+/// <summary>Uma onda começou e precisa anunciar o próprio nome na tela.</summary>
+/// <param name="DisplayName">O texto do banner, ex.: "ONDA 3".</param>
+public readonly record struct WaveAnnouncedEvent(string DisplayName);
+
+/// <summary>Um marcador de nascimento de inimigo precisa aparecer no chão, antes dele surgir de verdade.</summary>
+/// <param name="Position">Onde, no mundo.</param>
+/// <param name="Duration">Quanto tempo o marcador fica visível antes do inimigo aparecer.</param>
+public readonly record struct SpawnMarkerEvent(Vector3 Position, float Duration);
+
+/// <summary>
 /// Barramento para eventos entre sistemas sem relação direta — o abate de um
 /// inimigo chegando ao placar, por exemplo.
 /// </summary>
@@ -72,6 +93,15 @@ public sealed partial class GameEvents : Node
     /// <summary>Avisa que um projétil de habilidade precisa nascer.</summary>
     public event Action<ProjectileFireEvent>? ProjectileFireRequested;
 
+    /// <summary>Avisa que um inimigo morreu. Ticket 27.</summary>
+    public event Action<EnemyKilledEvent>? EnemyKilled;
+
+    /// <summary>Avisa que uma onda começou, para o banner na tela. Ticket 27.</summary>
+    public event Action<WaveAnnouncedEvent>? WaveAnnounced;
+
+    /// <summary>Avisa que um marcador de nascimento precisa aparecer no chão. Ticket 27.</summary>
+    public event Action<SpawnMarkerEvent>? SpawnMarkerRequested;
+
     public override void _Ready()
     {
         ServiceLocator.Register(this);
@@ -83,4 +113,13 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="ProjectileFireRequested"/>.</summary>
     public void RaiseProjectileFire(in ProjectileFireEvent evento) => ProjectileFireRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="EnemyKilled"/>.</summary>
+    public void RaiseEnemyKilled(in EnemyKilledEvent evento) => EnemyKilled?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="WaveAnnounced"/>.</summary>
+    public void RaiseWaveAnnounced(in WaveAnnouncedEvent evento) => WaveAnnounced?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="SpawnMarkerRequested"/>.</summary>
+    public void RaiseSpawnMarker(in SpawnMarkerEvent evento) => SpawnMarkerRequested?.Invoke(evento);
 }

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/GameModes/Horde/WaveDefinition.cs" id="1_wave"]
+[ext_resource type="Resource" path="res://data/waves/entry_wave2_grunt.tres" id="2_entry"]
+
+[resource]
+script = ExtResource("1_wave")
+DisplayName = "ONDA 2"
+Entries = [ExtResource("2_entry")]
+SpawnInterval = 0.9
+MaxConcurrent = 6
+CompletionDelay = 4.0

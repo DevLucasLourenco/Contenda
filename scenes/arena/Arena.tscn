@@ -1,4 +1,4 @@
-[gd_scene load_steps=60 format=3]
+[gd_scene load_steps=62 format=3]
 
 [ext_resource type="Script" path="res://src/Camera/CameraRig.cs" id="1_rig"]
 [ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/characters/Character.tscn" id="5_pj"]
 [ext_resource type="PackedScene" path="res://scenes/debug/TrainingDummy.tscn" id="6_alvo"]
 [ext_resource type="Script" path="res://src/Camera/CameraOcclusionFader.cs" id="7_fade"]
+[ext_resource type="Script" path="res://src/GameModes/Horde/SpawnDirector.cs" id="8_spawndir"]
+[ext_resource type="Script" path="res://src/GameModes/Horde/WaveDirector.cs" id="9_wavedir"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
 sky_top_color = Color(0.35, 0.45, 0.62, 1)
@@ -797,3 +799,15 @@ script = ExtResource("2_cam")
 script = ExtResource("7_fade")
 CameraPath = NodePath("../CombatCamera")
 TargetPath = NodePath("../../Jogador")
+
+; ── Modo horda (ticket 27): inertes até alguém chamar WaveDirector.Begin.
+; SpawnDirector reaproveita SpawnPoints/Spawn1..8 (acima) como candidatos.
+
+[node name="SpawnDirector" type="Node" parent="."]
+script = ExtResource("8_spawndir")
+SpawnPointsPath = NodePath("../SpawnPoints")
+CameraPath = NodePath("../CameraRig/CombatCamera")
+
+[node name="WaveDirector" type="Node" parent="."]
+script = ExtResource("9_wavedir")
+SpawnDirectorPath = NodePath("../SpawnDirector")

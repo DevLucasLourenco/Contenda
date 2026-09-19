@@ -8,15 +8,15 @@ começa — com um anúncio na tela.
 
 **Status:** ready-for-agent
 
-- [ ] Os inimigos de uma onda aparecem espaçados no tempo, não todos de uma vez
-- [ ] **Nenhum inimigo nasce dentro do campo de visão imediato do jogador**
-- [ ] Nenhum nasce colado nele
-- [ ] Um marcador no chão avisa antes de o inimigo surgir
-- [ ] O recém-nascido fica brevemente invulnerável, para não morrer sem ser visto
-- [ ] Matar todos avança para a próxima onda, com um intervalo de respiro
-- [ ] O anúncio da onda aparece e some sozinho
-- [ ] A composição e o ritmo da onda vêm de arquivo de dados, não do código
-- [ ] **Um inimigo preso no cenário não trava a partida:** se não houver mais
+- [x] Os inimigos de uma onda aparecem espaçados no tempo, não todos de uma vez
+- [x] **Nenhum inimigo nasce dentro do campo de visão imediato do jogador**
+- [x] Nenhum nasce colado nele
+- [x] Um marcador no chão avisa antes de o inimigo surgir
+- [x] O recém-nascido fica brevemente invulnerável, para não morrer sem ser visto
+- [x] Matar todos avança para a próxima onda, com um intervalo de respiro
+- [x] O anúncio da onda aparece e some sozinho
+- [x] A composição e o ritmo da onda vêm de arquivo de dados, não do código
+- [x] **Um inimigo preso no cenário não trava a partida:** se não houver mais
       ninguém para matar por tempo demais, a onda avança assim mesmo
 
 ## Comments
@@ -27,3 +27,157 @@ termina — e vai acontecer.
 
 Contar inimigos varrendo a cena a cada quadro é caro e frágil. A contagem vem do
 evento de abate.
+
+## Implementação
+
+`WaveDirector`/`SpawnDirector` são novos, autocontidos, adicionados como
+filhos INERTES de `Arena.tscn` (nada acontece até alguém chamar
+`WaveDirector.Begin(waveSet)`) -- não construí `IGameMode`/`HordeGameMode`
+nem contagem regressiva/vitória/derrota (spec 10 §1-2): isso pertence ao
+ticket 28 ("cinco ondas, chefe e fim de partida"), que está logo depois na
+fila e vai chamar `Begin` de verdade a partir do `StartMatch` que ele
+constrói. Este ticket é só o LAÇO da onda em si, exatamente o próprio
+título.
+
+### Dados: `WaveDefinition`/`EnemySpawnEntry`/`WaveSetDefinition`
+
+Três `Resource` novos em `src/GameModes/Horde/`, na forma exata da spec 10
+§3, com uma omissão deliberada: `WaveDefinition.IsBossWave`/`MusicOverride`
+(também na spec) ficaram de fora, mesma disciplina que
+`EnemyDefinition` já segue para o resto do roster -- pertencem aos tickets
+28 (onda de chefe) e 36/M8 (áudio de verdade), e adicionar agora seria campo
+para um sistema que ainda não roda.
+
+`data/waves/waveset_default.tres` (o nome que a própria spec 10 §10 cita
+como critério de aceite: "trocar `waveset_default.tres` altera a progressão
+sem recompilar") tem 2 ondas, só de grunt -- `runner`/`shooter`/`brute`/
+`warlord` do roster completo da spec (§5-6) ainda não existem como
+personagem jogável em código (só `grunt.tscn`/`grunt.tres`, ticket 25), 
+então a progressão de 5 ondas da spec fica para quando esses tipos
+existirem. `WaveDirectorProbe` confere a FORMA do `.tres` de produção (ondas,
+entradas, contagens) sem simular as ondas inteiras -- rodar até o fim levaria
+minutos, não segundos.
+
+### `SpawnDirector`: onde nascer
+
+Três passadas, relaxando uma regra de cada vez (spec 10 §6): (1) dentro de
+`[MinDistanceFromPlayer, MaxDistanceFromPlayer]` do jogador E fora do
+frustum da câmera (`Camera3D.IsPositionInFrustum`, de graça do motor -- a
+câmera é fixa, o teste é barato como a spec promete); (2) só a distância, se
+nada sobrar; (3) qualquer ponto conhecido, se AINDA assim nada sobrar.
+"Nunca falha em spawnar" é literal.
+
+Os candidatos são os filhos de `SpawnPoints` (`Spawn1..8`, ticket 21) --
+não um array de `NodePath` um a um: Godot C# não exporta bem referência a
+nó em array, e enumerar os filhos de um container é o idiomatismo natural.
+Escolha ponderada (`SpawnPointMath.ChooseWeightedIndex`, testado em xUnit,
+sorteio injetado como parâmetro -- mesma disciplina de `CritMath.Rolar`) com
+peso reduzido para o ponto usado por último, contra a repetição.
+
+Cada pedido de spawn primeiro acende um marcador no chão
+(`GameEvents.SpawnMarkerRequested` -> `SpawnMarkerPool`, autoload pooled,
+mesmo desenho de `DamageNumberPool`), espera `TelegraphSeconds` (0,4 s), só
+DEPOIS chama `EnemyPool.Acquire` e concede `HealthComponent.GrantInvulnerability`
+(o mesmo mecanismo dos i-frames do dash, ticket 17) por
+`SpawnProtectionSeconds`.
+
+### `WaveDirector`: o laço
+
+`EnemiesRemaining = total planejado da onda − abatidos`, contado por
+`GameEvents.EnemyKilled` (novo, disparado em `EnemyBrain.AoMorrer`), nunca
+por varredura de cena -- spec 10 §4 e ticket 09 §4 são explícitos sobre
+isso. Zerar `EnemiesRemaining` só faz a onda avançar depois de
+`CompletionDelay` de respiro (`WaveCleared`/banner primeiro, depois a
+próxima `WaveStarted`).
+
+**Alçapão de inimigo preso**: `EnemiesRemaining == 0` sozinho NÃO significa
+"ninguém mais no mundo" -- um abate só libera o pool depois de
+`DeathDuration` (o corpo fica visível um instante, ticket 25), então
+`EnemyPool.ActiveCount` ainda mostrar alguém logo após o último abate é
+NORMAL, não travamento. O relógio de `StuckFallbackSeconds` (5 s, bem mais
+que o `DeathDuration` padrão de 1,2 s) só acumula enquanto essa discordância
+persistir; se o pool zerar antes disso (o caminho normal todo santo dia), a
+onda avança na hora, sem nunca tocar o alçapão. Só quando a discordância
+persiste além de 5 s (um abate que nunca chegou até aqui, ou um inimigo
+genuinamente preso) é que ele força o avanço, com aviso no log.
+
+Testado por SIMULAÇÃO da discordância, não por "nunca matar um inimigo
+vivo": um inimigo vivo que ninguém matou ainda NÃO é travamento (é o
+funcionamento normal de esperar a onda -- se qualquer inimigo vivo forçasse
+avanço, a própria regra "matar todos avança a onda" deixaria de existir).
+`WaveDirectorProbe` dispara `GameEvents.EnemyKilled` na mão, sem matar
+ninguém de verdade, para reproduzir a MESMA discordância que um abate
+perdido produziria, e prova que o alçapão reage a ela.
+
+### Banner de onda
+
+`WaveBanner` (novo `Control`, HUD) ouve `GameEvents.WaveAnnounced` sozinho,
+mesmo desenho de `BossHealthBar`/`DamageNumberPool` -- nenhum sistema de
+onda segura referência a ele. "Aparece e some sozinho" é literal: fica
+visível por `VisibleDuration`, depois se apaga sozinho ao longo de
+`FadeDuration`, sem ninguém mandar esconder.
+
+### O que não deu para verificar rigorosamente
+
+Nada além do já esperado para este tipo de sistema: tempo de frame/fps sob
+carga (sem profiler neste ambiente headless), e a progressão de 5 ondas da
+spec 10 §5 completa (precisa de `runner`/`shooter`/`brute`/`warlord`, que
+ainda não existem).
+
+### Code review
+
+Duas sub-agents em paralelo (Standards e Spec) revisaram o diff staged
+contra `docs/plans/convencoes-de-codigo.md`/o baseline de smells e contra
+este ticket + `docs/specs/10-modos-de-jogo-horde.md`. Achados reais,
+corrigidos:
+
+- **Teto global de 40 nunca aplicado.** Spec 10 §7 é explícita ("Inimigos
+  ativos simultâneos (teto duro): 40"), mas `WaveDirector` só respeitava
+  `WaveDefinition.MaxConcurrent` (um hint de balanceamento por onda, sem
+  trava nenhuma contra um `.tres` pedir mais que 40). Corrigido com
+  `WaveDirector.GlobalActiveCap` (padrão 40), aplicado via
+  `Mathf.Min(onda.MaxConcurrent, GlobalActiveCap)` antes de cada spawn.
+- **`WaveDirector` sem nenhuma cobertura xUnit**, apesar de spec 15 §1-2
+  pedir literalmente "WaveDirector avança com relógio simulado; fallback do
+  inimigo preso" como requisito de teste. A lógica de fase/tempo estava
+  toda inline no próprio `Node`, sem como isolar do Godot. Corrigido
+  extraindo dois POCOs testáveis, seguindo o mesmo molde de
+  `EnemyStateMachine`: `WaveClearTimer` (decide quando a onda está limpa e
+  quando o alçapão de inimigo preso deve disparar, 9 testes) e `SpawnQueue`
+  (decide qual entrada nasce a seguir entre concorrentes, 8 testes);
+  `WaveDirector` passou a só traduzir o resultado dos dois em ações de
+  engine.
+- **`EnemySpawnEntry.Weight` era um campo morto.** O dado existia e era
+  editável no `.tres`, mas nada lia nem aplicava o peso a uma escolha de
+  verdade -- todo spawn dentro de uma onda saía na mesma ordem sempre.
+  Corrigido: a extração do `SpawnQueue` (acima) passou a escolher a próxima
+  entrada por `SpawnPointMath.ChooseWeightedIndex` (o mesmo utilitário já
+  usado por `SpawnDirector` para pontos de spawn), com `Weight` agora
+  determinando de verdade a proporção de cada inimigo na onda.
+- **`WaveDefinition.EliteChance`, também um campo morto** (achado só pela
+  Standards review): existia no `.tres` e no `Resource`, mas nada neste
+  ticket lê ou aplica a chance a um spawn -- virar elite mudaria
+  `EnemyDefinition.IsElite`, um `Resource` COMPARTILHADO por todo `grunt`,
+  e fazer isso por instância exigiria um mecanismo de sobreposição que este
+  ticket não constrói. Corrigido removendo o campo (e as duas linhas
+  `EliteChance = 0.0` em `wave_1.tres`/`wave_2.tres`) em vez de deixar um
+  knob de editor sem efeito nenhum -- mesma regra que `EnemyDefinition` já
+  segue para o resto do roster ainda não implementado.
+- **Operadores `!` sem comentário e faltando `ArgumentNullException`** em
+  `WaveDirector`/`SpawnDirector`, contra convenções §6 (todo `!` precisa de
+  justificativa) e o padrão de guarda de nulo já usado no resto do projeto.
+  Corrigido: todos os `!` de `WaveDirector` viraram guardas
+  `is not { } x` (capturando o local para o resto do método, sem
+  null-forgiving nenhum); `Begin`/`RequestSpawn` ganharam
+  `ArgumentNullException.ThrowIfNull`.
+
+Não alterado, por ser exatamente o padrão estabelecido no resto de
+`src/Tools/` (mesma decisão já registrada no ticket 23): a duplicação de
+`Verificar`/`AvancarFase`/`Procurar` entre `WaveDirectorProbe.cs` e os
+outros probes -- extrair uma base compartilhada agora tocaria em todos os
+probes existentes por um ganho que não é deste ticket. A ÚNICA duplicação
+extraída foi a LOCAL, dentro do próprio `WaveDirectorProbe.cs`
+(`DetectarNovosSpawns`/`MatarTodosOsAtivos` repetiam o mesmo filtro
+"grunt de verdade, nascido pelo `SpawnDirector`, não boneco de treino, não
+estoque do pool" duas vezes) -- essa virou `GruntDaOndaOuNulo`, uma função
+só.

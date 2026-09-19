@@ -467,6 +467,13 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         if (Definition.IsBoss && ReferenceEquals(ServiceLocator.Session.BossBody, _contexto.Owner))
             ServiceLocator.Session.BossBody = null;
 
+        // Contagem de onda (ticket 27, spec 10 §4): por evento, nunca por
+        // varredura de cena a cada quadro. Aqui, não em EnemyPool.Release --
+        // Release só roda DEPOIS de DeathDuration inteiro (a "animação" de
+        // morte), e o WaveDirector precisa saber do abate na hora, não
+        // segundos depois.
+        ServiceLocator.Events.RaiseEnemyKilled(new EnemyKilledEvent());
+
         _temporizadorDeMorte = 0f;
         _liberado = false;
     }
