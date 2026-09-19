@@ -50,6 +50,16 @@ public sealed class WaveClearTimer
     /// último abate é NORMAL, não travamento -- o alçapão só acumula
     /// ENQUANTO essa discordância persistir, e o caminho comum (o pool zera
     /// antes do alçapão vencer) nunca o aciona.
+    ///
+    /// Escopo deliberadamente estreito: isto cobre só a discordância de
+    /// CONTAGEM (um <c>EnemyKilled</c> que não chegou até aqui -- bug), não
+    /// um inimigo genuinamente vivo e inalcançável (<paramref
+    /// name="enemiesRemaining"/> continua maior que zero enquanto ele não
+    /// morre, e o relógio de travado nem começa a contar nesse caso -- de
+    /// propósito, senão qualquer inimigo vivo forçaria o avanço da onda). O
+    /// caso "vivo, preso atrás de um obstáculo" é responsabilidade do
+    /// sistema de navegação do ticket 23, não deste relógio. Ver a seção
+    /// "Alçapão de inimigo preso" do ticket 27 para a leitura completa.
     /// </remarks>
     /// <param name="delta">Tempo do quadro, em segundos.</param>
     /// <param name="enemiesRemaining">Planejados mais ativos, menos abatidos -- o bookkeeping do dono.</param>

@@ -98,8 +98,26 @@ NORMAL, não travamento. O relógio de `StuckFallbackSeconds` (5 s, bem mais
 que o `DeathDuration` padrão de 1,2 s) só acumula enquanto essa discordância
 persistir; se o pool zerar antes disso (o caminho normal todo santo dia), a
 onda avança na hora, sem nunca tocar o alçapão. Só quando a discordância
-persiste além de 5 s (um abate que nunca chegou até aqui, ou um inimigo
-genuinamente preso) é que ele força o avanço, com aviso no log.
+persiste além de 5 s (um abate que nunca chegou até aqui -- evento perdido,
+bug) é que ele força o avanço, com aviso no log.
+
+**Leitura honesta do escopo, mais estreita que o exemplo motivador do
+ticket.** O comentário original deste ticket usa "um inimigo perdido atrás
+de um carro" para justificar o critério -- mas um inimigo assim está VIVO
+e `EnemiesRemaining` continua maior que zero enquanto ele não morre
+(`TickWaitingForClear` nem começa a contar o relógio de travado nesse
+caso, por design: se qualquer inimigo vivo disparasse o alçapão, a regra
+"matar todos avança a onda" deixaria de existir). Este alçapão cobre
+literalmente só a discordância de CONTAGEM (`EnemiesRemaining == 0` mas o
+pool ainda ativo) -- um abate que o evento `GameEvents.EnemyKilled` não
+propagou por algum bug. Ele NÃO resolve, sozinho, um inimigo genuinamente
+vivo e inalcançável atrás de geometria: essa parte do problema é
+responsabilidade do sistema de navegação do ticket 23 (convergência
+espalhada + escalada por ligações de `NavigationLink3D`), que existe
+justamente para um inimigo sempre conseguir alcançar o jogador em vez de
+ficar fisicamente preso atrás de um obstáculo. Os dois mecanismos juntos
+cobrem o exemplo do carro; nenhum dos dois sozinho cobriria as duas
+metades do problema (contagem perdida vs. rota impossível).
 
 Testado por SIMULAÇÃO da discordância, não por "nunca matar um inimigo
 vivo": um inimigo vivo que ninguém matou ainda NÃO é travamento (é o
@@ -170,6 +188,27 @@ corrigidos:
   `is not { } x` (capturando o local para o resto do método, sem
   null-forgiving nenhum); `Begin`/`RequestSpawn` ganharam
   `ArgumentNullException.ThrowIfNull`.
+- **Escopo do alçapão de inimigo preso documentado de forma otimista
+  demais** (Spec review): a seção "Alçapão de inimigo preso" original
+  citava "um abate que nunca chegou até aqui, ou um inimigo genuinamente
+  preso" como os dois gatilhos do alçapão -- mas um inimigo genuinamente
+  vivo e preso NUNCA aciona esse relógio (`EnemiesRemaining` continua maior
+  que zero enquanto ele não morre, por design, senão "matar todos avança a
+  onda" deixaria de valer). É uma leitura mais estreita que o próprio
+  exemplo motivador do ticket ("um inimigo perdido atrás de um carro", nos
+  Comments) -- que descreve um inimigo VIVO e inalcançável, não um abate
+  perdido. Corrigido reescrevendo a seção para ser honesta sobre o
+  DE-escopo: o alçapão cobre só a discordância de contagem; o caso "vivo,
+  preso atrás de obstáculo" é responsabilidade do sistema de navegação do
+  ticket 23 (convergência espalhada + ligações de `NavigationLink3D`), não
+  deste relógio -- os dois mecanismos juntos, não um sozinho, cobrem o
+  exemplo do carro. Sem mudança de comportamento, só de documentação (ticket
+  27 e o doc comment de `WaveClearTimer.TickWaitingForClear`).
+
+A sub-agent Standards desta rodada ainda não retornou ao fechar esta seção;
+os quatro achados acima (teto global, cobertura xUnit, `Weight` morto,
+escopo do alçapão) vieram da sub-agent Spec. Se a Standards trouxer algo
+novo depois, entra como um adendo nesta mesma seção.
 
 Não alterado, por ser exatamente o padrão estabelecido no resto de
 `src/Tools/` (mesma decisão já registrada no ticket 23): a duplicação de
