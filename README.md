@@ -1,75 +1,82 @@
 # Contenda
 
-Contenda é um jogo de **ação em arena, 2.5D**, feito em **Godot 4.7.x .NET
-(C#)**: o jogador escolhe um entre dois arquétipos e sobrevive a ondas
-crescentes de inimigos numa arena 3D, executando habilidades por **sequências
-de movimento** (WASD) em vez de teclas de atalho — a mecânica que o projeto
-existe para provar.
+Contenda é um jogo de ação em arena para PC, desenvolvido com Godot 4.7 .NET e C#. O jogador escolhe um personagem, enfrenta ondas de inimigos e combina ataques, habilidades e transformações para sobreviver.
 
-Mundo, personagens, inimigos e colisão são **100% 3D**; o "2.5D" vem só da
-apresentação — uma `Camera3D` travada num ângulo superior, que segue o jogador
-e nunca gira. Referências de tom: *V Rising*, *Battlerite*, *Darksiders
-Genesis* — não *Dragon Ball FighterZ*: não há plano de luta 2D nem sprites.
+O projeto está sendo construído como um jogo single-player. A primeira versão pretende oferecer uma partida completa no modo Horde, com uma arena urbana, dois personagens jogáveis e uma progressão de ondas que culmina em um chefe.
 
-> **Nome:** a concepção usava o codinome *Infinity Wars*; o repositório e o
-> namespace (`Contenda.*`) já adotam **Contenda**.
+## Como o jogo funciona
 
-## Os dois arquétipos
+O jogador se movimenta pela arena, enfrenta grupos de inimigos e administra os recursos do personagem durante cada onda. A câmera acompanha a ação a partir de um ângulo superior fixo, deixando a leitura do espaço e dos inimigos no centro da experiência.
 
-| | Arma | M1 (ataque básico) faz |
-|---|---|---|
-| **Swordsman** | Espada | combo corpo a corpo de três golpes |
-| **Gunslinger** | Revólver | tiro instantâneo (hitscan), munição e recarga |
+As principais mecânicas planejadas são:
 
-O mesmo botão, a mesma `CharacterController`, o mesmo `CombatComponent` — o
-que muda é qual `Resource` (`.tres`) está equipado. Trocar de personagem nunca
-passa por um `if` no código; é a regra não negociável nº 3 abaixo.
+- **Ataques básicos:** o Swordsman usa uma espada e encadeia um combo corpo a corpo; o Gunslinger usa um revólver com tiros hitscan, munição e recarga.
+- **Habilidades por sequência:** WASD movimenta o personagem e também registra sequências curtas de comandos. Ao confirmar com M2, a sequência correspondente executa uma habilidade. Por exemplo, `W W` pode executar um avanço ofensivo e `S W` pode lançar um inimigo para o alto.
+- **Mana e transformações:** o jogador seleciona uma transformação com o scroll e a ativa com M3. A transformação consome mana na ativação e continua drenando mana enquanto estiver ativa, criando uma decisão entre manter o poder ou guardar recurso para habilidades.
+- **Mobilidade e combate aéreo:** o pulo e o dash ajudam a atravessar a arena, escapar de ataques e continuar combos no ar. O dash possui recarga e uma breve janela de invulnerabilidade.
+- **Críticos e impacto:** ataques podem causar golpes críticos, com feedback visual e sonoro próprio. Inimigos lançados podem ser perseguidos no ar, mas o sistema limita a duração desses combos para manter o combate controlado.
+- **Ondas de inimigos:** cada onda define sua composição, ritmo de surgimento e limite de inimigos ativos. O jogador precisa lidar com inimigos que perseguem, atacam, cercam e ocupam diferentes áreas da arena.
 
-## Pilares
+## Personagens
 
-1. **É 3D de verdade.** `CharacterBody3D`, `NavigationRegion3D`, `Camera3D`.
-   Nenhum nó 2D no gameplay — só `Control`/`CanvasLayer` na UI.
-2. **Composição, não herança.** Personagem é um contêiner de componentes
-   (`HealthComponent`, `CombatComponent`, `MovementComponent`, …). Jogador e
-   inimigo usam os mesmos. Nada de `Player.cs` de 4.000 linhas nem de
-   `if (personagem == swordsman)`.
-3. **Data-driven.** Habilidades, armas, transformações, personagens, inimigos
-   e ondas são `Resource` (`.tres`). Adicionar ou balancear conteúdo não toca
-   em código C#.
-4. **Sem GDScript.** 100% C#, inclusive tooling e scripts de editor.
-5. **Núcleo testável fora da engine.** Regras puras — combo, dano, travas de
-   ação, cadência de tiro — são POCOs com testes xUnit, sem abrir o Godot.
+O MVP começa com dois arquétipos que compartilham o mesmo vocabulário de comandos, mas exigem estilos de jogo diferentes:
+
+| Personagem | Estilo | Ataque básico | Transformação |
+|---|---|---|---|
+| **Swordsman** | combate próximo, dano alto e resistência maior | combo de espada | Berserker |
+| **Gunslinger** | distância, mobilidade e controle de espaço | tiros de revólver | Overdrive |
+
+As mesmas sequências podem representar funções semelhantes nos dois personagens. Assim, o jogador aprende uma linguagem de combate que permanece familiar ao trocar de arquétipo, enquanto as armas e os efeitos mudam a forma de jogar.
+
+## Estrutura do projeto
+
+O conteúdo do jogo é organizado em recursos editáveis (`.tres`), incluindo personagens, armas, habilidades, transformações, inimigos e ondas. A lógica de gameplay é separada em componentes de movimento, vida, mana, combate, habilidades, IA e targeting.
+
+Essa estrutura permite testar regras importantes fora da engine e ajustar conteúdo sem espalhar valores de balanceamento pelo código. A pasta `tests/` contém os testes automatizados; as cenas em `scenes/debug/` servem para validar sistemas isolados durante o desenvolvimento.
+
+## Estado atual
+
+Contenda está em desenvolvimento ativo. O repositório já contém a fundação do projeto, a arena e a câmera, os componentes principais de personagem, armas, habilidades, vida e mana, além de sistemas para inimigos, ondas, HUD e cenas de teste.
+
+A prioridade atual é transformar esses sistemas em um ciclo de jogo completo e consistente: combate, mobilidade, inimigos, progressão de ondas, interface e polimento. O andamento detalhado está no [roadmap](docs/plans/roadmap.md).
+
+## O que o projeto pode se tornar
+
+A primeira entrega é o MVP 0.1: uma partida completa de Horde com cinco ondas, dois personagens, transformações, chefes, HUD, menus, configurações e uma arena urbana com diferentes níveis de altura.
+
+Depois do MVP, a base do projeto pode crescer em várias direções:
+
+- Horde infinito com escalonamento de dificuldade;
+- novas habilidades, transformações, personagens, inimigos e arenas;
+- modos como Survival, Boss Rush e 1v1;
+- itens, buffs, progressão entre partidas e desafios de dificuldade;
+- suporte a gamepad, replay, modding baseado em dados e, em uma etapa mais distante, multiplayer online.
+
+Essas possibilidades ainda são parte do backlog. O objetivo imediato é validar e polir o núcleo: movimentar-se bem, executar habilidades por sequência e tomar boas decisões durante uma horda.
 
 ## Desenvolvimento
 
-Requer a edição **.NET** do Godot 4.7 (a padrão não roda C#). Abra o projeto
-com o atalho `Contenda (Godot .NET)` ou `tools/abrir-editor.cmd` — nunca com a
-edição sem "mono" no nome, que remove a configuração de C# do
-`project.godot`. Build de linha de comando:
+É necessário usar a edição **.NET** do Godot 4.7, pois o projeto utiliza C#. Abra o projeto pelo editor Godot .NET ou pelo atalho `tools/abrir-editor.cmd`.
+
+Para compilar a solution:
 
 ```bash
 dotnet build Contenda.sln -c ExportRelease
 ```
 
-Convenções de código, portões de qualidade por PR e as regras de ferramentas
-desta máquina estão em [`docs/plans/convencoes-de-codigo.md`](docs/plans/convencoes-de-codigo.md).
+Para executar os testes:
+
+```bash
+dotnet test Contenda.sln
+```
+
+Convenções de código, critérios de qualidade e organização do trabalho estão em [`docs/plans/convencoes-de-codigo.md`](docs/plans/convencoes-de-codigo.md).
 
 ## Documentação
 
-Comece por [docs/README.md](docs/README.md).
+Comece pela [visão geral do projeto](docs/00-visao-geral.md) ou pelo índice em [docs/README.md](docs/README.md).
 
-| | |
-|---|---|
-| Visão geral e escopo | [docs/00-visao-geral.md](docs/00-visao-geral.md) |
-| Especificações | [docs/specs/](docs/specs/) |
-| Roadmap e milestones | [docs/plans/roadmap.md](docs/plans/roadmap.md) |
-| Decisões e riscos | [docs/plans/riscos-e-decisoes.md](docs/plans/riscos-e-decisoes.md) |
-
-## Status
-
-Em desenvolvimento ativo. **M0** (fundação) e **M1** (movimento e câmera
-2.5D) estão fechados; **M2** (atributos e combate básico) está em andamento —
-vida, dano e o combo de espada já funcionam, o revólver do Gunslinger é o
-ticket corrente. Progresso detalhado, por ticket, em
-[docs/plans/roadmap.md](docs/plans/roadmap.md) e em
-`.scratch/contenda-m0-m9/issues/`.
+- [Especificações](docs/specs/): regras de câmera, input, combate, habilidades, personagens, IA, Horde, UI e dados.
+- [Roadmap](docs/plans/roadmap.md): milestones e entregas planejadas.
+- [Riscos e decisões](docs/plans/riscos-e-decisoes.md): decisões técnicas e limites conhecidos.
+- [Testes](tests/): testes automatizados e testes de cenas.
