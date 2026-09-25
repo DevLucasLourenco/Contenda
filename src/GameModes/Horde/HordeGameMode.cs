@@ -1,8 +1,10 @@
 using System;
+using System.IO;
 using Contenda.Characters.Base;
 using Contenda.Components.AI;
 using Contenda.Components.Health;
 using Contenda.Core;
+using Contenda.Persistence;
 using Godot;
 
 namespace Contenda.GameModes.Horde;
@@ -13,9 +15,11 @@ namespace Contenda.GameModes.Horde;
 /// </summary>
 /// <remarks>
 /// Só orquestra: quem sabe QUANDO e ONDE cada inimigo nasce é o
-/// <see cref="WaveDirector"/>/<see cref="SpawnDirector"/> (ticket 27), e quem
-/// desenha a tela de resultado é o ticket 29 -- este nó guarda as regras de
-/// vitória/derrota e o resultado em <see cref="GameSession.LastResult"/>.
+/// <see cref="WaveDirector"/>/<see cref="SpawnDirector"/> (ticket 27), quem faz
+/// a conta do placar é o <see cref="ScoreKeeper"/> (ticket 29), e quem desenha
+/// a tela de resultado ouve <see cref="GameEvents.MatchEnded"/> -- este nó
+/// guarda as regras de vitória/derrota, alimenta o placar com o que acontece na
+/// partida e grava o resultado.
 ///
 /// Fica inerte até <see cref="StartMatch"/> (ou <see cref="AutoStart"/>):
 /// `Arena.tscn` é a cena principal e a base de todos os probes, e nenhum deles
@@ -34,11 +38,19 @@ public sealed partial class HordeGameMode : Node, IGameMode
     /// <summary>Começa a partida sozinho ao entrar na árvore. Falso na arena base; verdadeiro na cena jogável.</summary>
     [Export] public bool AutoStart { get; set; }
 
+    /// <summary>Onde o perfil (recordes e estatísticas) é gravado. Spec 14 §3.</summary>
+    /// <remarks>Um probe aponta isto para outro arquivo -- nunca deve sujar o perfil de verdade.</remarks>
+    [Export] public string ProfilePath { get; set; } = "user://profile.cfg";
+
+    /// <summary>Os números do placar (combo, bônus de onda). Spec 10 §8.</summary>
+    [Export] public ScoreRulesDefinition? ScoreRulesData { get; set; }
+
     private WaveDirector? _waveDirector;
     private EnemyPool? _pool;
     private HealthComponent? _vidaDoJogador;
     private CharacterController? _jogador;
 
+    private ScoreKeeper _placar = new(new ScoreRulesDefinition().ToRules());
     private int _ondasLimpas;
     private int _abates;
     private float _duracao;
@@ -77,7 +89,10 @@ public sealed partial class HordeGameMode : Node, IGameMode
         DesligarDoJogador();
 
         if (_waveDirector is not null)
+        {
             _waveDirector.WaveCleared -= AoLimparOnda;
+            _waveDirector.WaveStarted -= AoComecarOnda;
+        }
     }
 
     public void Initialize(GameModeConfig config)
@@ -112,8 +127,13 @@ public sealed partial class HordeGameMode : Node, IGameMode
             return;
         }
 
-        if (State == GameModeState.Playing)
-            _duracao += (float)delta;
+        if (State != GameModeState.Playing)
+            return;
+
+        _duracao += (float)delta;
+
+        if (_placar.ExpireCombo(_duracao))
+            AvisarPlacar();
     }
 
     public void EndMatch(GameModeResult result)
@@ -126,7 +146,10 @@ public sealed partial class HordeGameMode : Node, IGameMode
 
         Mudar(GameModeState.Ended);
         ServiceLocator.Session.LastResult = result;
+        GravarPerfil(result);
+
         MatchEnded?.Invoke(result);
+        ServiceLocator.Events.RaiseMatchEnded(new MatchEndedEvent(result));
     }
 
     /// <summary>Cria o estoque das espécies que o conjunto usa e o grunt de boot ainda não cobre. Spec 10 §2.</summary>
@@ -163,21 +186,32 @@ public sealed partial class HordeGameMode : Node, IGameMode
         _jogador = ServiceLocator.Session.PlayerBody;
         _vidaDoJogador = _jogador?.Context?.Health;
         if (_vidaDoJogador is not null)
+        {
             _vidaDoJogador.Died += AoJogadorMorrer;
+            _vidaDoJogador.Damaged += AoJogadorApanhar;
+        }
 
+        _waveDirector.WaveStarted += AoComecarOnda;
         _waveDirector.WaveCleared += AoLimparOnda;
 
+        _placar = new ScoreKeeper((ScoreRulesData ?? new ScoreRulesDefinition()).ToRules());
         _ondasLimpas = 0;
         _abates = 0;
         _duracao = 0f;
 
         Mudar(GameModeState.Playing);
+        AvisarPlacar();
         _waveDirector.Begin(WaveSet);
     }
+
+    private void AoComecarOnda(WaveDefinition onda, int indice) => _placar.StartWave();
 
     private void AoLimparOnda(WaveDefinition onda, int indice)
     {
         _ondasLimpas++;
+
+        if (_placar.ClearWave() > 0)
+            AvisarPlacar();
 
         if (WaveSet is not null && indice >= WaveSet.Waves.Length - 1)
             EndMatch(MontarResultado(vitoria: true));
@@ -185,24 +219,65 @@ public sealed partial class HordeGameMode : Node, IGameMode
 
     private void AoJogadorMorrer(DamageInfo golpe) => EndMatch(MontarResultado(vitoria: false));
 
+    private void AoJogadorApanhar(DamageInfo golpe)
+    {
+        if (State != GameModeState.Playing)
+            return;
+
+        _placar.RegisterPlayerDamaged();
+        AvisarPlacar();
+    }
+
     private void AoMatarInimigo(EnemyKilledEvent evento)
     {
-        if (State == GameModeState.Playing)
-            _abates++;
+        if (State != GameModeState.Playing)
+            return;
+
+        _abates++;
+        _placar.RegisterKill(_duracao, evento.ScoreValue, _waveDirector?.CurrentWaveIndex ?? 0);
+        AvisarPlacar();
     }
+
+    private void AvisarPlacar()
+        => ServiceLocator.Events.RaiseScoreChanged(new ScoreChangedEvent(_placar.Score, _placar.ComboMultiplier));
 
     private GameModeResult MontarResultado(bool vitoria) => new(
         Victory: vitoria,
-        Score: 0,
+        Score: _placar.Score,
         WavesCleared: _ondasLimpas,
         EnemiesKilled: _abates,
         DurationSeconds: _duracao,
         CharacterId: _jogador?.Definition?.Id ?? new StringName("desconhecido"));
 
+    /// <remarks>
+    /// Uma falha de disco não pode derrubar a tela de resultado -- o jogador
+    /// acabou de terminar a partida, e perder o recorde é melhor que perder a
+    /// tela. Loga alto e segue.
+    /// </remarks>
+    private void GravarPerfil(GameModeResult resultado)
+    {
+        try
+        {
+            new ProfileStore(ProjectSettings.GlobalizePath(ProfilePath)).RecordMatch(
+                resultado.CharacterId.ToString(),
+                resultado.Score,
+                resultado.WavesCleared,
+                resultado.EnemiesKilled,
+                Mathf.RoundToInt(resultado.DurationSeconds));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            GD.PushError($"{Name}: não consegui gravar o perfil em {ProfilePath}: {e.Message}");
+        }
+    }
+
     private void DesligarDoJogador()
     {
         if (_vidaDoJogador is not null)
+        {
             _vidaDoJogador.Died -= AoJogadorMorrer;
+            _vidaDoJogador.Damaged -= AoJogadorApanhar;
+        }
 
         _vidaDoJogador = null;
     }

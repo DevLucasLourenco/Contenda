@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using System.IO;
 using Contenda.Characters.Base;
 using Contenda.Components.AI;
 using Contenda.Components.Health;
 using Contenda.Core;
 using Contenda.GameModes;
 using Contenda.GameModes.Horde;
+using Contenda.UI.HUD;
+using Contenda.UI.Menus;
 using Godot;
 
 namespace Contenda.Tools;
@@ -46,6 +49,8 @@ public sealed partial class HordeMatchProbe : Node
     // Praça e ruas laterais em Arena.tscn: Spawn7 (praça) e Spawn3/Spawn4 (ruas laterais).
     private static readonly Vector3 Praca = new(0f, -0.9f, 0f);
 
+    private const string CaminhoDoPerfil = "user://probe_profile.cfg";
+
     private const int LimiteDeQuadros = 60 * 400;
     // A onda 5 planeja 6 grunts de entrada; passar disso são reforços.
     private const int AbatesDeNaoChefeParaMatarOChefe = 10;
@@ -72,6 +77,12 @@ public sealed partial class HordeMatchProbe : Node
     private bool _chefeVisto;
     private bool _chefeMorto;
     private int _abatesNaoChefeNaOnda5;
+    private bool _viuEventoDeChefe;
+
+    // Placar: o bônus de onda sem apanhar tem que chegar como +250 exatos depois de cada onda limpa.
+    private int _placarUltimo;
+    private int _placarAntesDoBonus = -1;
+    private int _bonusesVistos;
     private int _quadroDaMorteDoChefe = -1;
     private int _reforcosQuandoOChefeCaiu = -1;
 
@@ -97,6 +108,12 @@ public sealed partial class HordeMatchProbe : Node
             return;
         }
 
+        // Um perfil PRÓPRIO do probe -- partidas de teste nunca sujam o de verdade.
+        _modo.ProfilePath = CaminhoDoPerfil;
+        var perfilReal = ProjectSettings.GlobalizePath(CaminhoDoPerfil);
+        if (File.Exists(perfilReal))
+            File.Delete(perfilReal);
+
         _modo.MatchEnded += resultado =>
         {
             _resultado = resultado;
@@ -104,6 +121,8 @@ public sealed partial class HordeMatchProbe : Node
         };
 
         ServiceLocator.Events.EnemyKilled += AoMatar;
+        ServiceLocator.Events.ScoreChanged += AoMudarPlacar;
+        _ondas.WaveCleared += (_, _) => _placarAntesDoBonus = _placarUltimo;
 
         if (Scenario != "defeat")
             Engine.TimeScale = VelocidadeDoJogo;
@@ -115,6 +134,20 @@ public sealed partial class HordeMatchProbe : Node
     {
         Engine.TimeScale = 1f;
         ServiceLocator.Events.EnemyKilled -= AoMatar;
+        ServiceLocator.Events.ScoreChanged -= AoMudarPlacar;
+    }
+
+    private void AoMudarPlacar(ScoreChangedEvent evento)
+    {
+        if (_placarAntesDoBonus >= 0)
+        {
+            if (evento.Score - _placarAntesDoBonus == (_modo?.ScoreRulesData?.FlawlessWaveBonus ?? -1))
+                _bonusesVistos++;
+
+            _placarAntesDoBonus = -1;
+        }
+
+        _placarUltimo = evento.Score;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -273,6 +306,9 @@ public sealed partial class HordeMatchProbe : Node
 
     private void AoMatar(EnemyKilledEvent evento)
     {
+        if (evento.IsBoss)
+            _viuEventoDeChefe = true;
+
         if (evento.IsBoss || _ondas?.CurrentWaveIndex != 4)
             return;
 
@@ -325,6 +361,17 @@ public sealed partial class HordeMatchProbe : Node
         Verificar(ServiceLocator.Session.LastResult is { Victory: true }, "GameSession.LastResult deveria guardar a vitória");
 
         Verificar(_ondas!.CurrentWave is null, "o WaveDirector deveria ter parado com o fim da partida");
+        Verificar(_bonusesVistos == 5,
+            $"cada uma das 5 ondas limpas sem apanhar deveria render +250; o bônus chegou {_bonusesVistos} vezes");
+        Verificar(_resultado.Score >= 500, $"o placar deveria somar ao menos o chefe (500); somou {_resultado.Score}");
+
+        var tela = Encontrar<ResultsScreen>(GetTree().Root);
+        Verificar(tela is { IsShowing: true, TitleText: "VITÓRIA" },
+            $"a tela de resultado deveria mostrar VITÓRIA; mostra \"{tela?.TitleText}\"");
+
+        var hud = Encontrar<ScoreDisplay>(GetTree().Root);
+        Verificar(hud?.ScoreText == "SCORE  " + ScoreDisplay.FormatarPontos(_resultado.Score),
+            $"o HUD deveria mostrar o placar final ({_resultado.Score}); mostra \"{hud?.ScoreText}\"");
 
         // Composição: cada onda traz algo que a anterior não trazia.
         Verificar(Especies(0).SetEquals(["grunt"]), $"onda 1 deveria ter só grunt; teve {string.Join(",", Especies(0))}");
@@ -342,12 +389,28 @@ public sealed partial class HordeMatchProbe : Node
 
         // Chefe e reforços.
         Verificar(_chefeVisto, "o chefe deveria ter nascido");
+        Verificar(_viuEventoDeChefe, "a morte do chefe deveria anunciar EnemyKilled com IsBoss (é o que para os reforços)");
         Verificar(_ondas.ReinforcementsSpawned >= 4,
             $"deveriam ter chegado reforços enquanto o chefe vivia; chegaram {_ondas.ReinforcementsSpawned}");
         Verificar(_reforcosQuandoOChefeCaiu >= 0 && _ondas.ReinforcementsSpawned == _reforcosQuandoOChefeCaiu,
             $"depois do chefe cair não deveriam chegar mais reforços; eram {_reforcosQuandoOChefeCaiu}, terminou com {_ondas.ReinforcementsSpawned}");
 
         Concluir();
+    }
+
+    private static T? Encontrar<T>(Node no) where T : Node
+    {
+        if (no is T achado)
+            return achado;
+
+        foreach (var filho in no.GetChildren())
+        {
+            var dentro = Encontrar<T>(filho);
+            if (dentro is not null)
+                return dentro;
+        }
+
+        return null;
     }
 
     private HashSet<string> Especies(int onda)
@@ -376,6 +439,10 @@ public sealed partial class HordeMatchProbe : Node
 
     private void Concluir()
     {
+        var perfilReal = ProjectSettings.GlobalizePath(CaminhoDoPerfil);
+        if (File.Exists(perfilReal))
+            File.Delete(perfilReal);
+
         if (_falhas.Count > 0)
         {
             GD.PrintErr($"[partida] {_falhas.Count} verificação(ões) falharam");

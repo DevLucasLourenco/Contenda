@@ -401,7 +401,7 @@ public sealed partial class WaveDirectorProbe : Node
 
         if (_quadroDaFase == 90)
         {
-            ServiceLocator.Events.RaiseEnemyKilled(new EnemyKilledEvent(false));
+            ServiceLocator.Events.RaiseEnemyKilled(new EnemyKilledEvent(false, 0));
             return;
         }
 

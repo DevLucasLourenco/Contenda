@@ -21,6 +21,10 @@ public sealed partial class GameBootstrap : Node
     [Export(PropertyHint.File, "*.tscn")]
     public string HudScenePath { get; set; } = "res://scenes/ui/hud/Hud.tscn";
 
+    /// <summary>Caminho da tela de resultado (ticket 29), adicionada à raiz como o HUD.</summary>
+    [Export(PropertyHint.File, "*.tscn")]
+    public string ResultsScenePath { get; set; } = "res://scenes/ui/menus/ResultsScreen.tscn";
+
     public override void _Ready()
     {
         GD.Print($"[boot] {ProjectInfo.Describe()}");
@@ -51,6 +55,14 @@ public sealed partial class GameBootstrap : Node
             // falha com "Parent node is busy setting up children".
             GetTree().Root.CallDeferred(Node.MethodName.AddChild, hud.Instantiate());
         }
+
+        // A tela de resultado mora ao lado do HUD, pelo mesmo motivo (regra 1
+        // do CLAUDE.md) -- fica escondida até o modo de jogo anunciar o fim.
+        var resultados = GD.Load<PackedScene>(ResultsScenePath);
+        if (resultados is null)
+            GD.PushError($"{Name}: não consegui carregar a tela de resultado em '{ResultsScenePath}'.");
+        else
+            GetTree().Root.CallDeferred(Node.MethodName.AddChild, resultados.Instantiate());
 
         GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
     }

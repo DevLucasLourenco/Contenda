@@ -1,4 +1,4 @@
-[gd_scene load_steps=64 format=3]
+[gd_scene load_steps=65 format=3]
 
 [ext_resource type="Script" path="res://src/Camera/CameraRig.cs" id="1_rig"]
 [ext_resource type="Script" path="res://src/Camera/CombatCamera.cs" id="2_cam"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://src/GameModes/Horde/WaveDirector.cs" id="9_wavedir"]
 [ext_resource type="Script" path="res://src/GameModes/Horde/HordeGameMode.cs" id="10_horde"]
 [ext_resource type="Resource" path="res://data/waves/waveset_default.tres" id="11_waveset"]
+[ext_resource type="Resource" path="res://data/score/horde_score.tres" id="12_score"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
 sky_top_color = Color(0.35, 0.45, 0.62, 1)
@@ -821,4 +822,5 @@ SpawnDirectorPath = NodePath("../SpawnDirector")
 [node name="HordeGameMode" type="Node" parent="."]
 script = ExtResource("10_horde")
 WaveSet = ExtResource("11_waveset")
+ScoreRulesData = ExtResource("12_score")
 WaveDirectorPath = NodePath("../WaveDirector")

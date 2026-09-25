@@ -18,3 +18,4 @@ IsBoss = true
 ComboHits = 3
 Scene = ExtResource("2_cena")
 PoolSize = 1
+ScoreValue = 500

@@ -483,7 +483,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         // Release só roda DEPOIS de DeathDuration inteiro (a "animação" de
         // morte), e o WaveDirector precisa saber do abate na hora, não
         // segundos depois.
-        ServiceLocator.Events.RaiseEnemyKilled(new EnemyKilledEvent());
+        ServiceLocator.Events.RaiseEnemyKilled(new EnemyKilledEvent(Definition.IsBoss, Definition.ScoreValue));
 
         _temporizadorDeMorte = 0f;
         _liberado = false;

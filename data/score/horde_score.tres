@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ScoreRulesDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/GameModes/Horde/ScoreRulesDefinition.cs" id="1_regras"]
+
+[resource]
+script = ExtResource("1_regras")
+ComboWindowSeconds = 3.0
+ComboStep = 0.1
+ComboCap = 3.0
+WaveStep = 0.1
+FlawlessWaveBonus = 250

@@ -16,3 +16,4 @@ DeathDuration = 1.2
 IsElite = false
 EliteTint = Color(1, 0.843137, 0, 1)
 IsBoss = false
+ScoreValue = 10

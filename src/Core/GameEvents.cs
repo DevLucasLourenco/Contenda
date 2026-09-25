@@ -58,7 +58,17 @@ public readonly record struct ProjectileFireEvent(
 /// Se quem morreu era o chefe -- é o que faz o <c>WaveDirector</c> parar os
 /// reforços de uma onda de chefe (ticket 28).
 /// </param>
-public readonly record struct EnemyKilledEvent(bool IsBoss);
+/// <param name="ScoreValue">Quanto o abate vale, antes dos multiplicadores (ticket 29).</param>
+public readonly record struct EnemyKilledEvent(bool IsBoss, int ScoreValue);
+
+/// <summary>O placar mudou -- para o HUD reagir na hora, sem varrer nada (ticket 29).</summary>
+/// <param name="Score">Pontos totais.</param>
+/// <param name="ComboMultiplier">Multiplicador de combo agora (1,0 sem sequência).</param>
+public readonly record struct ScoreChangedEvent(int Score, float ComboMultiplier);
+
+/// <summary>A partida terminou -- para a tela de resultado (ticket 29).</summary>
+/// <param name="Result">O que sobrou da partida.</param>
+public readonly record struct MatchEndedEvent(Contenda.GameModes.GameModeResult Result);
 
 /// <summary>Uma onda começou e precisa anunciar o próprio nome na tela.</summary>
 /// <param name="DisplayName">O texto do banner, ex.: "ONDA 3".</param>
@@ -105,6 +115,12 @@ public sealed partial class GameEvents : Node
     /// <summary>Avisa que um marcador de nascimento precisa aparecer no chão. Ticket 27.</summary>
     public event Action<SpawnMarkerEvent>? SpawnMarkerRequested;
 
+    /// <summary>Avisa que o placar mudou. Ticket 29.</summary>
+    public event Action<ScoreChangedEvent>? ScoreChanged;
+
+    /// <summary>Avisa que a partida terminou. Ticket 29.</summary>
+    public event Action<MatchEndedEvent>? MatchEnded;
+
     public override void _Ready()
     {
         ServiceLocator.Register(this);
@@ -119,6 +135,12 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="EnemyKilled"/>.</summary>
     public void RaiseEnemyKilled(in EnemyKilledEvent evento) => EnemyKilled?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="ScoreChanged"/>.</summary>
+    public void RaiseScoreChanged(in ScoreChangedEvent evento) => ScoreChanged?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="MatchEnded"/>.</summary>
+    public void RaiseMatchEnded(in MatchEndedEvent evento) => MatchEnded?.Invoke(evento);
 
     /// <summary>Dispara <see cref="WaveAnnounced"/>.</summary>
     public void RaiseWaveAnnounced(in WaveAnnouncedEvent evento) => WaveAnnounced?.Invoke(evento);

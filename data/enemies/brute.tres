@@ -17,3 +17,4 @@ DeathDuration = 1.5
 IsElite = true
 Scene = ExtResource("2_cena")
 PoolSize = 8
+ScoreValue = 60

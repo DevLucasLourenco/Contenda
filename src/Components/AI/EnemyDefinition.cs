@@ -103,6 +103,9 @@ public sealed partial class EnemyDefinition : Resource
     /// </remarks>
     [Export(PropertyHint.Range, "1,5,1")] public int ComboHits { get; set; } = 1;
 
+    /// <summary>Pontos base do abate, antes dos multiplicadores de onda e de combo. Spec 09 §5/§6, spec 10 §8.</summary>
+    [Export(PropertyHint.Range, "0,1000,5")] public int ScoreValue { get; set; } = 10;
+
     /// <summary>A cena que o <c>EnemyPool</c> instancia para esta espécie. Ver <see cref="PoolSize"/>.</summary>
     /// <remarks>
     /// Ticket 28: com mais de uma espécie, o pool precisa saber de onde criar

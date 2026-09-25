@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
 [ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/UI/HUD/AbilityGuide.cs" id="6_guia"]
 [ext_resource type="Script" path="res://src/UI/HUD/BossHealthBar.cs" id="7_chefe"]
 [ext_resource type="Script" path="res://src/UI/HUD/WaveBanner.cs" id="8_onda"]
+[ext_resource type="Script" path="res://src/UI/HUD/ScoreDisplay.cs" id="9_placar"]
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -135,3 +136,27 @@ theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "ONDA 1"
+
+[node name="Placar" type="Control" parent="."]
+offset_left = 1500.0
+offset_top = 20.0
+offset_right = 1900.0
+offset_bottom = 110.0
+script = ExtResource("9_placar")
+ScoreLabelPath = NodePath("Pontos")
+ComboLabelPath = NodePath("Combo")
+
+[node name="Pontos" type="Label" parent="Placar"]
+offset_right = 400.0
+offset_bottom = 44.0
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 2
+text = "SCORE  0"
+
+[node name="Combo" type="Label" parent="Placar"]
+offset_top = 46.0
+offset_right = 400.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 2
