@@ -58,8 +58,14 @@ public sealed partial class HudController : CanvasLayer
     private CharacterController? _chefeAtual;
     private int _indiceArquetipo;
 
+    /// <summary>O jogador a quem o HUD está ligado agora. Nulo entre partidas. Para o probe/depuração.</summary>
+    public CharacterController? BoundPlayer => _jogador;
+
     public override void _Ready()
     {
+        // Sem partida, sem HUD: menus e telas de resultado não mostram barras de ninguém.
+        Visible = false;
+
         _barraDeVida = GetNodeOrNull<HealthBar>(HealthBarPath);
         _barraDeMana = GetNodeOrNull<ManaBar>(ManaBarPath);
         _guiaDeHabilidades = GetNodeOrNull<AbilityGuide>(AbilityGuidePath);
@@ -85,6 +91,15 @@ public sealed partial class HudController : CanvasLayer
     /// </remarks>
     public override void _PhysicsProcess(double delta)
     {
+        // O HUD é um autoload e sobrevive à troca de cena (retry, menu): um
+        // jogador que saiu da árvore não é mais o jogador -- solta e procura o
+        // novo, em vez de ficar ligado a um nó liberado.
+        if (_jogador is not null && !GodotObject.IsInstanceValid(_jogador))
+        {
+            _jogador = null;
+            Visible = false;
+        }
+
         if (_jogador is null)
             ProcurarJogador();
 
@@ -115,6 +130,7 @@ public sealed partial class HudController : CanvasLayer
             return;
 
         _jogador = jogador;
+        Visible = true;
         _barraDeVida?.Bind(vida);
         _barraDeMana?.Bind(mana);
         _guiaDeHabilidades?.Bind(habilidades, mana);

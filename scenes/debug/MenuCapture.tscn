@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Tools/FramingCapture.cs" id="1_cap"]
+
+[node name="MenuCapture" type="Node"]
+script = ExtResource("1_cap")
+ScenePath = "res://scenes/ui/menus/MainMenu.tscn"
+OutputName = "menu.png"
+WarmupFrames = 90

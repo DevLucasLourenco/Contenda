@@ -70,6 +70,11 @@ public readonly record struct ScoreChangedEvent(int Score, float ComboMultiplier
 /// <param name="Result">O que sobrou da partida.</param>
 public readonly record struct MatchEndedEvent(Contenda.GameModes.GameModeResult Result);
 
+/// <summary>O carregamento de uma cena andou -- para a tela de carregamento mostrar progresso de verdade (ticket 30).</summary>
+/// <param name="Progress">De 0 a 1, o que o <c>ResourceLoader</c> reporta.</param>
+/// <param name="Loading">Falso quando o carregamento acabou (ou nunca começou) e a tela deve sumir.</param>
+public readonly record struct SceneLoadProgressEvent(float Progress, bool Loading);
+
 /// <summary>Uma onda começou e precisa anunciar o próprio nome na tela.</summary>
 /// <param name="DisplayName">O texto do banner, ex.: "ONDA 3".</param>
 public readonly record struct WaveAnnouncedEvent(string DisplayName);
@@ -115,6 +120,9 @@ public sealed partial class GameEvents : Node
     /// <summary>Avisa que um marcador de nascimento precisa aparecer no chão. Ticket 27.</summary>
     public event Action<SpawnMarkerEvent>? SpawnMarkerRequested;
 
+    /// <summary>Avisa o andamento do carregamento de uma cena. Ticket 30.</summary>
+    public event Action<SceneLoadProgressEvent>? SceneLoadProgress;
+
     /// <summary>Avisa que o placar mudou. Ticket 29.</summary>
     public event Action<ScoreChangedEvent>? ScoreChanged;
 
@@ -135,6 +143,9 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="EnemyKilled"/>.</summary>
     public void RaiseEnemyKilled(in EnemyKilledEvent evento) => EnemyKilled?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="SceneLoadProgress"/>.</summary>
+    public void RaiseSceneLoadProgress(in SceneLoadProgressEvent evento) => SceneLoadProgress?.Invoke(evento);
 
     /// <summary>Dispara <see cref="ScoreChanged"/>.</summary>
     public void RaiseScoreChanged(in ScoreChangedEvent evento) => ScoreChanged?.Invoke(evento);

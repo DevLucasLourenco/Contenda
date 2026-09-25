@@ -84,6 +84,17 @@ public sealed partial class CharacterController : CharacterBody3D
             ServiceLocator.Session.PlayerBody = this;
     }
 
+    /// <remarks>
+    /// Quem se anunciou em <c>_Ready</c> se retira ao sair: sem isto, trocar de
+    /// cena (retry, menu) deixaria <c>GameSession.PlayerBody</c> apontando para
+    /// um nó já liberado, e o HUD continuaria "ligado" a um jogador morto.
+    /// </remarks>
+    public override void _ExitTree()
+    {
+        if (Team == Team.Player && ReferenceEquals(ServiceLocator.Session.PlayerBody, this))
+            ServiceLocator.Session.PlayerBody = null;
+    }
+
     /// <summary>
     /// Devolve todo componente ao estado de recém-criado. Chamado pelo
     /// <c>EnemyPool</c> ao reaproveitar este inimigo (ticket 25).

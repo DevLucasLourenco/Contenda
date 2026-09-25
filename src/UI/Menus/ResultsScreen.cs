@@ -100,12 +100,11 @@ public sealed partial class ResultsScreen : CanvasLayer
         _menuPrincipal.Pressed += () => Ir(MainMenuScenePath);
 
         // Visível e desabilitado até a tela de destino existir.
-        _trocarPersonagem.Disabled = !ResourceLoader.Exists(CharacterSelectScenePath);
-        _menuPrincipal.Disabled = !ResourceLoader.Exists(MainMenuScenePath);
-        if (_trocarPersonagem.Disabled)
-            _trocarPersonagem.TooltipText = "Em breve";
-        if (_menuPrincipal.Disabled)
-            _menuPrincipal.TooltipText = "Em breve";
+        if (!ResourceLoader.Exists(CharacterSelectScenePath))
+            ComingSoon.Apply(_trocarPersonagem);
+
+        if (!ResourceLoader.Exists(MainMenuScenePath))
+            ComingSoon.Apply(_menuPrincipal);
 
         ServiceLocator.Events.MatchEnded += AoTerminarAPartida;
     }
@@ -145,7 +144,7 @@ public sealed partial class ResultsScreen : CanvasLayer
     private void Ir(string caminho)
     {
         Esconder();
-        ServiceLocator.Router.GoTo(caminho);
+        ServiceLocator.Router.GoToAsync(caminho);
     }
 
     private void Esconder()

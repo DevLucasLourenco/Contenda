@@ -1,0 +1,63 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/UI/Menus/MainMenu.cs" id="1_menu"]
+[ext_resource type="Script" path="res://src/UI/Menus/MenuBackdrop.cs" id="2_fundo"]
+[ext_resource type="PackedScene" path="res://scenes/ui/menus/GameModeMenu.tscn" id="3_modos"]
+
+[node name="MainMenu" type="Node"]
+script = ExtResource("1_menu")
+MainPanelPath = NodePath("Interface/Painel")
+StartButtonPath = NodePath("Interface/Painel/Caixa/Iniciar")
+SettingsButtonPath = NodePath("Interface/Painel/Caixa/Configuracoes")
+QuitButtonPath = NodePath("Interface/Painel/Caixa/Sair")
+OverlayRootPath = NodePath("Interface")
+BackdropPath = NodePath("Fundo")
+ModeMenuScene = ExtResource("3_modos")
+
+[node name="Fundo" type="Node3D" parent="."]
+script = ExtResource("2_fundo")
+
+[node name="Interface" type="CanvasLayer" parent="."]
+
+[node name="Painel" type="Control" parent="Interface"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Caixa" type="VBoxContainer" parent="Interface/Painel"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 160.0
+offset_top = -200.0
+offset_right = 560.0
+offset_bottom = 200.0
+grow_vertical = 2
+theme_override_constants/separation = 18
+
+[node name="Titulo" type="Label" parent="Interface/Painel/Caixa"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 96
+text = "CONTENDA"
+
+[node name="Iniciar" type="Button" parent="Interface/Painel/Caixa"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "INICIAR"
+
+[node name="Configuracoes" type="Button" parent="Interface/Painel/Caixa"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "CONFIGURAÇÕES"
+
+[node name="Sair" type="Button" parent="Interface/Painel/Caixa"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "SAIR"

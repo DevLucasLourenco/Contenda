@@ -13,7 +13,7 @@ config_version=5
 config/name="Contenda"
 config/description="Jogo de ação 2.5D em arena: mundo 3D, câmera travada em ângulo superior."
 config/version="0.1.0"
-run/main_scene="res://scenes/arena/Arena.tscn"
+run/main_scene="res://scenes/ui/menus/MainMenu.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 
 [autoload]

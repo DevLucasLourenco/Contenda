@@ -21,6 +21,10 @@ public sealed partial class GameBootstrap : Node
     [Export(PropertyHint.File, "*.tscn")]
     public string HudScenePath { get; set; } = "res://scenes/ui/hud/Hud.tscn";
 
+    /// <summary>Caminho da tela de carregamento (ticket 30), adicionada à raiz como o HUD.</summary>
+    [Export(PropertyHint.File, "*.tscn")]
+    public string LoadingScenePath { get; set; } = "res://scenes/ui/menus/LoadingScreen.tscn";
+
     /// <summary>Caminho da tela de resultado (ticket 29), adicionada à raiz como o HUD.</summary>
     [Export(PropertyHint.File, "*.tscn")]
     public string ResultsScenePath { get; set; } = "res://scenes/ui/menus/ResultsScreen.tscn";
@@ -56,14 +60,23 @@ public sealed partial class GameBootstrap : Node
             GetTree().Root.CallDeferred(Node.MethodName.AddChild, hud.Instantiate());
         }
 
-        // A tela de resultado mora ao lado do HUD, pelo mesmo motivo (regra 1
-        // do CLAUDE.md) -- fica escondida até o modo de jogo anunciar o fim.
-        var resultados = GD.Load<PackedScene>(ResultsScenePath);
-        if (resultados is null)
-            GD.PushError($"{Name}: não consegui carregar a tela de resultado em '{ResultsScenePath}'.");
-        else
-            GetTree().Root.CallDeferred(Node.MethodName.AddChild, resultados.Instantiate());
+        // A tela de resultado e a de carregamento moram ao lado do HUD, pelo
+        // mesmo motivo (regra 1 do CLAUDE.md) -- escondidas até serem chamadas.
+        AdicionarNaRaiz(ResultsScenePath, "a tela de resultado");
+        AdicionarNaRaiz(LoadingScenePath, "a tela de carregamento");
 
         GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
+    }
+
+    private void AdicionarNaRaiz(string caminho, string descricao)
+    {
+        var cena = GD.Load<PackedScene>(caminho);
+        if (cena is null)
+        {
+            GD.PushError($"{Name}: não consegui carregar {descricao} em '{caminho}'.");
+            return;
+        }
+
+        GetTree().Root.CallDeferred(Node.MethodName.AddChild, cena.Instantiate());
     }
 }
