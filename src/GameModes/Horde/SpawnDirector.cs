@@ -99,7 +99,14 @@ public sealed partial class SpawnDirector : Node
     /// de errar do que um recurso de verdade: o <see cref="WaveDirector"/>
     /// já não precisa da instância, só de contar via <see cref="GameEvents.EnemyKilled"/>.
     /// </remarks>
-    public void RequestSpawn(EnemyDefinition definicao)
+    /// <param name="definicao">Quem nasce.</param>
+    /// <param name="grupoDeSpawn">
+    /// Restringe os candidatos aos pontos deste grupo de nós (ex.:
+    /// `spawn_plaza`) -- é como uma onda escolhe ONDE a luta acontece (spec 17
+    /// §6: pinça nas ruas laterais, elite e chefe na praça). Vazio, ou um
+    /// grupo sem nenhum ponto, usa todos: "nunca falha em spawnar" (spec 10 §6).
+    /// </param>
+    public void RequestSpawn(EnemyDefinition definicao, string grupoDeSpawn = "")
     {
         ArgumentNullException.ThrowIfNull(definicao);
 
@@ -107,7 +114,7 @@ public sealed partial class SpawnDirector : Node
         if (jogador is null || _pontos.Count == 0)
             return;
 
-        var posicao = EscolherPonto(jogador.GlobalPosition);
+        var posicao = EscolherPonto(jogador.GlobalPosition, grupoDeSpawn);
 
         ServiceLocator.Events.RaiseSpawnMarker(new SpawnMarkerEvent(posicao, TelegraphSeconds));
         _pendentes.Add(new SpawnPendente(definicao, posicao, TelegraphSeconds));
@@ -127,11 +134,25 @@ public sealed partial class SpawnDirector : Node
     /// "Nunca falha em spawnar" é literal na spec -- por isso o último
     /// degrau nunca fica vazio enquanto houver ALGUM ponto cadastrado.
     /// </remarks>
-    private Vector3 EscolherPonto(Vector3 posicaoDoJogador)
+    private Vector3 EscolherPonto(Vector3 posicaoDoJogador, string grupoDeSpawn)
     {
-        var candidatos = new List<int>(_pontos.Count);
-
+        var elegiveis = new List<int>(_pontos.Count);
         for (var i = 0; i < _pontos.Count; i++)
+        {
+            if (string.IsNullOrEmpty(grupoDeSpawn) || _pontos[i].IsInGroup(grupoDeSpawn))
+                elegiveis.Add(i);
+        }
+
+        if (elegiveis.Count == 0)
+        {
+            GD.PushWarning($"{Name}: nenhum ponto no grupo \"{grupoDeSpawn}\" -- usando todos.");
+            for (var i = 0; i < _pontos.Count; i++)
+                elegiveis.Add(i);
+        }
+
+        var candidatos = new List<int>(elegiveis.Count);
+
+        foreach (var i in elegiveis)
         {
             var distancia = _pontos[i].GlobalPosition.DistanceTo(posicaoDoJogador);
             if (!SpawnPointMath.IsDistanceValid(distancia, MinDistanceFromPlayer, MaxDistanceFromPlayer))
@@ -145,7 +166,7 @@ public sealed partial class SpawnDirector : Node
 
         if (candidatos.Count == 0)
         {
-            for (var i = 0; i < _pontos.Count; i++)
+            foreach (var i in elegiveis)
             {
                 var distancia = _pontos[i].GlobalPosition.DistanceTo(posicaoDoJogador);
                 if (SpawnPointMath.IsDistanceValid(distancia, MinDistanceFromPlayer, MaxDistanceFromPlayer))
@@ -154,10 +175,7 @@ public sealed partial class SpawnDirector : Node
         }
 
         if (candidatos.Count == 0)
-        {
-            for (var i = 0; i < _pontos.Count; i++)
-                candidatos.Add(i);
-        }
+            candidatos.AddRange(elegiveis);
 
         var pesos = new List<float>(candidatos.Count);
         foreach (var indice in candidatos)

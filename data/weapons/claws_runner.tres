@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+[ext_resource type="Resource" path="res://data/weapons/combo/claws_swipe.tres" id="2_s"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.claws_runner"
+DisplayName = "Garras rápidas"
+Kind = 0
+BaseDamage = 8.0
+Range = 1.8
+HalfAngle = 60.0
+Knockback = 1.0
+ComboSteps = [ExtResource("2_s")]

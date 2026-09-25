@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+[ext_resource type="Resource" path="res://data/weapons/combo/warlord_step_1.tres" id="2_s"]
+[ext_resource type="Resource" path="res://data/weapons/combo/warlord_step_2.tres" id="3_s"]
+[ext_resource type="Resource" path="res://data/weapons/combo/warlord_step_3.tres" id="4_s"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.warlord_hammer"
+DisplayName = "Martelo de guerra"
+Kind = 0
+BaseDamage = 35.0
+Range = 3.0
+HalfAngle = 80.0
+Knockback = 3.0
+ComboSteps = [ExtResource("2_s"), ExtResource("3_s"), ExtResource("4_s")]

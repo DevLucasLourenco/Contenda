@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
+[ext_resource type="Resource" path="res://data/characters/shared/movement_shooter.tres" id="2_mov"]
+[ext_resource type="Resource" path="res://data/characters/shared/health_shooter.tres" id="3_hp"]
+[ext_resource type="Resource" path="res://data/weapons/pistol_shooter.tres" id="4_arma"]
+
+[resource]
+script = ExtResource("1_def")
+Id = &"shooter"
+DisplayName = "Shooter"
+Health = ExtResource("3_hp")
+Weapon = ExtResource("4_arma")
+Movement = ExtResource("2_mov")

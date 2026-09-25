@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/arena/Arena.tscn" id="1_arena"]
+
+; A partida de verdade: a arena urbana com o modo horda ligado sozinho.
+[node name="HordeMatch" instance=ExtResource("1_arena")]
+
+[node name="HordeGameMode" parent="." index="18"]
+AutoStart = true

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Components/AI/EnemyDefinition.cs" id="1_ia"]
+[ext_resource type="PackedScene" path="res://scenes/characters/EnemyWarlord.tscn" id="2_cena"]
+
+[resource]
+script = ExtResource("1_ia")
+DetectionRadius = 22.0
+LoseTargetRadius = 30.0
+LoseTargetDelay = 3.0
+AlertDuration = 0.4
+AttackRange = 3.2
+AttackWindup = 1.0
+AttackCooldown = 1.6
+StaggerDuration = 0.15
+DeathDuration = 2.0
+IsBoss = true
+ComboHits = 3
+Scene = ExtResource("2_cena")
+PoolSize = 1

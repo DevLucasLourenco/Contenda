@@ -136,6 +136,9 @@ public sealed partial class EnemyPool : Node
         GD.Print($"[boot] EnemyPool pronto ({GruntPoolSize} grunts pré-alocados)");
     }
 
+    /// <summary>Se esta espécie já foi prewarmada. Ver <see cref="Prewarm"/>.</summary>
+    public bool IsPrewarmed(EnemyDefinition definicao) => _especies.ContainsKey(definicao);
+
     /// <summary>Cria e desativa <paramref name="quantidade"/> instâncias de uma espécie, prontas para <see cref="Acquire"/>.</summary>
     public void Prewarm(PackedScene cena, EnemyDefinition definicao, int quantidade)
     {

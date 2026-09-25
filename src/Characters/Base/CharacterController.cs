@@ -161,6 +161,11 @@ public sealed partial class CharacterController : CharacterBody3D
         // sinal dominante sem animações (M8).
         var escalaDeHitstop = _vida?.TimeScale ?? 1f;
 
+        // 2b. mira de quem não tem cursor (inimigo à distância, ticket 28):
+        //     o cérebro já resolveu a mira -- só a repassa à arma.
+        if (_mira is not null && _entrada is null)
+            _mira.SetAim(intencao.AimPoint, intencao.AimDirection, intencao.HasAim);
+
         // 3. locomoção
         _movimento?.Tick(intencao, (float)delta * escalaDeHitstop);
 

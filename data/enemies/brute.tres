@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Components/AI/EnemyDefinition.cs" id="1_ia"]
+[ext_resource type="PackedScene" path="res://scenes/characters/EnemyBrute.tscn" id="2_cena"]
+
+[resource]
+script = ExtResource("1_ia")
+DetectionRadius = 22.0
+LoseTargetRadius = 30.0
+LoseTargetDelay = 3.0
+AlertDuration = 0.4
+AttackRange = 2.8
+AttackWindup = 0.8
+AttackCooldown = 1.8
+StaggerDuration = 0.3
+DeathDuration = 1.5
+IsElite = true
+Scene = ExtResource("2_cena")
+PoolSize = 8

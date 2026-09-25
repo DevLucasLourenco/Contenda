@@ -54,6 +54,25 @@ public sealed partial class TargetingComponent : Node, ICharacterComponent
     }
 
     /// <summary>
+    /// Fixa a mira diretamente, sem cursor -- a fonte de quem não tem mouse.
+    /// </summary>
+    /// <remarks>
+    /// Ticket 28: um inimigo à distância (`shooter`) usa a MESMA arma
+    /// `HitscanWeapon` do jogador, que lê a mira daqui. O cérebro já calcula
+    /// <c>AimPoint</c>/<c>AimDirection</c> no <c>IntentFrame</c>; o contêiner
+    /// os repassa por este método, no lugar de <see cref="UpdateFromScreen"/>.
+    /// </remarks>
+    public void SetAim(Vector3 ponto, Vector3 direcao, bool temMira)
+    {
+        if (!temMira)
+            return;
+
+        AimPoint = ponto;
+        AimDirection = direcao;
+        HasAim = true;
+    }
+
+    /// <summary>
     /// Projeta o cursor no plano do torso usando a câmera ativa.
     /// </summary>
     /// <remarks>

@@ -46,16 +46,19 @@ public readonly record struct ProjectileFireEvent(
     bool IsCritical);
 
 /// <summary>
-/// Um inimigo morreu. Sem identidade nem posição de propósito -- o único
-/// assinante hoje (<c>WaveDirector</c>, ticket 27) só precisa CONTAR, nunca
-/// SABER QUEM; spec 09 §4/10 §4 é explícita que a contagem é "por evento
-/// EnemyKilled do GameEvents, não por varredura de cena a cada frame" -- o
-/// evento em si, não os dados que carrega, é o que resolve isso. Campos
-/// entram quando um assinante de verdade precisar deles (pontuação, ticket
-/// 29, por exemplo) -- adicioná-los agora seria dado para uma necessidade
-/// que ainda não existe.
+/// Um inimigo morreu. Sem identidade nem posição de propósito -- os
+/// assinantes (<c>WaveDirector</c>, ticket 27; <c>HordeGameMode</c>, ticket
+/// 28) só precisam CONTAR, nunca SABER QUEM; spec 09 §4/10 §4 é explícita que
+/// a contagem é "por evento EnemyKilled do GameEvents, não por varredura de
+/// cena a cada frame". Campos entram quando um assinante de verdade precisar
+/// deles (pontuação, ticket 29, por exemplo) -- adicioná-los antes seria dado
+/// para uma necessidade que ainda não existe.
 /// </summary>
-public readonly record struct EnemyKilledEvent;
+/// <param name="IsBoss">
+/// Se quem morreu era o chefe -- é o que faz o <c>WaveDirector</c> parar os
+/// reforços de uma onda de chefe (ticket 28).
+/// </param>
+public readonly record struct EnemyKilledEvent(bool IsBoss);
 
 /// <summary>Uma onda começou e precisa anunciar o próprio nome na tela.</summary>
 /// <param name="DisplayName">O texto do banner, ex.: "ONDA 3".</param>

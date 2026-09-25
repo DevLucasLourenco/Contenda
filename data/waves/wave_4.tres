@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/GameModes/Horde/WaveDefinition.cs" id="1_wave"]
+[ext_resource type="Resource" path="res://data/waves/entry_w4_grunt.tres" id="2_e"]
+[ext_resource type="Resource" path="res://data/waves/entry_w4_runner.tres" id="3_e"]
+[ext_resource type="Resource" path="res://data/waves/entry_w4_shooter.tres" id="4_e"]
+[ext_resource type="Resource" path="res://data/waves/entry_w4_brute.tres" id="5_e"]
+
+[resource]
+script = ExtResource("1_wave")
+DisplayName = "ONDA 4"
+Entries = [ExtResource("2_e"), ExtResource("3_e"), ExtResource("4_e"), ExtResource("5_e")]
+SpawnInterval = 0.7
+MaxConcurrent = 15
+CompletionDelay = 4.0

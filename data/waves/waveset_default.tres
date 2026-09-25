@@ -1,10 +1,13 @@
-[gd_resource type="Resource" script_class="WaveSetDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WaveSetDefinition" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/GameModes/Horde/WaveSetDefinition.cs" id="1_set"]
-[ext_resource type="Resource" path="res://data/waves/wave_1.tres" id="2_wave1"]
-[ext_resource type="Resource" path="res://data/waves/wave_2.tres" id="3_wave2"]
+[ext_resource type="Resource" path="res://data/waves/wave_1.tres" id="2_w1"]
+[ext_resource type="Resource" path="res://data/waves/wave_2.tres" id="3_w2"]
+[ext_resource type="Resource" path="res://data/waves/wave_3.tres" id="4_w3"]
+[ext_resource type="Resource" path="res://data/waves/wave_4.tres" id="5_w4"]
+[ext_resource type="Resource" path="res://data/waves/wave_5.tres" id="6_w5"]
 
 [resource]
 script = ExtResource("1_set")
 DisplayName = "Horde — Padrão"
-Waves = [ExtResource("2_wave1"), ExtResource("3_wave2")]
+Waves = [ExtResource("2_w1"), ExtResource("3_w2"), ExtResource("4_w3"), ExtResource("5_w4"), ExtResource("6_w5")]

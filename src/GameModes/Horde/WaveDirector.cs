@@ -71,7 +71,13 @@ public sealed partial class WaveDirector : Node
 
     private SpawnQueue? _fila;
     private WaveClearTimer? _relogio;
+    private ReinforcementClock? _reforcos;
     private float _relogioDeSpawn;
+
+    // O chefe da onda já saiu da fila de spawn / já morreu. Reforços só chegam
+    // entre os dois -- ver TickReforcos (ticket 28).
+    private bool _chefeNasceu;
+    private bool _chefeMorreu;
 
     private int _totalDaOnda;
     private int _abatidosNaOnda;
@@ -84,6 +90,9 @@ public sealed partial class WaveDirector : Node
 
     /// <summary>Planejados (ainda por spawnar) mais ativos, menos os já abatidos. Ver spec 10 §4.</summary>
     public int EnemiesRemaining => Mathf.Max(0, _totalDaOnda - _abatidosNaOnda);
+
+    /// <summary>Quantos reforços de chefe já chegaram na onda atual (ou na última). Para o probe.</summary>
+    public int ReinforcementsSpawned { get; private set; }
 
     /// <summary>Dispara ao começar cada onda, com a própria onda e o índice. Para o banner e o probe.</summary>
     public event Action<WaveDefinition, int>? WaveStarted;
@@ -165,8 +174,12 @@ public sealed partial class WaveDirector : Node
 
         _fila = new SpawnQueue(entradas);
         _relogio = new WaveClearTimer(onda.CompletionDelay, StuckFallbackSeconds);
+        _reforcos = new ReinforcementClock(onda.ReinforcementEnemy is null ? 0f : onda.ReinforcementInterval);
         _relogioDeSpawn = 0f;
         _abatidosNaOnda = 0;
+        _chefeNasceu = false;
+        _chefeMorreu = false;
+        ReinforcementsSpawned = 0;
 
         _fase = _totalDaOnda > 0 ? Fase.Spawnando : Fase.EsperandoLimpeza;
 
@@ -183,6 +196,7 @@ public sealed partial class WaveDirector : Node
             return;
 
         fila.Tick(delta);
+        TickReforcos(delta, onda);
 
         if (fila.IsEmpty)
         {
@@ -206,9 +220,14 @@ public sealed partial class WaveDirector : Node
         _relogioDeSpawn = 0f;
         fila.Consume(indice);
 
-        var definicao = onda.Entries[indice].Enemy;
-        if (definicao is not null)
-            _spawnDirector?.RequestSpawn(definicao);
+        var entrada = onda.Entries[indice];
+        if (entrada.Enemy is { } definicao)
+        {
+            _spawnDirector?.RequestSpawn(definicao, entrada.SpawnGroup);
+
+            if (definicao.IsBoss)
+                _chefeNasceu = true;
+        }
 
         if (fila.IsEmpty)
             _fase = Fase.EsperandoLimpeza;
@@ -218,6 +237,8 @@ public sealed partial class WaveDirector : Node
     {
         if (CurrentWave is not { } onda || _relogio is not { } relogio)
             return;
+
+        TickReforcos(delta, onda);
 
         var ativos = _pool?.ActiveCount ?? 0;
         if (!relogio.TickWaitingForClear(delta, EnemiesRemaining, ativos))
@@ -234,6 +255,32 @@ public sealed partial class WaveDirector : Node
         WaveCleared?.Invoke(onda, CurrentWaveIndex);
     }
 
+    /// <remarks>
+    /// Reforço contínuo (spec 10 §5, ticket 28): enquanto o chefe da onda
+    /// vive, a cada <see cref="WaveDefinition.ReinforcementInterval"/> chega um
+    /// lote. O lote entra na contagem da onda (<see cref="_totalDaOnda"/>) --
+    /// a onda só termina quando TODOS caem, senão sobrariam reforços vivos
+    /// depois da "vitória". Sob o teto de inimigos, o lote espera (o relógio
+    /// continua vencido), nunca é descartado.
+    /// </remarks>
+    private void TickReforcos(float delta, WaveDefinition onda)
+    {
+        if (_reforcos is not { } relogio || onda.ReinforcementEnemy is not { } reforco)
+            return;
+
+        var tetoDeVerdade = Mathf.Min(onda.MaxConcurrent, GlobalActiveCap);
+        var ativos = _pool?.ActiveCount ?? 0;
+        if (!relogio.TryDeliver(
+                delta, _chefeNasceu && !_chefeMorreu, ativos, onda.ReinforcementBatch, tetoDeVerdade))
+            return;
+
+        for (var i = 0; i < onda.ReinforcementBatch; i++)
+            _spawnDirector?.RequestSpawn(reforco, onda.ReinforcementSpawnGroup);
+
+        _totalDaOnda += onda.ReinforcementBatch;
+        ReinforcementsSpawned += onda.ReinforcementBatch;
+    }
+
     private void TickRespiro(float delta)
     {
         if (_relogio is not { } relogio)
@@ -245,7 +292,12 @@ public sealed partial class WaveDirector : Node
 
     private void AoMatarInimigo(EnemyKilledEvent evento)
     {
-        if (_fase is Fase.Spawnando or Fase.EsperandoLimpeza)
-            _abatidosNaOnda++;
+        if (_fase is not (Fase.Spawnando or Fase.EsperandoLimpeza))
+            return;
+
+        _abatidosNaOnda++;
+
+        if (evento.IsBoss)
+            _chefeMorreu = true;
     }
 }

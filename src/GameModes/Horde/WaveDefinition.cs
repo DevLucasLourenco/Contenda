@@ -1,3 +1,4 @@
+using Contenda.Components.AI;
 using Godot;
 
 namespace Contenda.GameModes.Horde;
@@ -9,9 +10,11 @@ namespace Contenda.GameModes.Horde;
 /// aceite da spec §10).
 ///
 /// Deliberadamente sem `IsBossWave`/`MusicOverride`/`EliteChance` (também na
-/// spec §3): `IsBossWave`/`MusicOverride` pertencem aos tickets 28 (onda de
-/// chefe) e 36/M8 (áudio de verdade, `AudioDirector` ainda é um autoload
-/// vazio); `EliteChance` chegou a existir aqui, mas nada neste ticket lê ou
+/// spec §3): `MusicOverride` pertence ao ticket 36/M8 (áudio de verdade,
+/// `AudioDirector` ainda é um autoload vazio); `IsBossWave` nunca foi
+/// necessário -- o `WaveDirector` reconhece o chefe pelo próprio
+/// `EnemyDefinition.IsBoss` de uma entrada, sem uma flag duplicada na onda
+/// (ticket 28); `EliteChance` chegou a existir aqui, mas nada neste ticket lê ou
 /// aplica a chance a um spawn de verdade (virar elite muda
 /// `EnemyDefinition.IsElite`, um `Resource` COMPARTILHADO por todo `grunt`
 /// -- fazer isso por instância exige um mecanismo de sobreposição que este
@@ -37,4 +40,18 @@ public sealed partial class WaveDefinition : Resource
 
     /// <summary>Respiro depois de limpar a onda, antes da próxima começar, em segundos.</summary>
     [Export(PropertyHint.Range, "0,15,0.1")] public float CompletionDelay { get; set; } = 4f;
+
+    // --- reforço contínuo (ticket 28, spec 10 §5: "reforço contínuo" na onda do chefe) ---
+
+    /// <summary>Quem chega de reforço enquanto o chefe da onda vive. Nulo, sem reforços.</summary>
+    [Export] public EnemyDefinition? ReinforcementEnemy { get; set; }
+
+    /// <summary>Quantos reforços chegam por lote.</summary>
+    [Export(PropertyHint.Range, "1,10,1")] public int ReinforcementBatch { get; set; } = 2;
+
+    /// <summary>Segundos entre um lote de reforço e o seguinte. Zero desliga os reforços.</summary>
+    [Export(PropertyHint.Range, "0,60,0.5")] public float ReinforcementInterval { get; set; }
+
+    /// <summary>Grupo de pontos de spawn de onde os reforços descem (spec 17 §6: "as vielas").</summary>
+    [Export] public string ReinforcementSpawnGroup { get; set; } = "";
 }

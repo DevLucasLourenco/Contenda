@@ -90,4 +90,27 @@ public sealed partial class EnemyDefinition : Resource
     /// campo que qualquer arquétipo do jogador já usa.
     /// </remarks>
     [Export] public bool IsBoss { get; set; }
+
+    /// <summary>
+    /// Quantos golpes da cadeia da arma o inimigo encadeia num único ataque.
+    /// </summary>
+    /// <remarks>
+    /// Ticket 28: é o que dá ao chefe "mais de um golpe" sem classe nova (spec
+    /// 09 §6) -- a arma dele traz N passos de combo com dano/alcance/avanço
+    /// diferentes, e o cérebro só insiste até o passo <c>ComboHits</c>. 1 (padrão)
+    /// é um golpe simples, como todo o resto do roster. Só faz sentido com arma
+    /// corpo a corpo.
+    /// </remarks>
+    [Export(PropertyHint.Range, "1,5,1")] public int ComboHits { get; set; } = 1;
+
+    /// <summary>A cena que o <c>EnemyPool</c> instancia para esta espécie. Ver <see cref="PoolSize"/>.</summary>
+    /// <remarks>
+    /// Ticket 28: com mais de uma espécie, o pool precisa saber de onde criar
+    /// cada uma -- o grunt do boot continua vindo dos caminhos exportados do
+    /// próprio pool, mas o resto do roster se prewarma por aqui.
+    /// </remarks>
+    [Export] public PackedScene? Scene { get; set; }
+
+    /// <summary>Quantas instâncias pré-alocar desta espécie no início da partida. Spec 10 §7.</summary>
+    [Export(PropertyHint.Range, "1,200,1")] public int PoolSize { get; set; } = 10;
 }

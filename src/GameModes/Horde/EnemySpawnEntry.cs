@@ -25,4 +25,10 @@ public sealed partial class EnemySpawnEntry : Resource
 
     /// <summary>Atraso antes do primeiro spawn desta entrada, em segundos.</summary>
     [Export(PropertyHint.Range, "0,30,0.1")] public float DelayBeforeFirst { get; set; }
+
+    /// <summary>
+    /// Grupo de nós dos pontos de spawn onde esta entrada nasce (ex.:
+    /// `spawn_plaza`). Vazio, qualquer ponto. Ticket 28, spec 17 §6.
+    /// </summary>
+    [Export] public string SpawnGroup { get; set; } = "";
 }

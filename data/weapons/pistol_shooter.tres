@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.pistol_shooter"
+DisplayName = "Pistola"
+Kind = 1
+BaseDamage = 12.0
+Range = 14.0
+Knockback = 1.0
+AttackInterval = 0.7
+MagazineSize = 6
+ReloadTime = 1.6
+SpreadDegrees = 3.0
+HitstopSeconds = 0.04

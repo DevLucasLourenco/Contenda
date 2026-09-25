@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MeleeComboStep" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/MeleeComboStep.cs" id="1_passo"]
+
+[resource]
+script = ExtResource("1_passo")
+DamageMultiplier = 0.9
+HitWindowStart = 0.45
+HitWindowEnd = 0.6
+ComboWindowEnd = 1.2
+ForwardStep = 0.4
+KnockbackMultiplier = 1.5
+HitstopSeconds = 0.04

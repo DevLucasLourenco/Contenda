@@ -1,4 +1,5 @@
 using Contenda.Characters.Base;
+using Contenda.GameModes;
 using Godot;
 
 namespace Contenda.Core;
@@ -45,6 +46,12 @@ public sealed partial class GameSession : Node
     /// </remarks>
     public CharacterController? BossBody { get; set; }
 
+    /// <summary>
+    /// O resultado da última partida terminada. Nulo antes da primeira. A tela
+    /// de resultado (ticket 29) lê daqui. Spec 10 §9.
+    /// </summary>
+    public GameModeResult? LastResult { get; set; }
+
     public override void _Ready()
     {
         ServiceLocator.Register(this);
@@ -56,5 +63,6 @@ public sealed partial class GameSession : Node
     {
         PlayerBody = null;
         BossBody = null;
+        LastResult = null;
     }
 }

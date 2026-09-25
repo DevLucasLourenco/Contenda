@@ -294,7 +294,18 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             return (false, false);
 
         if (_golpeSolicitado)
-            return (!(_contexto!.Combat?.IsAttacking ?? false), false);
+        {
+            var combate = _contexto?.Combat;
+            var atacando = combate?.IsAttacking ?? false;
+
+            // Encadeia o resto do combo (ticket 28, `ComboHits`): pedir todo
+            // quadro é seguro -- `MeleeCombo.TryStart` recusa até a janela de
+            // acerto do passo atual abrir, e só então aceita o próximo. Parar
+            // em `ComboHits` (nunca além) evita a cadeia da arma dar a volta
+            // para o passo 1 sozinha.
+            var encadearMais = atacando && (combate?.ComboStep ?? 0) < Definition.ComboHits;
+            return (!atacando, encadearMais);
+        }
 
         _windupRestante -= delta;
         if (_windupRestante > 0f)

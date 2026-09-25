@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="HealthDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Health/HealthDefinition.cs" id="1_hp"]
+
+[resource]
+script = ExtResource("1_hp")
+MaxHealth = 900.0
+InvulnerabilityAfterHit = 0.0
