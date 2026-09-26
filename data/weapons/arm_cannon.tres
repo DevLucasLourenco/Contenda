@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/Weapons/WeaponDefinition.cs" id="1_arma"]
+
+[resource]
+script = ExtResource("1_arma")
+Id = &"weapon.arm_cannon"
+DisplayName = "Braço-canhão"
+Kind = 1
+BaseDamage = 26.0
+Range = 20.0
+Knockback = 3.0
+AttackInterval = 0.5
+MagazineSize = 1
+ReloadTime = 0.1
+SpreadDegrees = 0.0
+ExplosionRadius = 2.5
+ProjectileSpeed = 20.0
+EdgeDamageMultiplier = 0.6
+InfiniteAmmo = true
+HitstopSeconds = 0.04

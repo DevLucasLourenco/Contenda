@@ -51,6 +51,9 @@ public sealed class HealthState
     /// <summary>Avisa que caiu. Dispara no máximo uma vez por vida.</summary>
     public event Action<DamageInfo>? Died;
 
+    /// <summary>Aviso síncrono imediatamente antes de emitir Died.</summary>
+    public event Action<DamageInfo>? Dying;
+
     /// <summary>Avisa que foi curado.</summary>
     public event Action<float>? Healed;
 
@@ -80,6 +83,7 @@ public sealed class HealthState
             return true;
 
         IsAlive = false;
+        Dying?.Invoke(golpe);
         Died?.Invoke(golpe);
         return true;
     }

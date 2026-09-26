@@ -45,9 +45,10 @@ public sealed partial class WeaponDefinition : Resource
     /// Tempo mínimo entre tiros, em segundos. Só hitscan.
     /// </summary>
     /// <remarks>
-    /// Dividido por <c>AttackSpeed</c> do <c>StatBlock</c> a cada tiro, nunca
-    /// editado em código: é assim que Overdrive (M4) acelera a cadência da
-    /// pistoleira sem tocar neste `.tres`. Ver spec 07 §5 e o ticket 09.
+    /// Dividido por <c>AttackSpeed</c> do <c>StatBlock</c> a cada tiro. Uma
+    /// arma de forma pode sobrescrever este recurso para mudar a cadência sem
+    /// alterar a arma base -- Overdrive usa 0,50 s contra 0,30 s do revólver.
+    /// Ver spec 07 §5 e ticket 20.
     /// </remarks>
     [Export(PropertyHint.Range, "0.05,3,0.01")] public float AttackInterval { get; set; } = 0.3f;
 
@@ -59,6 +60,18 @@ public sealed partial class WeaponDefinition : Resource
 
     /// <summary>Meia-abertura do cone de dispersão aleatória do tiro, em graus. Só hitscan.</summary>
     [Export(PropertyHint.Range, "0,15,0.1")] public float SpreadDegrees { get; set; } = 1.5f;
+
+    /// <summary>Raio horizontal da explosão por tiro; zero mantém hitscan comum.</summary>
+    [Export(PropertyHint.Range, "0,10,0.1")] public float ExplosionRadius { get; set; }
+
+    /// <summary>Velocidade do projétil quando a arma dispara dano explosivo.</summary>
+    [Export(PropertyHint.Range, "1,60,1")] public float ProjectileSpeed { get; set; } = 20f;
+
+    /// <summary>Multiplicador de dano na borda da explosão.</summary>
+    [Export(PropertyHint.Range, "0,1,0.05")] public float EdgeDamageMultiplier { get; set; } = 0.6f;
+
+    /// <summary>Arma de energia que não consome munição nem recarrega.</summary>
+    [Export] public bool InfiniteAmmo { get; set; }
 
     /// <summary>
     /// Duração do congelamento local ao conectar, em segundos. Só hitscan —

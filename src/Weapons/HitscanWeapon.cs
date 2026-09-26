@@ -34,6 +34,7 @@ public sealed class HitscanWeapon : IWeapon
     private readonly StringName _targetGroup;
     private readonly float _verticalReach;
     private readonly RevolverState _estado;
+    private readonly string _sourceTag;
 
     public HitscanWeapon(
         WeaponDefinition arma,
@@ -51,7 +52,8 @@ public sealed class HitscanWeapon : IWeapon
         _dono = dono;
         _targetGroup = targetGroup;
         _verticalReach = verticalReach;
-        _estado = new RevolverState(arma.MagazineSize, arma.ReloadTime);
+        _estado = new RevolverState(arma.MagazineSize, arma.ReloadTime, arma.InfiniteAmmo);
+        _sourceTag = arma.Id.ToString();
     }
 
     /// <remarks>
@@ -76,7 +78,6 @@ public sealed class HitscanWeapon : IWeapon
     public void Tick(float delta, bool triggerHeld)
     {
         _estado.Advance(delta);
-
         if (triggerHeld)
             TentarDisparo();
     }
@@ -91,7 +92,10 @@ public sealed class HitscanWeapon : IWeapon
     {
     }
 
-    public void ResetForSpawn() => _estado.ResetForSpawn();
+    public void ResetForSpawn()
+    {
+        _estado.ResetForSpawn();
+    }
 
     /// <remarks>
     /// Sem mira válida (cursor além do horizonte, ou o primeiro quadro antes
@@ -129,21 +133,32 @@ public sealed class HitscanWeapon : IWeapon
             : -corpo.GlobalTransform.Basis.Z;
 
         var direcao = AplicarDispersao(direcaoBase);
+        if (_arma.ExplosionRadius > 0f)
+        {
+            DispararProjetil(origem, direcao);
+            return;
+        }
+
         var alcanceEfetivo = AlcanceAteParede(origem, direcao);
         var alvo = EncontrarAlvo(origem, direcao, alcanceEfetivo);
         var destino = origem + (direcao * alcanceEfetivo);
 
+        var critico = CritMath.RolarNaStats(_contexto.Stats);
+        var danoBase = _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
+
         if (alvo is not null)
         {
             destino = alvo.GlobalPosition;
+        }
 
+        if (alvo is not null)
+        {
             // Sorteado aqui, uma vez por tiro -- um hitscan só atinge um
             // alvo por disparo, então não existe o problema de "loteria" do
             // corpo a corpo em área. Ticket 18, spec 16 §5.
-            var critico = CritMath.RolarNaStats(_contexto.Stats);
             var dano = CritMath.AplicarNaStats(
                 _contexto.Stats,
-                _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+                danoBase,
                 critico);
 
             alvo.Context?.Health?.ApplyDamage(new DamageInfo(
@@ -169,6 +184,33 @@ public sealed class HitscanWeapon : IWeapon
         }
 
         DesenharRastro(origem, destino);
+    }
+
+    private void DispararProjetil(Vector3 origem, Vector3 direcao)
+    {
+        var projectileSpeed = Mathf.Max(1f, _arma.ProjectileSpeed);
+        var alcance = Mathf.Max(0.1f, _arma.Range);
+        var critico = CritMath.RolarNaStats(_contexto.Stats);
+        var dano = CritMath.AplicarNaStats(
+            _contexto.Stats,
+            _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f),
+            critico);
+
+        ServiceLocator.Events.RaiseProjectileFire(new ProjectileFireEvent(
+            Origin: origem,
+            Direction: direcao,
+            Speed: projectileSpeed,
+            LifeTime: alcance / projectileSpeed,
+            Damage: dano,
+            ExplosionRadius: _arma.ExplosionRadius,
+            MaxTargets: 0,
+            Knockback: _arma.Knockback,
+            SourceId: _contexto.Body.GetInstanceId(),
+            SourceTag: _sourceTag,
+            ShooterTeam: _contexto.Team,
+            TargetGroup: _targetGroup,
+            IsCritical: critico,
+            EdgeDamageMultiplier: _arma.EdgeDamageMultiplier));
     }
 
     /// <summary>Dispersão aleatória em torno de Y — a mira é sempre horizontal.</summary>

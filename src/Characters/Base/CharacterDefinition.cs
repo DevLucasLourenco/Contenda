@@ -3,6 +3,7 @@ using Contenda.Components.Health;
 using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
+using Contenda.Components.Transformations;
 using Contenda.Weapons;
 using Godot;
 
@@ -45,4 +46,7 @@ public sealed partial class CharacterDefinition : Resource
 
     /// <summary>As habilidades executáveis por sequência de WASD. Vazia é válido — sem AbilityComponent, sem M2.</summary>
     [Export] public AbilityDefinition[] Abilities { get; set; } = [];
+
+    /// <summary>Formas disponíveis para este personagem; vazia é válido.</summary>
+    [Export] public TransformationDefinition[] Transformations { get; set; } = [];
 }

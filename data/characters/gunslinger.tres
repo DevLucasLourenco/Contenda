@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_gunslinger.tres" id="2_mov"]
@@ -10,6 +10,7 @@
 [ext_resource type="Resource" path="res://data/abilities/fan_the_hammer.tres" id="8_fan"]
 [ext_resource type="Resource" path="res://data/abilities/deadeye.tres" id="9_deadeye"]
 [ext_resource type="Resource" path="res://data/characters/shared/stats_gunslinger.tres" id="10_stats"]
+[ext_resource type="Resource" path="res://data/transformations/overdrive.tres" id="11_form"]
 
 [resource]
 script = ExtResource("1_def")
@@ -21,3 +22,4 @@ Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")
 Stats = ExtResource("10_stats")
 Abilities = [ExtResource("6_quickstep"), ExtResource("7_explosive"), ExtResource("8_fan"), ExtResource("9_deadeye")]
+Transformations = [ExtResource("11_form")]

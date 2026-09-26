@@ -8,6 +8,7 @@ using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
+using Contenda.Components.Transformations;
 using Contenda.Core;
 using Contenda.Input;
 using Godot;
@@ -45,6 +46,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private CombatComponent? _combate;
     private AbilityComponent? _habilidades;
     private DamageFlashComponent? _flash;
+    private TransformationComponent? _transformations;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
@@ -200,6 +202,9 @@ public sealed partial class CharacterController : CharacterBody3D
 
         _habilidades?.Tick((float)delta);
 
+        // Formas drenam mana depois das habilidades e antes da regeneração.
+        _transformations?.Tick((float)delta, intencao);
+
         // 3d. mana: regenera, com atraso após qualquer gasto. Precisa vir
         //     DEPOIS das habilidades: um TryExecute bem-sucedido já gastou
         //     mana neste mesmo quadro, e regenerar antes disso devolveria uma
@@ -282,6 +287,10 @@ public sealed partial class CharacterController : CharacterBody3D
             case AbilityComponent a:
                 _habilidades = a;
                 Context!.Abilities = a;
+                break;
+            case TransformationComponent tr:
+                _transformations = tr;
+                Context!.Transformations = tr;
                 break;
             case DamageFlashComponent f:
                 _flash = f;

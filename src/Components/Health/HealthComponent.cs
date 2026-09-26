@@ -63,6 +63,9 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     /// <summary>Avisa que caiu. Uma vez por vida.</summary>
     public event Action<DamageInfo>? Died;
 
+    /// <summary>Aviso anterior a <see cref="Died"/>; formas revertem antes da morte.</summary>
+    public event Action<DamageInfo>? BeforeDied;
+
     /// <summary>Avisa que foi curado.</summary>
     public event Action<float>? Healed;
 
@@ -235,6 +238,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
         _estado.Damaged += RepassarDano;
         _estado.Died += RepassarMorte;
         _estado.Healed += RepassarCura;
+        _estado.Dying += RepassarMorteAntecipada;
     }
 
     private void DesassinarEstado()
@@ -242,6 +246,7 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
         _estado.Damaged -= RepassarDano;
         _estado.Died -= RepassarMorte;
         _estado.Healed -= RepassarCura;
+        _estado.Dying -= RepassarMorteAntecipada;
     }
 
     private void AoMudarAtributo(StatId stat, float valor)
@@ -263,6 +268,8 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     }
 
     private void RepassarMorte(DamageInfo golpe) => Died?.Invoke(golpe);
+
+    private void RepassarMorteAntecipada(DamageInfo golpe) => BeforeDied?.Invoke(golpe);
 
     private void RepassarCura(float quanto) => Healed?.Invoke(quanto);
 }

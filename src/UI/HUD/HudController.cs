@@ -41,6 +41,8 @@ public sealed partial class HudController : CanvasLayer
     /// <summary>A barra do chefe a alimentar.</summary>
     [Export] public NodePath BossBarPath { get; set; } = new();
 
+    [Export] public NodePath TransformationSelectorPath { get; set; } = new();
+
     /// <summary>
     /// Arquétipos alternáveis pela tecla de debug, nesta ordem.
     /// </summary>
@@ -54,6 +56,7 @@ public sealed partial class HudController : CanvasLayer
     private ManaBar? _barraDeMana;
     private AbilityGuide? _guiaDeHabilidades;
     private BossHealthBar? _barraDoChefe;
+    private TransformationSelector? _seletorDeForma;
     private CharacterController? _jogador;
     private CharacterController? _chefeAtual;
     private int _indiceArquetipo;
@@ -70,8 +73,9 @@ public sealed partial class HudController : CanvasLayer
         _barraDeMana = GetNodeOrNull<ManaBar>(ManaBarPath);
         _guiaDeHabilidades = GetNodeOrNull<AbilityGuide>(AbilityGuidePath);
         _barraDoChefe = GetNodeOrNull<BossHealthBar>(BossBarPath);
+        _seletorDeForma = GetNodeOrNull<TransformationSelector>(TransformationSelectorPath);
 
-        if (_barraDeVida is null || _barraDeMana is null || _guiaDeHabilidades is null || _barraDoChefe is null)
+        if (_barraDeVida is null || _barraDeMana is null || _guiaDeHabilidades is null || _barraDoChefe is null || _seletorDeForma is null)
         {
             // Falhar alto: um HUD "quase ligado" pareceria funcionar e nunca
             // atualizaria nada. Convenções §9.
@@ -96,6 +100,7 @@ public sealed partial class HudController : CanvasLayer
         // novo, em vez de ficar ligado a um nó liberado.
         if (_jogador is not null && !GodotObject.IsInstanceValid(_jogador))
         {
+            _seletorDeForma?.Unbind();
             _jogador = null;
             Visible = false;
         }
@@ -126,7 +131,7 @@ public sealed partial class HudController : CanvasLayer
     {
         var encontrado = GetTree().GetFirstNodeInGroup(NodeGroups.Player);
         if (encontrado is not CharacterController jogador
-            || jogador.Context is not { Health: { } vida, Mana: { } mana, Abilities: { } habilidades })
+            || jogador.Context is not { Health: { } vida, Mana: { } mana, Abilities: { } habilidades, Transformations: { } formas })
             return;
 
         _jogador = jogador;
@@ -134,6 +139,7 @@ public sealed partial class HudController : CanvasLayer
         _barraDeVida?.Bind(vida);
         _barraDeMana?.Bind(mana);
         _guiaDeHabilidades?.Bind(habilidades, mana);
+        _seletorDeForma?.Bind(formas);
     }
 
     /// <remarks>

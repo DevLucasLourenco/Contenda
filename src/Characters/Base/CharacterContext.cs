@@ -6,6 +6,7 @@ using Contenda.Components.Mana;
 using Contenda.Components.Movement;
 using Contenda.Components.Stats;
 using Contenda.Components.Targeting;
+using Contenda.Components.Transformations;
 using Contenda.Core;
 using Godot;
 
@@ -60,6 +61,9 @@ public sealed class CharacterContext
 
     /// <summary>Habilidades. Executa uma sequência de WASD confirmada. Nulo para quem não tem nenhuma.</summary>
     public AbilityComponent? Abilities { get; internal set; }
+
+    /// <summary>Formas temporárias que alteram os componentes deste personagem.</summary>
+    public TransformationComponent? Transformations { get; internal set; }
 
     /// <summary>Pathing até um ponto do mundo. Nulo para quem não persegue ninguém (o jogador, os manequins).</summary>
     public NavigationMotor? NavigationMotor { get; internal set; }

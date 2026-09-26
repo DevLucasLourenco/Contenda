@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
 [ext_resource type="Script" path="res://src/Components/Movement/MovementComponent.cs" id="2_mov"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://src/Components/Mana/ManaComponent.cs" id="10_mana"]
 [ext_resource type="Script" path="res://src/Components/Health/DamageFlashComponent.cs" id="11_flash"]
 [ext_resource type="Script" path="res://src/Components/Abilities/AbilityComponent.cs" id="12_hab"]
+[ext_resource type="Script" path="res://src/Components/Transformations/TransformationComponent.cs" id="13_form"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -33,6 +34,26 @@ roughness = 0.5
 [sub_resource type="BoxMesh" id="Mesh_frente"]
 material = SubResource("Mat_frente")
 size = Vector3(0.18, 0.18, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_canhao"]
+albedo_color = Color(0.08, 0.65, 0.9, 1)
+emission_enabled = true
+emission = Color(0.05, 0.75, 1, 1)
+emission_energy_multiplier = 1.5
+metallic = 0.65
+roughness = 0.28
+
+[sub_resource type="CylinderMesh" id="Mesh_canhao"]
+material = SubResource("Mat_canhao")
+top_radius = 0.1
+bottom_radius = 0.14
+height = 0.75
+
+[sub_resource type="CylinderMesh" id="Mesh_bocal"]
+material = SubResource("Mat_canhao")
+top_radius = 0.17
+bottom_radius = 0.14
+height = 0.14
 
 [node name="Character" type="CharacterBody3D" groups=["damageable", "player"]]
 collision_layer = 2
@@ -84,3 +105,17 @@ TorsoHeight = 1.0
 
 [node name="PlayerInputController" type="Node" parent="."]
 script = ExtResource("4_in")
+
+[node name="CannonForma" type="Node3D" parent="."]
+visible = false
+
+[node name="Canhao" type="MeshInstance3D" parent="CannonForma"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.38, 1.1, -0.12)
+mesh = SubResource("Mesh_canhao")
+
+[node name="Bocal" type="MeshInstance3D" parent="CannonForma"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0.38, 1.1, -0.53)
+mesh = SubResource("Mesh_bocal")
+
+[node name="TransformationComponent" type="Node" parent="."]
+script = ExtResource("13_form")

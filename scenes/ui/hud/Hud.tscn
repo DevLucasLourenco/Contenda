@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/UI/HUD/HudController.cs" id="1_hud"]
 [ext_resource type="Script" path="res://src/UI/HUD/HealthBar.cs" id="2_vida"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://src/UI/HUD/BossHealthBar.cs" id="7_chefe"]
 [ext_resource type="Script" path="res://src/UI/HUD/WaveBanner.cs" id="8_onda"]
 [ext_resource type="Script" path="res://src/UI/HUD/ScoreDisplay.cs" id="9_placar"]
+[ext_resource type="Script" path="res://src/UI/HUD/TransformationSelector.cs" id="10_form"]
 
 [node name="Hud" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -16,6 +17,7 @@ HealthBarPath = NodePath("Vida")
 ManaBarPath = NodePath("Mana")
 AbilityGuidePath = NodePath("Habilidades")
 BossBarPath = NodePath("Chefe")
+TransformationSelectorPath = NodePath("Formas")
 DebugArchetypes = [ExtResource("4_sw"), ExtResource("5_gs")]
 
 [node name="Vida" type="Control" parent="."]
@@ -84,6 +86,19 @@ offset_top = 76.0
 offset_right = 340.0
 offset_bottom = 176.0
 script = ExtResource("6_guia")
+
+[node name="Formas" type="Control" parent="."]
+offset_left = 20.0
+offset_top = 184.0
+offset_right = 400.0
+offset_bottom = 232.0
+script = ExtResource("10_form")
+LabelPath = NodePath("Texto")
+
+[node name="Texto" type="Label" parent="Formas"]
+offset_right = 500.0
+offset_bottom = 48.0
+text = "◀  Normal  |  Forma  ▶"
 
 [node name="Chefe" type="Control" parent="."]
 offset_left = 660.0

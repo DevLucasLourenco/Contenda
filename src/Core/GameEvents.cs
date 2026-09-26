@@ -30,6 +30,7 @@ public readonly record struct DamageNumberEvent(Vector3 Position, float Amount, 
 /// explosão em área reaproveita o mesmo valor para todo mundo que ela
 /// atinge, mesma disciplina de um golpe corpo a corpo em área. Ticket 18.
 /// </param>
+/// <param name="EdgeDamageMultiplier">Multiplicador do dano no limite do raio da explosão.</param>
 public readonly record struct ProjectileFireEvent(
     Vector3 Origin,
     Vector3 Direction,
@@ -43,7 +44,8 @@ public readonly record struct ProjectileFireEvent(
     string SourceTag,
     Team ShooterTeam,
     StringName TargetGroup,
-    bool IsCritical);
+    bool IsCritical,
+    float EdgeDamageMultiplier = 1f);
 
 /// <summary>
 /// Um inimigo morreu. Sem identidade nem posição de propósito -- os

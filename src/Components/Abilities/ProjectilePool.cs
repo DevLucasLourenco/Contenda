@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Components.Health;
 using Contenda.Core;
+using Contenda.Weapons;
 using Godot;
 
 namespace Contenda.Components.Abilities;
@@ -33,6 +34,8 @@ public sealed partial class ProjectilePool : Node
     [Export(PropertyHint.Range, "0.05,1,0.05")] public float VisualRadius { get; set; } = 0.2f;
 
     private readonly List<MeshInstance3D> _visuais = [];
+    private readonly List<MeshInstance3D> _visuaisDeExplosao = [];
+    private readonly List<float> _explosoesRestantes = [];
     private readonly List<Vector3> _posicoes = [];
     private readonly List<Vector3> _direcoes = [];
     private readonly List<float> _velocidades = [];
@@ -45,6 +48,7 @@ public sealed partial class ProjectilePool : Node
     private readonly List<string> _fontesTag = [];
     private readonly List<Team> _times = [];
     private readonly List<bool> _criticos = [];
+    private readonly List<float> _multiplicadoresNaBorda = [];
 
     // Um alvo amostrado UMA VEZ, no disparo -- não a cada quadro. Cada slot
     // reutiliza sempre a MESMA List<T> (limpa e recarregada no disparo
@@ -75,6 +79,9 @@ public sealed partial class ProjectilePool : Node
 
     public override void _Ready()
     {
+        var contêinerDeExplosões = new Node3D { Name = "Explosões" };
+        AddChild(contêinerDeExplosões, false, InternalMode.Back);
+
         for (var i = 0; i < PoolSize; i++)
         {
             var visual = new MeshInstance3D
@@ -85,6 +92,20 @@ public sealed partial class ProjectilePool : Node
 
             AddChild(visual);
             _visuais.Add(visual);
+            var visualDeExplosao = new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 1f, Height = 2f },
+                MaterialOverride = new StandardMaterial3D
+                {
+                    AlbedoColor = new Color(0.15f, 0.75f, 1f, 0.35f),
+                    Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                },
+                Visible = false,
+            };
+            contêinerDeExplosões.AddChild(visualDeExplosao);
+            _visuaisDeExplosao.Add(visualDeExplosao);
+            _explosoesRestantes.Add(0f);
             _posicoes.Add(Vector3.Zero);
             _direcoes.Add(Vector3.Forward);
             _velocidades.Add(0f);
@@ -97,6 +118,7 @@ public sealed partial class ProjectilePool : Node
             _fontesTag.Add(string.Empty);
             _times.Add(Team.Neutral);
             _criticos.Add(false);
+            _multiplicadoresNaBorda.Add(1f);
             _alvosEmCache.Add([]);
             _ativos.Add(false);
         }
@@ -112,6 +134,16 @@ public sealed partial class ProjectilePool : Node
 
     public override void _PhysicsProcess(double delta)
     {
+        for (var i = 0; i < _explosoesRestantes.Count; i++)
+        {
+            if (_explosoesRestantes[i] <= 0f)
+                continue;
+
+            _explosoesRestantes[i] -= (float)delta;
+            if (_explosoesRestantes[i] <= 0f)
+                _visuaisDeExplosao[i].Visible = false;
+        }
+
         for (var i = 0; i < _ativos.Count; i++)
         {
             if (!_ativos[i])
@@ -160,7 +192,8 @@ public sealed partial class ProjectilePool : Node
             // `!`: AbilityTargeting só chama este callback para alvos com
             // Health vivo -- é a própria checagem que filtra o candidato.
             alvo.Context!.Health!.ApplyDamage(new DamageInfo(
-                Amount: _danos[i],
+            Amount: _danos[i] * ExplosionMath.DamageMultiplier(
+                ate.Length(), _raiosDeExplosao[i], _multiplicadoresNaBorda[i]),
                 Type: DamageType.Explosive,
                 HitPoint: alvo.GlobalPosition,
                 Direction: direcao,
@@ -178,6 +211,11 @@ public sealed partial class ProjectilePool : Node
         _alvosEmCache[i].Clear();
         _ativos[i] = false;
         _visuais[i].Visible = false;
+        var raio = _raiosDeExplosao[i];
+        _visuaisDeExplosao[i].GlobalPosition = _posicoes[i];
+        _visuaisDeExplosao[i].Scale = Vector3.One * raio;
+        _visuaisDeExplosao[i].Visible = true;
+        _explosoesRestantes[i] = 0.12f;
     }
 
     private void AoPedirDisparo(ProjectileFireEvent evento)
@@ -203,6 +241,7 @@ public sealed partial class ProjectilePool : Node
         _fontesTag[indice] = evento.SourceTag;
         _times[indice] = evento.ShooterTeam;
         _criticos[indice] = evento.IsCritical;
+        _multiplicadoresNaBorda[indice] = evento.EdgeDamageMultiplier;
         _ativos[indice] = true;
 
         // Amostra o grupo AGORA, uma vez só -- ver o comentário de

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="TransformationDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Transformations/TransformationDefinition.cs" id="1_form"]
+[ext_resource type="Resource" path="res://data/weapons/arm_cannon.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_form")
+Id = &"overdrive"
+DisplayName = "Overdrive"
+ThemeColor = Color(0.1, 0.78, 1, 1)
+ManaActivationCost = 25.0
+ManaDrainPerSecond = 5.0
+MinimumDuration = 1.0
+DamageMultiplier = 1.1
+SpeedMultiplier = 1.15
+DefenseMultiplier = 0.9
+CritChanceBonus = 0.05
+WeaponOverride = ExtResource("2_weapon")
+ShowCannonVisual = true

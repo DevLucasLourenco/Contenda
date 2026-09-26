@@ -1,6 +1,7 @@
 using Contenda.Camera;
 using Contenda.Characters.Base;
 using Contenda.Components.Combat;
+using Contenda.Components.Stats;
 using Contenda.Input;
 using Godot;
 
@@ -53,6 +54,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     private int _pulosNoArRestantes;
     private float _dashCooldownRestante;
     private bool _dashUsadoNoAr;
+    private int _extraAirJumps;
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
@@ -115,8 +117,18 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// </remarks>
     public float ExternalGravityScale { get; set; } = 1f;
 
+    /// <summary>Aplica pulos extras temporários sem alterar o recurso compartilhado de movimento.</summary>
+    public void SetExtraAirJumps(int count)
+    {
+        _extraAirJumps = Mathf.Max(0, count);
+        _pulosNoArRestantes = Settings.MaxAirJumps + _extraAirJumps;
+    }
+
     /// <summary>Se um dash está em andamento agora. Para o probe/depuração.</summary>
     public bool IsDashing => _dash.IsActive;
+
+    /// <summary>Quantidade temporária de pulos extras, para HUD e probes.</summary>
+    public int ExtraAirJumps => _extraAirJumps;
 
     /// <summary>Quanto falta para o dash recarregar, em segundos. Para o probe/depuração.</summary>
     public float DashCooldownRemaining => _dashCooldownRestante;
@@ -167,7 +179,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         // deveria deixar um dash em andamento ou uma recarga presa de trás.
         _pulo.Reset();
         _dash.Cancel();
-        _pulosNoArRestantes = Settings.MaxAirJumps;
+        _pulosNoArRestantes = Settings.MaxAirJumps + _extraAirJumps;
         _dashCooldownRestante = 0f;
         _dashUsadoNoAr = false;
         ExternalGravityScale = 1f;
@@ -208,7 +220,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         // recarga própria". Ver spec 16 §3-4.
         if (noChao)
         {
-            _pulosNoArRestantes = Settings.MaxAirJumps;
+            _pulosNoArRestantes = Settings.MaxAirJumps + _extraAirJumps;
             _dashUsadoNoAr = false;
 
             // Todo combo aéreo de verdade termina em aterrissagem: zerar o
@@ -231,7 +243,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         // mas gravidade e repulsão continuam integrando: travar a própria
         // locomoção não deveria imunizar contra ser lançado por um golpe.
         var travado = (travas & ActionLock.Movement) != 0;
-        var desejada = travado ? Vector3.Zero : direcao * Settings.MoveSpeed;
+        var multiplicadorVelocidade = _contexto.Stats?.Get(StatId.MoveSpeed) ?? 1f;
+        var desejada = travado ? Vector3.Zero : direcao * Settings.MoveSpeed * multiplicadorVelocidade;
 
         // Controle no ar: mais lento para acelerar E para frear, nunca a
         // velocidade máxima em si -- "controle reduzido" é sobre redirecionar

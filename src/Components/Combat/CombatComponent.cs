@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Weapons;
 using Godot;
@@ -39,9 +40,14 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     private const string SelfLockSource = "combat.attack";
 
     private readonly ActionLockSet _locks = new();
+    private readonly Dictionary<WeaponDefinition, IWeapon> _instanciasDeArma = [];
 
     private CharacterContext? _contexto;
     private IWeapon _arma = NullWeapon.Instance;
+    private WeaponDefinition _armaBase = new();
+
+    /// <summary>Definição da arma atualmente equipada.</summary>
+    public WeaponDefinition EquippedWeapon { get; private set; } = new();
 
     /// <summary>Se há um golpe em andamento.</summary>
     public bool IsAttacking => _arma.IsAttacking;
@@ -72,10 +78,30 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     {
         // _contexto já existe: o CharacterController garante Bind em todos os
         // componentes antes de Configure em qualquer um. Ver spec 01 §4.1.
-        var arma = definicao.Weapon ?? Fallback ?? new WeaponDefinition();
+        _armaBase = definicao.Weapon ?? Fallback ?? new WeaponDefinition();
+        _instanciasDeArma.Clear();
+        _instanciasDeArma.Add(_armaBase, WeaponFactory.Criar(_armaBase, _contexto!, this, TargetGroup, VerticalReach));
+        Equipar(_armaBase);
+    }
 
+    /// <summary>Troca temporariamente a arma básica, mantendo a original para reversão.</summary>
+    public void SetWeaponOverride(WeaponDefinition? weapon) => Equipar(weapon ?? _armaBase);
+
+    private void Equipar(WeaponDefinition weapon)
+    {
+        if (ReferenceEquals(weapon, EquippedWeapon))
+            return;
+
+        _arma.Cancel();
         DesligarEventos();
-        _arma = WeaponFactory.Criar(arma, _contexto!, this, TargetGroup, VerticalReach);
+        EquippedWeapon = weapon;
+        if (!_instanciasDeArma.TryGetValue(weapon, out var instancia))
+        {
+            instancia = WeaponFactory.Criar(weapon, _contexto!, this, TargetGroup, VerticalReach);
+            _instanciasDeArma.Add(weapon, instancia);
+        }
+
+        _arma = instancia;
         LigarEventos();
     }
 

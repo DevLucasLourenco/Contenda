@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="TransformationDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/Components/Transformations/TransformationDefinition.cs" id="1_form"]
+[ext_resource type="Resource" path="res://data/weapons/sword_berserker.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_form")
+Id = &"berserker"
+DisplayName = "Berserker"
+ThemeColor = Color(0.95, 0.2, 0.12, 1)
+ManaActivationCost = 20.0
+ManaDrainPerSecond = 4.0
+MinimumDuration = 1.0
+DamageMultiplier = 1.6
+SpeedMultiplier = 1.15
+DefenseMultiplier = 0.8
+CritChanceBonus = 0.35
+ExtraAirJumps = 1
+WeaponOverride = ExtResource("2_weapon")

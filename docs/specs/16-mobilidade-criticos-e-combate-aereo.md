@@ -279,6 +279,6 @@ contrapeso, porque a forma agora **é** a arma.
 - [ ] `Rising Slash` → pulo → golpes aéreos → estocada de queda funciona como
       combo contínuo
 - [ ] Nenhum inimigo passa de 4 acertos aéreos consecutivos
-- [ ] Berserker eleva o crítico a ~45 % e concede pulo duplo
-- [ ] Overdrive **troca a arma**: tiros passam a explodir em área e a recarga some
+- [x] Berserker eleva o crítico a ~45 % e concede pulo duplo
+- [x] Overdrive **troca a arma**: tiros passam a explodir em área e a recarga some
 - [ ] Reverter qualquer forma devolve arma, atributos e pulos ao estado base

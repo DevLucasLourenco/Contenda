@@ -20,14 +20,16 @@ public sealed class RevolverState
 {
     private readonly int _capacidade;
     private readonly float _reloadTime;
+    private readonly bool _infiniteAmmo;
 
     private float _cooldownRestante;
     private float _reloadRestante;
 
-    public RevolverState(int capacidade, float reloadTime)
+    public RevolverState(int capacidade, float reloadTime, bool infiniteAmmo = false)
     {
         _capacidade = Mathf.Max(1, capacidade);
         _reloadTime = reloadTime;
+        _infiniteAmmo = infiniteAmmo;
         Rounds = _capacidade;
     }
 
@@ -38,7 +40,7 @@ public sealed class RevolverState
     public bool IsReloading => _reloadRestante > 0f;
 
     /// <summary>Se um tiro agora seria aceito.</summary>
-    public bool CanFire => !IsReloading && _cooldownRestante <= 0f && Rounds > 0;
+    public bool CanFire => !IsReloading && _cooldownRestante <= 0f && (_infiniteAmmo || Rounds > 0);
 
     /// <summary>Envelhece a cadência e a recarga pelo quadro.</summary>
     public void Advance(float delta)
@@ -69,10 +71,11 @@ public sealed class RevolverState
         if (!CanFire)
             return false;
 
-        Rounds--;
+        if (!_infiniteAmmo)
+            Rounds--;
         _cooldownRestante = intervalo;
 
-        if (Rounds <= 0)
+        if (!_infiniteAmmo && Rounds <= 0)
             _reloadRestante = _reloadTime;
 
         return true;

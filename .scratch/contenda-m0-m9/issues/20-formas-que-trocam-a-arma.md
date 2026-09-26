@@ -7,18 +7,36 @@ pulo. A pistoleira larga o revólver: o braço vira canhão e cada tiro explode 
 
 **Blocked by:** 18, 19, e a transformação básica funcionando
 
-**Status:** ready-for-agent
+**Status:** concluído
 
-- [ ] Uma forma pode **substituir a arma equipada**, e não só a aparência
-- [ ] Berserker: chance de crítico salta para perto da metade dos golpes
-- [ ] Berserker: concede um pulo extra, e o telhado da arena passa a ser alcançável
-- [ ] Berserker: acrescenta um golpe à cadeia aérea e encurta a recuperação do mergulho
-- [ ] Overdrive: o revólver some e o braço direito vira canhão, visualmente
-- [ ] Overdrive: cada tiro causa dano em área, com dano menor na borda
-- [ ] Overdrive: **acaba a munição e a recarga** — a arma é energia
-- [ ] Overdrive: a cadência é mais **lenta** que a do revólver, não mais rápida
-- [ ] Reverter devolve arma, atributos, pulos e aparência ao estado base, exatos
-- [ ] Morrer transformado não deixa o canhão preso no braço no respawn
+- [x] Uma forma pode **substituir a arma equipada**, e não só a aparência
+- [x] Berserker: chance de crítico salta para perto da metade dos golpes
+- [x] Berserker: concede um pulo extra, e o telhado da arena passa a ser alcançável
+- [x] Berserker: acrescenta um golpe à cadeia aérea e encurta a recuperação do mergulho
+- [x] Overdrive: o revólver some e o braço direito vira canhão, visualmente (placeholder geométrico até os modelos do ticket 34)
+- [x] Overdrive: cada acerto do tiro causa dano em área, com dano reduzido linearmente até 60% na borda
+- [x] Overdrive: **acaba a munição e a recarga** — a arma é energia
+- [x] Overdrive: a cadência é mais **lenta** que a do revólver, não mais rápida
+- [x] Reverter devolve arma, atributos, pulos e aparência ao estado base, exatos
+- [x] Morrer transformado não deixa o canhão preso no braço no respawn
+
+## Implementação
+
+O repositório não tinha ainda o pré-requisito descrito em `Blocked by`: a
+transformação básica. Foi incluída a base necessária do M4: seleção com scroll,
+ativação com M3, custo e dreno de mana, duração mínima, modificadores por fonte,
+reversão ao zerar mana ou antes do evento de morte e seletor no HUD.
+
+`TransformationDefinition` e as formas vivem em `.tres`. `CombatComponent`
+mantém instâncias das armas base e de forma, para voltar ao revólver com seu
+estado preservado. `arm_cannon.tres` dispara projéteis do pool existente, a
+20 m/s, que explodem ao se aproximar de um alvo ou ao atingir o alcance máximo;
+o dano cai linearmente de 100% no centro para 60% a 2,5 m. O placeholder
+geométrico do canhão aparece no lado direito do avatar cápsula; o modelo
+articulado continua sendo trabalho do ticket 34.
+
+`TransformationProbe` valida Berserker, Overdrive, a troca/reversão das armas,
+os atributos e a reversão síncrona da forma antes do evento de morte.
 
 ## Comments
 
