@@ -109,7 +109,7 @@ public sealed partial class HordeMatchProbe : Node
         }
 
         // Um perfil PRÓPRIO do probe -- partidas de teste nunca sujam o de verdade.
-        _modo.ProfilePath = CaminhoDoPerfil;
+        ServiceLocator.Session.ProfilePath = CaminhoDoPerfil;
         var perfilReal = ProjectSettings.GlobalizePath(CaminhoDoPerfil);
         if (File.Exists(perfilReal))
             File.Delete(perfilReal);

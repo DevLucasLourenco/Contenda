@@ -75,6 +75,9 @@ public readonly record struct MatchEndedEvent(Contenda.GameModes.GameModeResult 
 /// <param name="Loading">Falso quando o carregamento acabou (ou nunca começou) e a tela deve sumir.</param>
 public readonly record struct SceneLoadProgressEvent(float Progress, bool Loading);
 
+/// <summary>As configurações foram aplicadas -- quem depende delas (tremor, números de dano, guia de combos, janela de comandos) relê. Ticket 32.</summary>
+public readonly record struct SettingsChangedEvent;
+
 /// <summary>Uma onda começou e precisa anunciar o próprio nome na tela.</summary>
 /// <param name="DisplayName">O texto do banner, ex.: "ONDA 3".</param>
 public readonly record struct WaveAnnouncedEvent(string DisplayName);
@@ -120,6 +123,9 @@ public sealed partial class GameEvents : Node
     /// <summary>Avisa que um marcador de nascimento precisa aparecer no chão. Ticket 27.</summary>
     public event Action<SpawnMarkerEvent>? SpawnMarkerRequested;
 
+    /// <summary>Avisa que as configurações foram aplicadas. Ticket 32.</summary>
+    public event Action<SettingsChangedEvent>? SettingsChanged;
+
     /// <summary>Avisa o andamento do carregamento de uma cena. Ticket 30.</summary>
     public event Action<SceneLoadProgressEvent>? SceneLoadProgress;
 
@@ -143,6 +149,9 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="EnemyKilled"/>.</summary>
     public void RaiseEnemyKilled(in EnemyKilledEvent evento) => EnemyKilled?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="SettingsChanged"/>.</summary>
+    public void RaiseSettingsChanged(in SettingsChangedEvent evento) => SettingsChanged?.Invoke(evento);
 
     /// <summary>Dispara <see cref="SceneLoadProgress"/>.</summary>
     public void RaiseSceneLoadProgress(in SceneLoadProgressEvent evento) => SceneLoadProgress?.Invoke(evento);

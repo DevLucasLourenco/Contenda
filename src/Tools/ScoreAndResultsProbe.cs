@@ -85,7 +85,7 @@ public sealed partial class ScoreAndResultsProbe : Node
             return;
         }
 
-        _modo.ProfilePath = CaminhoDoPerfil;
+        ServiceLocator.Session.ProfilePath = CaminhoDoPerfil;
 
         if (s_recarregou)
         {

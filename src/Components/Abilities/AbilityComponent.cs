@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
+using Contenda.Core;
 using Contenda.Input;
 using Godot;
 
@@ -52,6 +53,9 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
 
     /// <summary>As habilidades deste personagem, na ordem do <see cref="CharacterDefinition"/>.</summary>
     public IReadOnlyList<AbilityDefinition> Abilities => _habilidades;
+
+    /// <summary>Quanto tempo um símbolo de comando vale agora, em segundos (a opção do jogador, ticket 32). Para o probe/depuração.</summary>
+    public float CommandWindowSeconds => _buffer.TokenLifetime;
 
     /// <summary>A habilidade em execução agora. Nulo se ocioso.</summary>
     public AbilityDefinition? Executing => _executando;
@@ -106,15 +110,32 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
             ? new AbilityComboResolver<AbilityDefinition>(_habilidades, a => a.Sequence, a => a.DisplayName)
             : null;
 
-        _buffer = new CommandBuffer(BufferCapacity, TokenLifetime, SequenceTimeout);
+        RecriarBuffer();
         CancelCurrent();
         _recargas.Reset();
+
+        // Assina uma vez só, mesmo com Configure rodando de novo (troca de arquétipo).
+        ServiceLocator.Events.SettingsChanged -= AoMudarConfiguracoes;
+        ServiceLocator.Events.SettingsChanged += AoMudarConfiguracoes;
 
         AbilitiesChanged?.Invoke();
     }
 
+    /// <remarks>
+    /// A tolerância da janela de comandos é opção do jogador (spec 14 §1,
+    /// acessibilidade): o buffer nasce com ela, e uma troca nas configurações
+    /// recria o buffer -- o que estava digitado se perde, mas isso só acontece
+    /// no menu de pause, nunca no meio de uma sequência.
+    /// </remarks>
+    private void RecriarBuffer()
+        => _buffer = new CommandBuffer(BufferCapacity, ServiceLocator.Session.Settings.Gameplay.CommandWindowSeconds, SequenceTimeout);
+
+    private void AoMudarConfiguracoes(SettingsChangedEvent evento) => RecriarBuffer();
+
     public override void _ExitTree()
     {
+        ServiceLocator.Events.SettingsChanged -= AoMudarConfiguracoes;
+
         if (_contexto?.Health is not null)
             _contexto.Health.Died -= AoMorrer;
     }

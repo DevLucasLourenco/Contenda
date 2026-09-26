@@ -1,4 +1,5 @@
 using Contenda.Characters.Base;
+using Contenda.Core;
 using Contenda.Components.Health;
 using Godot;
 
@@ -133,7 +134,7 @@ public sealed partial class CameraRig : Node3D
     /// </remarks>
     public void Shake(float intensidade)
     {
-        var escalada = intensidade * Settings.ShakeIntensityMultiplier;
+        var escalada = intensidade * Settings.ShakeIntensityMultiplier * ServiceLocator.Session.Settings.Gameplay.ShakeMultiplier;
         if (escalada <= 0f)
             return;
 

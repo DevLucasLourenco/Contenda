@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using Contenda.Components.Abilities;
 using Contenda.Components.Mana;
+using Contenda.Core;
 using Contenda.Input;
+using Contenda.Settings;
 using Godot;
 
 namespace Contenda.UI.HUD;
@@ -79,6 +81,34 @@ public sealed partial class AbilityGuide : Control
     private AbilityComponent? _habilidades;
     private ManaComponent? _mana;
     private float _piscarRestante;
+    private string _teclaDeConfirmar = "";
+
+    /// <summary>A tecla de confirmar que a guia mostra agora ("+ Mouse 2"). Para o probe/depuração.</summary>
+    public string ConfirmKeyText => _teclaDeConfirmar;
+
+    public override void _Ready()
+    {
+        AtualizarConfiguracoes();
+        ServiceLocator.Events.SettingsChanged += AoMudarConfiguracoes;
+    }
+
+    /// <remarks>
+    /// Duas opções do jogador chegam aqui (ticket 32): mostrar ou esconder a
+    /// guia, e a tecla de confirmar -- a guia mostra "+ tecla" depois de cada
+    /// sequência, lida do `InputMap`, então remapear a confirmação nunca a
+    /// deixa mentindo.
+    /// </remarks>
+    private void AoMudarConfiguracoes(SettingsChangedEvent evento)
+    {
+        AtualizarConfiguracoes();
+        Reconstruir();
+    }
+
+    private void AtualizarConfiguracoes()
+    {
+        Visible = ServiceLocator.Session.Settings.Gameplay.ShowComboGuide;
+        _teclaDeConfirmar = SettingsStore.DescribeAction(InputActions.CommandConfirm);
+    }
 
     /// <summary>Quantas linhas existem agora. Para o probe/depuração.</summary>
     public int RowCount => _linhas.Count;
@@ -97,7 +127,11 @@ public sealed partial class AbilityGuide : Control
         Reconstruir();
     }
 
-    public override void _ExitTree() => Desassinar();
+    public override void _ExitTree()
+    {
+        ServiceLocator.Events.SettingsChanged -= AoMudarConfiguracoes;
+        Desassinar();
+    }
 
     public override void _PhysicsProcess(double delta)
     {
@@ -274,6 +308,8 @@ public sealed partial class AbilityGuide : Control
 
             _textoDaLinha.Append(SimboloPara(habilidade.Sequence[i]));
         }
+
+        _textoDaLinha.Append(" + ").Append(_teclaDeConfirmar);
     }
 
     /// <remarks>

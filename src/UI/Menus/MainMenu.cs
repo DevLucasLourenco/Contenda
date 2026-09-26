@@ -34,6 +34,8 @@ public sealed partial class MainMenu : Node
 
     [Export] public PackedScene? ModeMenuScene { get; set; }
 
+    [Export] public PackedScene? SettingsMenuScene { get; set; }
+
     /// <summary>A partida do modo horda.</summary>
     [Export(PropertyHint.File, "*.tscn")]
     public string HordeScenePath { get; set; } = "res://scenes/arena/HordeMatch.tscn";
@@ -47,6 +49,7 @@ public sealed partial class MainMenu : Node
     private Button? _sair;
     private Node? _overlayRoot;
     private GameModeMenu? _modos;
+    private SettingsMenu? _ajustes;
 
     /// <summary>O fundo 3D. Para o probe/depuração.</summary>
     public MenuBackdrop? Backdrop => GetNodeOrNull<MenuBackdrop>(BackdropPath);
@@ -59,6 +62,9 @@ public sealed partial class MainMenu : Node
 
     /// <summary>O overlay de escolha de modo, se aberto agora. Para o probe/depuração.</summary>
     public GameModeMenu? OpenModeMenu => _modos;
+
+    /// <summary>O overlay de configurações, se aberto agora. Para o probe/depuração.</summary>
+    public SettingsMenu? OpenSettings => _ajustes;
 
     public bool IsMainPanelShowing => _painel?.Visible ?? false;
 
@@ -81,6 +87,7 @@ public sealed partial class MainMenu : Node
         ServiceLocator.Session.ResetToMenu();
 
         _iniciar.Pressed += AbrirModos;
+        _configuracoes.Pressed += AbrirConfiguracoes;
         _sair.Pressed += () => GetTree().Quit();
 
         // Visível e desabilitado até a tela de destino existir.
@@ -101,6 +108,31 @@ public sealed partial class MainMenu : Node
 
         _modos.ModeChosen += AoEscolherModo;
         _modos.BackRequested += FecharModos;
+    }
+
+    private void AbrirConfiguracoes()
+    {
+        if (_ajustes is not null || _modos is not null || _painel is null || _overlayRoot is null || SettingsMenuScene is null)
+            return;
+
+        _ajustes = SettingsMenuScene.Instantiate<SettingsMenu>();
+        _overlayRoot.AddChild(_ajustes);
+        _painel.Visible = false;
+        _ajustes.BackRequested += FecharConfiguracoes;
+    }
+
+    private void FecharConfiguracoes()
+    {
+        if (_ajustes is null)
+            return;
+
+        _ajustes.QueueFree();
+        _ajustes = null;
+
+        if (_painel is not null)
+            _painel.Visible = true;
+
+        _configuracoes?.GrabFocus();
     }
 
     private void FecharModos()

@@ -38,10 +38,6 @@ public sealed partial class HordeGameMode : Node, IGameMode
     /// <summary>Começa a partida sozinho ao entrar na árvore. Falso na arena base; verdadeiro na cena jogável.</summary>
     [Export] public bool AutoStart { get; set; }
 
-    /// <summary>Onde o perfil (recordes e estatísticas) é gravado. Spec 14 §3.</summary>
-    /// <remarks>Um probe aponta isto para outro arquivo -- nunca deve sujar o perfil de verdade.</remarks>
-    [Export] public string ProfilePath { get; set; } = "user://profile.cfg";
-
     /// <summary>Os números do placar (combo, bônus de onda). Spec 10 §8.</summary>
     [Export] public ScoreRulesDefinition? ScoreRulesData { get; set; }
 
@@ -194,6 +190,9 @@ public sealed partial class HordeGameMode : Node, IGameMode
         _waveDirector.WaveStarted += AoComecarOnda;
         _waveDirector.WaveCleared += AoLimparOnda;
 
+        // Uma partida nova não herda o resultado da anterior (o pause só abre sem resultado pendente).
+        ServiceLocator.Session.LastResult = null;
+
         _placar = new ScoreKeeper((ScoreRulesData ?? new ScoreRulesDefinition()).ToRules());
         _ondasLimpas = 0;
         _abates = 0;
@@ -258,7 +257,7 @@ public sealed partial class HordeGameMode : Node, IGameMode
     {
         try
         {
-            new ProfileStore(ProjectSettings.GlobalizePath(ProfilePath)).RecordMatch(
+            new ProfileStore(ProjectSettings.GlobalizePath(ServiceLocator.Session.ProfilePath)).RecordMatch(
                 resultado.CharacterId.ToString(),
                 resultado.Score,
                 resultado.WavesCleared,
@@ -267,7 +266,7 @@ public sealed partial class HordeGameMode : Node, IGameMode
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            GD.PushError($"{Name}: não consegui gravar o perfil em {ProfilePath}: {e.Message}");
+            GD.PushError($"{Name}: não consegui gravar o perfil em {ServiceLocator.Session.ProfilePath}: {e.Message}");
         }
     }
 

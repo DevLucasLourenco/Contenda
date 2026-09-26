@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Contenda.Core;
@@ -72,6 +73,13 @@ public sealed partial class MenuProbe : Node
 
     private async Task Roteiro()
     {
+        // Um perfil PRÓPRIO do probe: as partidas que ele joga (e perde) não sujam o de verdade.
+        var perfilDoProbe = ProjectSettings.GlobalizePath("user://probe_menu_profile.cfg");
+        if (File.Exists(perfilDoProbe))
+            File.Delete(perfilDoProbe);
+
+        ServiceLocator.Session.ProfilePath = "user://probe_menu_profile.cfg";
+
         // --- o menu abre, com a cidade ao fundo e sem HUD ---
         await AteACenaSer("MainMenu");
         await Quadros(10);
@@ -98,8 +106,24 @@ public sealed partial class MenuProbe : Node
         Verificar((backdrop.BackdropCamera?.Position ?? Vector3.Zero).DistanceTo(posicaoAntes) > 0.01f,
             "a câmera do fundo deveria estar em órbita");
 
+        // --- configurações pelo menu principal (a mesma cena do pause) ---
+        Verificar(menu.SettingsButton is { Disabled: false }, "com a tela de configurações existindo, o botão deveria estar habilitado");
+        menu.SettingsButton!.EmitSignal(BaseButton.SignalName.Pressed);
+        await Quadros(3);
+        Verificar(menu.OpenSettings is not null && !menu.IsMainPanelShowing, "CONFIGURAÇÕES deveria abrir a tela de ajustes por cima");
+        var cenaDoMenu = menu.SettingsMenuScene?.ResourcePath;
+        Apertar("ui_cancel");
+        await AteQue(() => menu.OpenSettings is null);
+        await Quadros(2);
+        Verificar(menu.OpenSettings is null && menu.IsMainPanelShowing, "ESC deveria fechar as configurações e voltar ao menu");
+        Verificar(GetViewport().GuiGetFocusOwner() == menu.SettingsButton, "voltar das configurações deveria devolver o foco ao botão");
+
         // --- iniciar leva à escolha de modo; teclado; voltar ---
         // Enter no botão que tem o foco, não um sinal: prova foco + ação juntos.
+        // (Depois de voltar das configurações o foco está nelas -- sobe para INICIAR pelo teclado.)
+        Apertar("ui_up");
+        await Quadros(2);
+        Verificar(GetViewport().GuiGetFocusOwner() == menu.StartButton, "seta para cima de CONFIGURAÇÕES deveria ir para INICIAR");
         Apertar("ui_accept");
         await Quadros(3);
 
@@ -127,7 +151,8 @@ public sealed partial class MenuProbe : Node
         Verificar(GetViewport().GuiGetFocusOwner() == modos.HordeButton, "seta para cima deveria voltar ao Horde");
 
         Apertar("ui_cancel");
-        await Quadros(5);
+        await AteQue(() => menu.OpenModeMenu is null);
+        await Quadros(2);
         Verificar(menu.OpenModeMenu is null, "ESC deveria fechar a escolha de modo (e liberar o nó)");
         Verificar(menu.IsMainPanelShowing, "voltar deveria mostrar o menu principal de novo");
         Verificar(GetViewport().GuiGetFocusOwner() == menu.StartButton, "voltar deveria devolver o foco a INICIAR");
@@ -170,6 +195,14 @@ public sealed partial class MenuProbe : Node
             Verificar(hud is { Visible: true } && ReferenceEquals(hud.BoundPlayer, ServiceLocator.Session.PlayerBody),
                 "o HUD deveria estar ligado ao jogador NOVO da partida");
 
+            // Uma volta sai pelo pause: Esc, configurações, voltar, "sair para o menu".
+            if (volta == 2)
+            {
+                await PelaPausa(cenaDoMenu);
+                nosDepoisDoCiclo.Add(NosNaArvore());
+                continue;
+            }
+
             // A última volta usa o caminho de VERDADE do jogador: morrer, tela de
             // resultado, botão "menu principal". As outras vão direto pelo roteador.
             if (volta == VoltasMenuPartidaMenu - 1)
@@ -198,6 +231,70 @@ public sealed partial class MenuProbe : Node
         // A primeira volta cria estoque (pool de inimigos); as seguintes não podem crescer.
         Verificar(nosDepoisDoCiclo[^1] == nosDepoisDoCiclo[^2] && nosDepoisDoCiclo[^2] == nosDepoisDoCiclo[^3],
             $"menu -> partida -> menu não deveria acumular nós entre voltas; {string.Join(" -> ", nosDepoisDoCiclo)}");
+    }
+
+    /// <summary>O pause de verdade: Esc congela, o HUD fica, configurações abrem e fecham, "sair" volta ao menu despausado.</summary>
+    private async Task PelaPausa(string? cenaDeConfiguracoesDoMenu)
+    {
+        var pausa = Encontrar<PauseMenu>(GetTree().Root);
+        Verificar(pausa is { IsOpen: false }, "o menu de pause deveria existir e nascer fechado");
+        if (pausa is null)
+            return;
+
+        Verificar(pausa.SettingsMenuScene?.ResourcePath == cenaDeConfiguracoesDoMenu,
+            "o pause e o menu principal deveriam usar a MESMA cena de configurações");
+
+        Apertar("pause");
+        await AteQue(() => pausa.IsOpen);
+        Verificar(pausa.IsOpen && GetTree().Paused, "Esc no meio da partida deveria pausar e abrir o menu");
+        Verificar(Encontrar<HudController>(GetTree().Root) is { Visible: true }, "o HUD deveria continuar visível atrás do pause");
+
+        Apertar("pause");
+        await AteQue(() => !pausa.IsOpen);
+        Verificar(!pausa.IsOpen && !GetTree().Paused, "Esc de novo deveria continuar a partida");
+
+        // CONTINUAR pelo botão, e REINICIAR recarrega a partida (cena nova, jogador novo, despausado).
+        Apertar("pause");
+        await AteQue(() => pausa.IsOpen);
+        pausa.ContinueButton!.EmitSignal(BaseButton.SignalName.Pressed);
+        await AteQue(() => !pausa.IsOpen);
+        Verificar(!pausa.IsOpen && !GetTree().Paused, "o botão CONTINUAR deveria voltar à partida");
+
+        var cenaAntes = GetTree().CurrentScene;
+        Apertar("pause");
+        await AteQue(() => pausa.IsOpen);
+        pausa.RestartButton!.EmitSignal(BaseButton.SignalName.Pressed);
+        await AteQue(() => GetTree().CurrentScene != cenaAntes && GetTree().CurrentScene?.Name == "HordeMatch");
+        await Quadros(30);
+        Verificar(GetTree().CurrentScene != cenaAntes, "REINICIAR deveria recarregar a partida (cena nova)");
+        Verificar(!GetTree().Paused && !pausa.IsOpen, "REINICIAR deveria nascer despausado e com o pause fechado");
+        Verificar(ServiceLocator.Session.PlayerBody is not null, "a partida reiniciada deveria ter jogador novo");
+
+        Apertar("pause");
+        await AteQue(() => pausa.IsOpen);
+        pausa.SettingsButton!.EmitSignal(BaseButton.SignalName.Pressed);
+        await AteQue(() => pausa.OpenSettings is not null);
+        Verificar(pausa.OpenSettings is not null && GetTree().Paused, "CONFIGURAÇÕES no pause deveria abrir os ajustes, ainda pausado");
+
+        Apertar("ui_cancel");
+        await AteQue(() => pausa.OpenSettings is null);
+        await Quadros(2);
+        Verificar(pausa.OpenSettings is null && pausa.IsOpen && GetTree().Paused, "ESC nas configurações deveria voltar ao pause, não à partida");
+
+        pausa.QuitButton!.EmitSignal(BaseButton.SignalName.Pressed);
+        Verificar(!GetTree().Paused, "sair do pause para o menu deveria despausar a árvore");
+        await AteACenaSer("MainMenu");
+        await Quadros(30);
+
+        Verificar(!GetTree().Paused, "o menu não deveria nascer pausado depois de sair do pause");
+        Verificar(!pausa.IsOpen, "o pause deveria estar fechado no menu");
+        Verificar(ServiceLocator.Session.PlayerBody is null, "de volta ao menu pelo pause não deveria sobrar jogador");
+        Verificar(Encontrar<HudController>(GetTree().Root) is { Visible: false }, "o HUD deveria sumir no menu");
+
+        // No menu, Esc não abre o pause.
+        Apertar("pause");
+        await Quadros(3);
+        Verificar(!pausa.IsOpen && !GetTree().Paused, "o pause não deveria abrir no menu principal");
     }
 
     /// <summary>Morre na partida, espera a tela de resultado e volta ao menu apertando o botão dela.</summary>
@@ -244,9 +341,10 @@ public sealed partial class MenuProbe : Node
     private async Task AbrirEFechar(MainMenu menu)
     {
         menu.StartButton!.EmitSignal(BaseButton.SignalName.Pressed);
-        await Quadros(3);
+        await AteQue(() => menu.OpenModeMenu is not null);
         Apertar("ui_cancel");
-        await Quadros(5);
+        await AteQue(() => menu.OpenModeMenu is null);
+        await Quadros(2);
     }
 
     private void AoAndarOCarregamento(SceneLoadProgressEvent evento)
@@ -261,6 +359,13 @@ public sealed partial class MenuProbe : Node
     {
         Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = true });
         Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = false });
+    }
+
+    /// <summary>Espera a condição valer (até ~1 s de jogo): entrada injetada com a árvore pausada nem sempre é entregue no mesmo quadro.</summary>
+    private async Task AteQue(Func<bool> condicao)
+    {
+        for (var i = 0; i < 90 && !condicao(); i++)
+            await Quadros(1);
     }
 
     private async Task Quadros(int quantos)
@@ -322,6 +427,10 @@ public sealed partial class MenuProbe : Node
 
     private void Concluir()
     {
+        var perfilDoProbe = ProjectSettings.GlobalizePath("user://probe_menu_profile.cfg");
+        if (File.Exists(perfilDoProbe))
+            File.Delete(perfilDoProbe);
+
         if (_falhas.Count > 0)
         {
             GD.PrintErr($"[menu] {_falhas.Count} verificação(ões) falharam");

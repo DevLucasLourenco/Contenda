@@ -1,4 +1,5 @@
 using System.IO;
+using Contenda.Settings;
 using Godot;
 
 namespace Contenda.Core;
@@ -25,6 +26,10 @@ public sealed partial class GameBootstrap : Node
     [Export(PropertyHint.File, "*.tscn")]
     public string LoadingScenePath { get; set; } = "res://scenes/ui/menus/LoadingScreen.tscn";
 
+    /// <summary>Caminho do menu de pause (ticket 32), adicionado à raiz como o HUD.</summary>
+    [Export(PropertyHint.File, "*.tscn")]
+    public string PauseScenePath { get; set; } = "res://scenes/ui/menus/PauseMenu.tscn";
+
     /// <summary>Caminho da tela de resultado (ticket 29), adicionada à raiz como o HUD.</summary>
     [Export(PropertyHint.File, "*.tscn")]
     public string ResultsScenePath { get; set; } = "res://scenes/ui/menus/ResultsScreen.tscn";
@@ -32,6 +37,9 @@ public sealed partial class GameBootstrap : Node
     public override void _Ready()
     {
         GD.Print($"[boot] {ProjectInfo.Describe()}");
+
+        // As configurações valem ANTES da primeira cena (spec 14 §2): sem arquivo, são os padrões.
+        SettingsStore.LoadAndApply(ServiceLocator.Session, GetTree());
 
         // O HUD vive fora da cena do nível de propósito: `Arena.tscn` não pode
         // instanciar uma cena de `scenes/ui/` sem reprovar o verificador
@@ -64,6 +72,7 @@ public sealed partial class GameBootstrap : Node
         // mesmo motivo (regra 1 do CLAUDE.md) -- escondidas até serem chamadas.
         AdicionarNaRaiz(ResultsScenePath, "a tela de resultado");
         AdicionarNaRaiz(LoadingScenePath, "a tela de carregamento");
+        AdicionarNaRaiz(PauseScenePath, "o menu de pause");
 
         GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
     }

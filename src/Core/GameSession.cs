@@ -1,5 +1,6 @@
 using Contenda.Characters.Base;
 using Contenda.GameModes;
+using Contenda.Settings;
 using Godot;
 
 namespace Contenda.Core;
@@ -51,6 +52,15 @@ public sealed partial class GameSession : Node
     /// de resultado (ticket 29) lê daqui. Spec 10 §9.
     /// </summary>
     public GameModeResult? LastResult { get; set; }
+
+    /// <summary>As configurações valendo agora (spec 14 §2). O <c>GameBootstrap</c> carrega do disco no boot; o menu troca por <c>SettingsStore.Commit</c>.</summary>
+    public GameSettings Settings { get; set; } = new();
+
+    /// <summary>Onde o perfil (recordes e estatísticas) é gravado, spec 14 §3. Um probe aponta isto para outro arquivo -- partidas de teste nunca sujam o perfil de verdade.</summary>
+    public string ProfilePath { get; set; } = "user://profile.cfg";
+
+    /// <summary>Onde as configurações são gravadas. Um probe aponta isto para outro arquivo.</summary>
+    public string SettingsPath { get; set; } = SettingsStore.DefaultPath;
 
     public override void _Ready()
     {

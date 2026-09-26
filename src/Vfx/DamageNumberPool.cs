@@ -150,6 +150,10 @@ public sealed partial class DamageNumberPool : Node
 
     private void AoPedirNumero(DamageNumberEvent evento)
     {
+        // Opção do jogador (ticket 32): "mostrar números de dano".
+        if (!ServiceLocator.Session.Settings.Gameplay.ShowDamageNumbers)
+            return;
+
         var indice = _ativos.IndexOf(false);
         if (indice < 0)
         {

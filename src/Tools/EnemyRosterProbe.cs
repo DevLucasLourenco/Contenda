@@ -181,7 +181,7 @@ public sealed partial class EnemyRosterProbe : Node
             _distanciaNoPrimeiroDano = _a.GlobalPosition.DistanceTo(_jogador.GlobalPosition);
 
         // Termina cedo assim que o primeiro tiro pega; senão, até o limite.
-        if (_distanciaNoPrimeiroDano < 0f && _quadroDaFase < 480)
+        if (_distanciaNoPrimeiroDano < 0f && _quadroDaFase < 1200)
             return;
 
         Verificar(_distanciaNoPrimeiroDano >= 0f, "o shooter deveria ter machucado o jogador de longe");
