@@ -166,6 +166,27 @@ public sealed partial class MenuProbe : Node
         Verificar(NosNaArvore() == nosBase,
             $"vinte idas e voltas não deveriam acumular nós; eram {nosBase}, ficaram {NosNaArvore()}");
 
+        // Enter em VOLTAR na seleção deve voltar, sem começar a partida.
+        Verificar(menu.StartButton is not null, "o botão INICIAR deveria existir na volta ao menu");
+        menu.StartButton?.EmitSignal(BaseButton.SignalName.Pressed);
+        await Quadros(3);
+        Verificar(menu.OpenModeMenu?.HordeButton is not null, "HORDE deveria existir na escolha de modo");
+        menu.OpenModeMenu?.HordeButton?.EmitSignal(BaseButton.SignalName.Pressed);
+        await AteACenaSer("CharacterSelectMenu");
+        var selecaoParaVoltar = (CharacterSelectMenu)GetTree().CurrentScene;
+        Apertar(InputActionNames.MoveRight);
+        await Quadros(2);
+        Verificar(selecaoParaVoltar.SelectedIndex == 1, "D deveria escolher o próximo personagem");
+        Apertar(InputActionNames.MoveLeft);
+        await Quadros(2);
+        Verificar(selecaoParaVoltar.SelectedIndex == 0, "A deveria escolher o personagem anterior");
+        Verificar(selecaoParaVoltar.BackButton is not null, "VOLTAR deveria existir na seleção");
+        selecaoParaVoltar.BackButton?.GrabFocus();
+        Apertar("ui_accept");
+        await AteACenaSer("MainMenu");
+        Verificar(ServiceLocator.Session.SelectedCharacter is null,
+            "voltar da seleção não deveria iniciar uma partida");
+
         // --- menu -> partida -> menu, com a árvore pausada de propósito ---
         var nosDepoisDoCiclo = new List<int>();
         for (var volta = 0; volta < VoltasMenuPartidaMenu; volta++)
@@ -186,12 +207,22 @@ public sealed partial class MenuProbe : Node
                 menu.OpenModeMenu!.HordeButton!.EmitSignal(BaseButton.SignalName.Pressed);
 
             Verificar(!GetTree().Paused, "carregar uma partida deveria despausar a árvore");
+            await AteACenaSer("CharacterSelectMenu");
+            var characterMenu = (CharacterSelectMenu)GetTree().CurrentScene;
+            Verificar(characterMenu.CardCount == 2, "o elenco inicial deveria mostrar dois personagens");
+            characterMenu.Select(volta % characterMenu.CardCount);
+            var chosenId = characterMenu.SelectedDefinition?.Id;
+            _andamento.Clear();
+            _telaDeCarregamentoApareceu = false;
+            Apertar("ui_accept");
             await AteACenaSer("HordeMatch");
             await Quadros(90);
 
             VerificarCarregamento();
             Verificar(!GetTree().Paused, "a partida deveria nascer despausada");
             Verificar(ServiceLocator.Session.PlayerBody is not null, "a partida deveria ter um jogador");
+            Verificar(ServiceLocator.Session.PlayerBody?.Definition?.Id == chosenId,
+                "a arena deveria usar o personagem selecionado");
             Verificar(hud is { Visible: true } && ReferenceEquals(hud.BoundPlayer, ServiceLocator.Session.PlayerBody),
                 "o HUD deveria estar ligado ao jogador NOVO da partida");
 

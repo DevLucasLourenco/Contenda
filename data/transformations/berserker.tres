@@ -7,6 +7,7 @@
 script = ExtResource("1_form")
 Id = &"berserker"
 DisplayName = "Berserker"
+Description = "Espada ampliada; +60% dano, +15% velocidade e salto extra. Defesa reduzida."
 ThemeColor = Color(0.95, 0.2, 0.12, 1)
 ManaActivationCost = 20.0
 ManaDrainPerSecond = 4.0

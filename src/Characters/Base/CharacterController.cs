@@ -36,6 +36,10 @@ public sealed partial class CharacterController : CharacterBody3D
     /// <summary>De que lado ele está.</summary>
     [Export] public Team Team { get; set; } = Team.Player;
 
+    [Export] public NodePath ModelRootPath { get; set; } = new("%Model");
+    [Export] public NodePath PlaceholderBodyPath { get; set; } = new("%Corpo");
+    [Export] public NodePath PlaceholderFacingPath { get; set; } = new("%Frente");
+
     private readonly List<ICharacterComponent> _componentes = [];
     private PlayerInputController? _entrada;
     private EnemyBrain? _cerebro;
@@ -47,12 +51,22 @@ public sealed partial class CharacterController : CharacterBody3D
     private AbilityComponent? _habilidades;
     private DamageFlashComponent? _flash;
     private TransformationComponent? _transformations;
+    private Node3D? _model;
+    private Node3D? _modelRoot;
+    private MeshInstance3D? _placeholderBody;
+    private MeshInstance3D? _placeholderFacing;
+
+    /// <summary>Modelo da definição atual, para inspeção de cena.</summary>
+    public Node3D? CurrentModel => _model;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
 
     public override void _Ready()
     {
+        if (Team == Team.Player && ServiceLocator.Session.SelectedCharacter is { } escolhido)
+            Definition = escolhido;
+
         if (Definition is null)
         {
             // Falhar alto: sem definição o personagem roda com valores padrão e
@@ -63,7 +77,11 @@ public sealed partial class CharacterController : CharacterBody3D
         }
 
         Context = new CharacterContext(this, this, Team);
+        _modelRoot = GetNodeOrNull<Node3D>(ModelRootPath);
+        _placeholderBody = GetNodeOrNull<MeshInstance3D>(PlaceholderBodyPath);
+        _placeholderFacing = GetNodeOrNull<MeshInstance3D>(PlaceholderFacingPath);
         ColetarComponentes(this);
+        MontarModelo(Definition);
 
         // Primeira passada: todo mundo já existe na árvore, então a ordem aqui
         // não importa.
@@ -127,8 +145,44 @@ public sealed partial class CharacterController : CharacterBody3D
         ArgumentNullException.ThrowIfNull(novaDefinicao);
 
         Definition = novaDefinicao;
+        _transformations?.Revert(RevertReason.ModeReset);
+        MontarModelo(novaDefinicao);
         foreach (var componente in _componentes)
             componente.Configure(novaDefinicao);
+    }
+
+    private void MontarModelo(CharacterDefinition definition)
+    {
+        if (_model is not null)
+        {
+            _model.GetParent()?.RemoveChild(_model);
+            _model.QueueFree();
+            _model = null;
+        }
+
+        if (definition.ModelScene is not { } modelScene)
+        {
+            if (_placeholderBody is not null) _placeholderBody.Visible = true;
+            if (_placeholderFacing is not null) _placeholderFacing.Visible = true;
+            if (_placeholderBody is not null)
+            {
+                _transformations?.UseBodyMesh(_placeholderBody);
+                _flash?.UseMesh(_placeholderBody);
+            }
+            return;
+        }
+
+        var root = _modelRoot
+            ?? throw new InvalidOperationException($"{Name}: ModelRootPath não resolveu.");
+        _model = modelScene.Instantiate<Node3D>();
+        root.AddChild(_model);
+        // A malha é de uma instância criada agora; ainda não existia em _Ready.
+        var body = _model.GetNodeOrNull<MeshInstance3D>("%Body")
+            ?? throw new InvalidOperationException($"{Name}: ModelScene precisa ter a malha Body.");
+        if (_placeholderBody is not null) _placeholderBody.Visible = false;
+        if (_placeholderFacing is not null) _placeholderFacing.Visible = false;
+        _transformations?.UseBodyMesh(body);
+        _flash?.UseMesh(body);
     }
 
     /// <summary>

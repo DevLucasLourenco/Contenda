@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/UI/Menus/MainMenu.cs" id="1_menu"]
 [ext_resource type="Script" path="res://src/UI/Menus/MenuBackdrop.cs" id="2_fundo"]
 [ext_resource type="PackedScene" path="res://scenes/ui/menus/GameModeMenu.tscn" id="3_modos"]
 [ext_resource type="PackedScene" path="res://scenes/ui/menus/SettingsMenu.tscn" id="4_cfg"]
+[ext_resource type="PackedScene" path="res://scenes/arena/Arena.tscn" id="5_arena"]
 
 [node name="MainMenu" type="Node"]
 script = ExtResource("1_menu")
@@ -18,6 +19,7 @@ SettingsMenuScene = ExtResource("4_cfg")
 
 [node name="Fundo" type="Node3D" parent="."]
 script = ExtResource("2_fundo")
+ArenaScene = ExtResource("5_arena")
 
 [node name="Interface" type="CanvasLayer" parent="."]
 

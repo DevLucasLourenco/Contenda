@@ -167,14 +167,14 @@ public sealed partial class TransformationProbe : Node
     {
         var context = _player!.Context!;
         var origem = _player.GlobalPosition;
-        var pontoDeMira = origem + new Vector3(4f, 1f, 0f);
-        context.Targeting!.SetAim(pontoDeMira, Vector3.Right, true);
+        var pontoDeMira = origem + new Vector3(0f, 1f, -4f);
+        context.Targeting!.SetAim(pontoDeMira, Vector3.Forward, true);
         ServiceLocator.Events.ProjectileFireRequested += AoDispararCanhao;
         context.Combat!.RequestBasicAttack();
         ServiceLocator.Events.ProjectileFireRequested -= AoDispararCanhao;
 
         Verificar(_lastShot is { } shot && Mathf.IsEqualApprox(shot.LifeTime * shot.Speed, 4f),
-            "O tiro no espaço vazio não termina no ponto escolhido.");
+            $"O tiro no espaço vazio não termina no ponto escolhido (percurso={_lastShot?.LifeTime * _lastShot?.Speed}, arma={context.Combat.EquippedWeapon.Id}).");
     }
 
     private void AoAcertarCentro(DamageInfo info) => _impactHit ??= info;

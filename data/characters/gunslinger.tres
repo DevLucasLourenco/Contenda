@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_gunslinger.tres" id="2_mov"]
@@ -11,11 +11,19 @@
 [ext_resource type="Resource" path="res://data/abilities/deadeye.tres" id="9_deadeye"]
 [ext_resource type="Resource" path="res://data/characters/shared/stats_gunslinger.tres" id="10_stats"]
 [ext_resource type="Resource" path="res://data/transformations/overdrive.tres" id="11_form"]
+[ext_resource type="PackedScene" path="res://scenes/characters/previews/GunslingerPreview.tscn" id="12_model"]
 
 [resource]
 script = ExtResource("1_def")
 Id = &"gunslinger"
 DisplayName = "Gunslinger"
+Bio = "Atirador ágil. Mantém distância e controla a horda com tiros."
+ThemeColor = Color(0.15, 0.75, 1, 1)
+ModelScene = ExtResource("12_model")
+RatingDamage = 3
+RatingRange = 5
+RatingSpeed = 4
+RatingDurability = 2
 Health = ExtResource("3_hp")
 Mana = ExtResource("5_mana")
 Weapon = ExtResource("4_arma")

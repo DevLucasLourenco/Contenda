@@ -9,6 +9,7 @@ public sealed partial class TransformationDefinition : Resource
 {
     [Export] public StringName Id { get; set; } = new("form.unnamed");
     [Export] public string DisplayName { get; set; } = "Forma";
+    [Export(PropertyHint.MultilineText)] public string Description { get; set; } = "";
     [Export] public Color ThemeColor { get; set; } = Colors.OrangeRed;
     [Export(PropertyHint.Range, "0,100,1")] public float ManaActivationCost { get; set; } = 20f;
     [Export(PropertyHint.Range, "0.1,20,0.1")] public float ManaDrainPerSecond { get; set; } = 4f;

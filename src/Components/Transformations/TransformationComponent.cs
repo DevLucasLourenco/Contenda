@@ -50,8 +50,18 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
             _context.Health.BeforeDied -= AoMorrer;
 
         _context = contexto;
+        _context.BodyBaseMaterial = _originalOverride;
         if (_context.Health is not null)
             _context.Health.BeforeDied += AoMorrer;
+    }
+
+    /// <summary>Aplica forma e flash à malha real do arquétipo montado na cena.</summary>
+    public void UseBodyMesh(MeshInstance3D body)
+    {
+        _bodyMesh = body;
+        _originalOverride = body.MaterialOverride;
+        if (_context is not null)
+            _context.BodyBaseMaterial = _originalOverride;
     }
 
     public void Configure(CharacterDefinition definition)

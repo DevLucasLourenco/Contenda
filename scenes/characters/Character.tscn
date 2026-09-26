@@ -72,8 +72,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("Mesh_corpo")
 
 [node name="Frente" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -0.42)
 mesh = SubResource("Mesh_frente")
+
+[node name="Model" type="Node3D" parent="."]
+unique_name_in_owner = true
 
 [node name="StatsComponent" type="Node" parent="."]
 script = ExtResource("7_stats")
@@ -88,7 +92,7 @@ script = ExtResource("10_mana")
 
 [node name="DamageFlashComponent" type="Node" parent="."]
 script = ExtResource("11_flash")
-MeshPath = NodePath("../Corpo")
+MeshPath = NodePath("%Corpo")
 
 [node name="CombatComponent" type="Node" parent="."]
 script = ExtResource("9_cbt")

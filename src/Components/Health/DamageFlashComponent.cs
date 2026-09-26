@@ -66,6 +66,15 @@ public sealed partial class DamageFlashComponent : Node, ICharacterComponent
     {
     }
 
+    /// <summary>Redireciona o flash para a malha do modelo escolhido.</summary>
+    public void UseMesh(MeshInstance3D mesh)
+    {
+        if (_restante > 0f)
+            Desligar();
+        _restante = 0f;
+        _malha = mesh;
+    }
+
     public override void _ExitTree()
     {
         if (_vida is not null)

@@ -20,8 +20,7 @@ namespace Contenda.UI.Menus;
 /// </remarks>
 public sealed partial class MenuBackdrop : Node3D
 {
-    [Export(PropertyHint.File, "*.tscn")]
-    public string ArenaScenePath { get; set; } = "res://scenes/arena/Arena.tscn";
+    [Export] public PackedScene? ArenaScene { get; set; }
 
     /// <summary>Tempo de uma volta completa, em segundos.</summary>
     [Export(PropertyHint.Range, "20,600,5")] public float OrbitSeconds { get; set; } = 150f;
@@ -40,10 +39,10 @@ public sealed partial class MenuBackdrop : Node3D
 
     public override void _Ready()
     {
-        var arena = GD.Load<PackedScene>(ArenaScenePath)?.Instantiate();
+        var arena = ArenaScene?.Instantiate();
         if (arena is null)
         {
-            GD.PushError($"{Name}: não consegui carregar {ArenaScenePath}.");
+            GD.PushError($"{Name}: atribua ArenaScene.");
             return;
         }
 

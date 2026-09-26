@@ -30,9 +30,9 @@ reversão ao zerar mana ou antes do evento de morte e seletor no HUD.
 `TransformationDefinition` e as formas vivem em `.tres`. `CombatComponent`
 mantém instâncias das armas base e de forma, para voltar ao revólver com seu
 estado preservado. `arm_cannon.tres` dispara projéteis do pool existente, a
-20 m/s, que explodem ao se aproximar de um alvo ou ao atingir o alcance máximo;
-o dano cai linearmente de 100% no centro para 60% a 2,5 m. O placeholder
-geométrico do canhão aparece no lado direito do avatar cápsula; o modelo
+20 m/s, que explodem no contato com um alvo, no ponto mirado, na parede ou no
+alcance máximo. O alvo direto recebe 100% do dano; a explosão cai linearmente
+para 60% a 2,5 m. O placeholder geométrico do canhão aparece no lado direito do avatar; o modelo
 articulado continua sendo trabalho do ticket 34.
 
 `TransformationProbe` valida Berserker, Overdrive, a troca/reversão das armas,
@@ -47,3 +47,7 @@ verbo do personagem.
 O bônus de cadência que o Overdrive tinha antes **sai de propósito**: somado a
 dano em área, tornaria a forma dominante e o revólver base irrelevante. Se em
 teste o Overdrive parecer fraco, aumente o dano ou o raio — não a cadência.
+
+Revisão posterior (`dee615a`): a sonda agora verifica dano integral no alvo
+direto, queda no alvo vizinho e explosão no ponto escolhido quando não há alvo.
+Também foram reforçadas as referências dos visuais e a assinatura do seletor.

@@ -16,8 +16,7 @@ namespace Contenda.Characters.Base;
 /// **É aqui que a diferença entre Swordsman e Gunslinger vive** — nunca em
 /// ramificação de código. Um terceiro arquétipo é um `.tres` novo, não um `if`.
 ///
-/// Por enquanto só carrega locomoção; vida, mana, arma, habilidades e
-/// transformações entram do M2 em diante, conforme os componentes existirem.
+/// Carrega combate, apresentação e os ratings usados na seleção do M7.
 /// Ver docs/specs/08-personagens.md §1.
 /// </remarks>
 [GlobalClass]
@@ -28,6 +27,19 @@ public sealed partial class CharacterDefinition : Resource
 
     /// <summary>Nome exibido nas telas.</summary>
     [Export] public string DisplayName { get; set; } = "Sem nome";
+
+    /// <summary>Resumo exibido na seleção de personagem.</summary>
+    [Export(PropertyHint.MultilineText)] public string Bio { get; set; } = "";
+
+    [Export] public Color ThemeColor { get; set; } = Colors.White;
+
+    /// <summary>Modelo 3D usado na seleção e na arena; a arte final entra no ticket 34.</summary>
+    [Export] public PackedScene? ModelScene { get; set; }
+
+    [Export(PropertyHint.Range, "1,5,1")] public int RatingDamage { get; set; } = 3;
+    [Export(PropertyHint.Range, "1,5,1")] public int RatingRange { get; set; } = 3;
+    [Export(PropertyHint.Range, "1,5,1")] public int RatingSpeed { get; set; } = 3;
+    [Export(PropertyHint.Range, "1,5,1")] public int RatingDurability { get; set; } = 3;
 
     /// <summary>Parâmetros de vida.</summary>
     [Export] public HealthDefinition? Health { get; set; }

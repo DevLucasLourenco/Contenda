@@ -32,6 +32,9 @@ public sealed partial class GameSession : Node
     /// </remarks>
     public CharacterController? PlayerBody { get; set; }
 
+    /// <summary>Arquétipo escolhido antes da partida; nulo nos probes que usam a cena padrão.</summary>
+    public CharacterDefinition? SelectedCharacter { get; set; }
+
     /// <summary>
     /// O chefe da onda atual, se houver um. Nulo na maior parte da partida.
     /// </summary>
@@ -74,5 +77,6 @@ public sealed partial class GameSession : Node
         PlayerBody = null;
         BossBody = null;
         LastResult = null;
+        SelectedCharacter = null;
     }
 }

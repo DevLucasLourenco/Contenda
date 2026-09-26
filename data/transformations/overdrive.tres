@@ -7,6 +7,7 @@
 script = ExtResource("1_form")
 Id = &"overdrive"
 DisplayName = "Overdrive"
+Description = "Braço-canhão com explosão; +10% dano e +15% velocidade. Defesa reduzida."
 ThemeColor = Color(0.1, 0.78, 1, 1)
 ManaActivationCost = 25.0
 ManaDrainPerSecond = 5.0

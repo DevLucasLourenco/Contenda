@@ -54,12 +54,12 @@ Specs: [11 — UI e menus](../specs/11-ui-hud-e-menus.md) ·
 
 ### 5. Seleção de personagem
 
-- [ ] `CharacterSelectMenu.tscn` com dois cards
-- [ ] **Preview 3D real** por `SubViewport` com o modelo em idle
-- [ ] Barras de rating vindas de `CharacterDefinition.Rating*`
-- [ ] Lista de habilidades e transformação geradas dos `.tres`
-- [ ] Confirmar grava em `GameSession.SelectedCharacter` e vai para a arena
-- [ ] A tela **não** conhece os personagens — lê `data/characters/roster.tres`
+- [x] `CharacterSelectMenu.tscn` com dois cards
+- [x] **Preview 3D real** por `SubViewport` com o modelo em idle
+- [x] Barras de rating vindas de `CharacterDefinition.Rating*`
+- [x] Lista de habilidades e transformação geradas dos `.tres`
+- [x] Confirmar grava em `GameSession.SelectedCharacter` e vai para a arena
+- [x] A tela **não** conhece os personagens — lê `data/characters/roster.tres`
 
 ### 6. Configurações
 

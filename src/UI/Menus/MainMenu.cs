@@ -36,9 +36,9 @@ public sealed partial class MainMenu : Node
 
     [Export] public PackedScene? SettingsMenuScene { get; set; }
 
-    /// <summary>A partida do modo horda.</summary>
+    /// <summary>Próxima etapa do fluxo do modo horda.</summary>
     [Export(PropertyHint.File, "*.tscn")]
-    public string HordeScenePath { get; set; } = "res://scenes/arena/HordeMatch.tscn";
+    public string CharacterSelectScenePath { get; set; } = "res://scenes/ui/menus/CharacterSelectMenu.tscn";
 
     [Export(PropertyHint.File, "*.tscn")]
     public string SettingsScenePath { get; set; } = "res://scenes/ui/menus/SettingsMenu.tscn";
@@ -152,6 +152,6 @@ public sealed partial class MainMenu : Node
     private void AoEscolherModo(string idDoModo)
     {
         if (idDoModo == GameModeMenu.HordeModeId)
-            ServiceLocator.Router.GoToAsync(HordeScenePath);
+            ServiceLocator.Router.GoToAsync(CharacterSelectScenePath);
     }
 }

@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3]
+
+[sub_resource type="StandardMaterial3D" id="coat"]
+albedo_color = Color(0.06, 0.28, 0.4, 1)
+metallic = 0.22
+roughness = 0.48
+
+[sub_resource type="StandardMaterial3D" id="metal"]
+albedo_color = Color(0.58, 0.75, 0.83, 1)
+metallic = 0.8
+roughness = 0.22
+
+[sub_resource type="CapsuleMesh" id="body"]
+radius = 0.34
+height = 1.4
+
+[sub_resource type="SphereMesh" id="head"]
+radius = 0.28
+height = 0.56
+
+[sub_resource type="BoxMesh" id="hat"]
+size = Vector3(0.87, 0.13, 0.67)
+
+[sub_resource type="CylinderMesh" id="barrel"]
+top_radius = 0.11
+bottom_radius = 0.11
+height = 0.9
+
+[sub_resource type="BoxMesh" id="grip"]
+size = Vector3(0.24, 0.48, 0.26)
+
+[node name="GunslingerPreview" type="Node3D"]
+
+[node name="Body" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.03, 0)
+mesh = SubResource("body")
+material_override = SubResource("coat")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("head")
+material_override = SubResource("metal")
+
+[node name="Hat" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.31, 0)
+mesh = SubResource("hat")
+material_override = SubResource("coat")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.55, 1.12, -0.37)
+mesh = SubResource("barrel")
+material_override = SubResource("metal")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.98, 0.04)
+mesh = SubResource("grip")
+material_override = SubResource("coat")
