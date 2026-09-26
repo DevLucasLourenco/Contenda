@@ -18,7 +18,7 @@ public readonly record struct DamageNumberEvent(Vector3 Position, float Amount, 
 /// <param name="Speed">Velocidade de voo, em metros por segundo.</param>
 /// <param name="LifeTime">Quanto tempo voa antes de se autodestruir sem acertar nada.</param>
 /// <param name="Damage">Dano da explosão, já com multiplicadores aplicados.</param>
-/// <param name="ExplosionRadius">Raio da explosão — tanto o gatilho de impacto quanto o de área.</param>
+/// <param name="ExplosionRadius">Raio da área de dano.</param>
 /// <param name="MaxTargets">Quantos alvos a explosão atinge. Zero é ilimitado.</param>
 /// <param name="Knockback">Repulsão aplicada a cada alvo atingido.</param>
 /// <param name="SourceId">Identidade de quem disparou, sem manter o objeto vivo.</param>
@@ -31,6 +31,8 @@ public readonly record struct DamageNumberEvent(Vector3 Position, float Amount, 
 /// atinge, mesma disciplina de um golpe corpo a corpo em área. Ticket 18.
 /// </param>
 /// <param name="EdgeDamageMultiplier">Multiplicador do dano no limite do raio da explosão.</param>
+/// <param name="ImpactRadius">Distância para detonar ao alcançar um alvo; zero reutiliza ExplosionRadius.</param>
+/// <param name="VerticalReach">Tolerância vertical e área horizontal para armas; zero mantém área esférica de habilidades.</param>
 public readonly record struct ProjectileFireEvent(
     Vector3 Origin,
     Vector3 Direction,
@@ -45,7 +47,9 @@ public readonly record struct ProjectileFireEvent(
     Team ShooterTeam,
     StringName TargetGroup,
     bool IsCritical,
-    float EdgeDamageMultiplier = 1f);
+    float EdgeDamageMultiplier = 1f,
+    float ImpactRadius = 0f,
+    float VerticalReach = 0f);
 
 /// <summary>
 /// Um inimigo morreu. Sem identidade nem posição de propósito -- os

@@ -135,7 +135,7 @@ public sealed class HitscanWeapon : IWeapon
         var direcao = AplicarDispersao(direcaoBase);
         if (_arma.ExplosionRadius > 0f)
         {
-            DispararProjetil(origem, direcao);
+            DispararProjetil(origem, direcao, aimPoint);
             return;
         }
 
@@ -147,9 +147,7 @@ public sealed class HitscanWeapon : IWeapon
         var danoBase = _arma.BaseDamage * (_contexto.Stats?.Get(StatId.DamageMultiplier) ?? 1f);
 
         if (alvo is not null)
-        {
             destino = alvo.GlobalPosition;
-        }
 
         if (alvo is not null)
         {
@@ -186,10 +184,13 @@ public sealed class HitscanWeapon : IWeapon
         DesenharRastro(origem, destino);
     }
 
-    private void DispararProjetil(Vector3 origem, Vector3 direcao)
+    private void DispararProjetil(Vector3 origem, Vector3 direcao, Vector3 pontoDeMira)
     {
         var projectileSpeed = Mathf.Max(1f, _arma.ProjectileSpeed);
-        var alcance = Mathf.Max(0.1f, _arma.Range);
+        // O projétil percorre o caminho até o ponto escolhido no chão, a parede
+        // ou o limite da arma, o que vier primeiro. Assim um tiro em área vazia
+        // explode onde o jogador apontou, depois de viajar até lá.
+        var alcance = Mathf.Max(0.1f, Mathf.Min(origem.DistanceTo(pontoDeMira), AlcanceAteParede(origem, direcao)));
         var critico = CritMath.RolarNaStats(_contexto.Stats);
         var dano = CritMath.AplicarNaStats(
             _contexto.Stats,
@@ -210,7 +211,9 @@ public sealed class HitscanWeapon : IWeapon
             ShooterTeam: _contexto.Team,
             TargetGroup: _targetGroup,
             IsCritical: critico,
-            EdgeDamageMultiplier: _arma.EdgeDamageMultiplier));
+            EdgeDamageMultiplier: _arma.EdgeDamageMultiplier,
+            ImpactRadius: _arma.ProjectileImpactRadius,
+            VerticalReach: _verticalReach));
     }
 
     /// <summary>Dispersão aleatória em torno de Y — a mira é sempre horizontal.</summary>

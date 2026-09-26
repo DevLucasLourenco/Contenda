@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Contenda.Components.Transformations;
 using Godot;
@@ -11,17 +12,38 @@ public sealed partial class TransformationSelector : Control
 
     private Label? _label;
     private TransformationComponent? _forms;
+    private readonly StringBuilder _text = new();
+    private bool _needsDraw;
 
-    public override void _Ready() => _label = GetNodeOrNull<Label>(LabelPath);
+    public override void _Ready()
+    {
+        _label = GetNodeOrNull<Label>(LabelPath)
+            ?? throw new InvalidOperationException("TransformationSelector: LabelPath não resolveu um Label.");
+    }
+
+    public override void _ExitTree() => Unbind();
+
+    public override void _Process(double delta)
+    {
+        if (!_needsDraw)
+            return;
+
+        _needsDraw = false;
+        Desenhar();
+    }
 
     public void Bind(TransformationComponent forms)
     {
+        ArgumentNullException.ThrowIfNull(forms);
+        if (_label is null)
+            throw new InvalidOperationException("TransformationSelector precisa estar pronto antes de Bind.");
+
         Unbind();
         _forms = forms;
         _forms.SelectionChanged += AoMudar;
         _forms.Activated += AoAtivar;
         _forms.Reverted += AoReverter;
-        Desenhar();
+        _needsDraw = true;
     }
 
     public void Unbind()
@@ -34,20 +56,25 @@ public sealed partial class TransformationSelector : Control
         }
 
         _forms = null;
-        if (_label is not null)
-            _label.Text = string.Empty;
+        _needsDraw = true;
     }
 
-    private void AoMudar(int _) => Desenhar();
-    private void AoAtivar(TransformationDefinition _) => Desenhar();
-    private void AoReverter(TransformationDefinition _, RevertReason __) => Desenhar();
+    private void AoMudar(int _) => _needsDraw = true;
+    private void AoAtivar(TransformationDefinition _) => _needsDraw = true;
+    private void AoReverter(TransformationDefinition _, RevertReason __) => _needsDraw = true;
 
     private void Desenhar()
     {
-        if (_label is null || _forms is null)
+        if (_label is null)
             return;
 
-        var text = new StringBuilder("◀  ");
+        if (_forms is null)
+        {
+            _label.Text = string.Empty;
+            return;
+        }
+
+        var text = _text.Clear().Append("◀  ");
         for (var slot = 0; slot <= _forms.Available.Count; slot++)
         {
             if (slot > 0)

@@ -11,8 +11,16 @@ namespace Contenda.Tools;
 public sealed partial class TransformationProbe : Node
 {
     private static readonly Vector3 StartPosition = new(13f, 0f, 6f);
+    [Export] public NodePath ImpactDummyPath { get; set; } = new("Manequim1");
+    [Export] public NodePath EdgeDummyPath { get; set; } = new("Manequim2");
+
     private readonly List<string> _failures = [];
     private CharacterController? _player;
+    private CharacterController? _impactDummy;
+    private CharacterController? _edgeDummy;
+    private DamageInfo? _impactHit;
+    private DamageInfo? _edgeHit;
+    private ProjectileFireEvent? _lastShot;
     private bool _deathObservedActiveForm = true;
     private bool _manaDepletedReverted;
     private bool _finished;
@@ -28,7 +36,16 @@ public sealed partial class TransformationProbe : Node
             return;
         }
 
-        AddChild(arena.Instantiate());
+        var arenaNode = arena.Instantiate();
+        AddChild(arenaNode);
+        _impactDummy = arenaNode.GetNodeOrNull<CharacterController>(ImpactDummyPath);
+        _edgeDummy = arenaNode.GetNodeOrNull<CharacterController>(EdgeDummyPath);
+        if (_impactDummy?.Context?.Health is null || _edgeDummy?.Context?.Health is null)
+        {
+            Fail("Manequins do teste de explosão não foram encontrados.");
+            Finish();
+            return;
+        }
 
         _player = GetTree().GetFirstNodeInGroup(NodeGroups.Player) as CharacterController;
         if (_player?.Context is null)
@@ -50,6 +67,10 @@ public sealed partial class TransformationProbe : Node
             ReverterBerserker();
         else if (_frame == 100)
             AtivarOverdrive();
+        else if (_frame == 130)
+            VerificarImpactoDoCanhao();
+        else if (_frame == 140)
+            VerificarTiroNoEspacoVazio();
         else if (_frame == 190)
             VerificarReversaoAntesDaMorte();
         else if (_frame == 195)
@@ -116,7 +137,49 @@ public sealed partial class TransformationProbe : Node
         Verificar(cannon.ExplosionRadius == 2.5f && cannon.EdgeDamageMultiplier == 0.6f, "Braço-canhão não tem explosão e falloff previstos.");
         Verificar(cannon.InfiniteAmmo && cannon.AttackInterval > 0.3f, "Braço-canhão recarrega ou dispara mais rápido que o revólver.");
         Verificar(context.Transformations!.CannonVisible, "A representação visual do canhão não apareceu.");
+
+        // Um impacto direto e um alvo a 2 m revelam se a explosão começa cedo demais.
+        _impactDummy!.GlobalPosition = _player.GlobalPosition + new Vector3(0f, 0f, -8f);
+        _edgeDummy!.GlobalPosition = _impactDummy.GlobalPosition + new Vector3(2f, 0f, 0f);
+        _impactDummy.Context!.Health!.Damaged += AoAcertarCentro;
+        _edgeDummy.Context!.Health!.Damaged += AoAcertarBorda;
+        var pontoDeMira = _impactDummy.GlobalPosition + Vector3.Up;
+        context.Targeting!.SetAim(pontoDeMira, Vector3.Forward, true);
+        context.Combat.RequestBasicAttack();
     }
+
+    private void VerificarImpactoDoCanhao()
+    {
+        Verificar(_impactHit is not null, "O projétil não atingiu o alvo direto.");
+        Verificar(_edgeHit is not null, "A explosão não atingiu o alvo vizinho.");
+        if (_impactHit is not { } centro || _edgeHit is not { } borda || _player?.Context?.Stats is not { } stats)
+            return;
+
+        var arma = _player.Context!.Combat!.EquippedWeapon;
+        var critico = centro.IsCritical ? stats.Get(Contenda.Components.Stats.StatId.CritMultiplier) : 1f;
+        var danoDireto = arma.BaseDamage * stats.Get(Contenda.Components.Stats.StatId.DamageMultiplier) * critico;
+        Verificar(Mathf.IsEqualApprox(centro.Amount, danoDireto), "O alvo direto não recebeu o dano integral do canhão.");
+        var danoBorda = danoDireto * Contenda.Weapons.ExplosionMath.DamageMultiplier(2f, arma.ExplosionRadius, arma.EdgeDamageMultiplier);
+        Verificar(Mathf.IsEqualApprox(borda.Amount, danoBorda), "O alvo vizinho não recebeu o falloff linear previsto.");
+    }
+
+    private void VerificarTiroNoEspacoVazio()
+    {
+        var context = _player!.Context!;
+        var origem = _player.GlobalPosition;
+        var pontoDeMira = origem + new Vector3(4f, 1f, 0f);
+        context.Targeting!.SetAim(pontoDeMira, Vector3.Right, true);
+        ServiceLocator.Events.ProjectileFireRequested += AoDispararCanhao;
+        context.Combat!.RequestBasicAttack();
+        ServiceLocator.Events.ProjectileFireRequested -= AoDispararCanhao;
+
+        Verificar(_lastShot is { } shot && Mathf.IsEqualApprox(shot.LifeTime * shot.Speed, 4f),
+            "O tiro no espaço vazio não termina no ponto escolhido.");
+    }
+
+    private void AoAcertarCentro(DamageInfo info) => _impactHit ??= info;
+    private void AoAcertarBorda(DamageInfo info) => _edgeHit ??= info;
+    private void AoDispararCanhao(ProjectileFireEvent info) => _lastShot = info;
 
     private void VerificarReversaoAntesDaMorte()
     {
@@ -153,6 +216,10 @@ public sealed partial class TransformationProbe : Node
         _finished = true;
         if (_player?.Context?.Health is { } health)
             health.Died -= AoObservarMorte;
+        if (_impactDummy?.Context?.Health is { } centerHealth)
+            centerHealth.Damaged -= AoAcertarCentro;
+        if (_edgeDummy?.Context?.Health is { } edgeHealth)
+            edgeHealth.Damaged -= AoAcertarBorda;
 
         if (_failures.Count == 0)
             GD.Print("[transformacao] PASSOU: Berserker, Overdrive, troca de arma e reversão antes da morte.");

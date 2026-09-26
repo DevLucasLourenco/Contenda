@@ -42,6 +42,8 @@ public sealed partial class ProjectilePool : Node
     private readonly List<float> _restantes = [];
     private readonly List<float> _danos = [];
     private readonly List<float> _raiosDeExplosao = [];
+    private readonly List<float> _raiosDeImpacto = [];
+    private readonly List<float> _alcancesVerticais = [];
     private readonly List<int> _maxAlvos = [];
     private readonly List<float> _repulsoes = [];
     private readonly List<ulong> _fontesId = [];
@@ -112,6 +114,8 @@ public sealed partial class ProjectilePool : Node
             _restantes.Add(0f);
             _danos.Add(0f);
             _raiosDeExplosao.Add(0f);
+            _raiosDeImpacto.Add(0f);
+            _alcancesVerticais.Add(0f);
             _maxAlvos.Add(0);
             _repulsoes.Add(0f);
             _fontesId.Add(0UL);
@@ -149,7 +153,9 @@ public sealed partial class ProjectilePool : Node
             if (!_ativos[i])
                 continue;
 
-            _posicoes[i] += _direcoes[i] * _velocidades[i] * (float)delta;
+            // O último passo termina exatamente no ponto de mira/alcance.
+            var passo = Mathf.Min((float)delta, _restantes[i]);
+            _posicoes[i] += _direcoes[i] * _velocidades[i] * passo;
             _restantes[i] -= (float)delta;
             _visuais[i].GlobalPosition = _posicoes[i];
 
@@ -165,8 +171,21 @@ public sealed partial class ProjectilePool : Node
 
         AbilityTargeting.ForEachValidTarget(_alvosEmCache[i], _times[i], alvo =>
         {
-            if (alvo.GlobalPosition.DistanceTo(_posicoes[i]) > _raiosDeExplosao[i])
+            var raio = _raiosDeImpacto[i] > 0f ? _raiosDeImpacto[i] : _raiosDeExplosao[i];
+            var ate = alvo.GlobalPosition - _posicoes[i];
+            if (_alcancesVerticais[i] > 0f)
+            {
+                var distanciaHorizontalQuadrada = (ate.X * ate.X) + (ate.Z * ate.Z);
+                if (Mathf.Abs(ate.Y) > _alcancesVerticais[i] || distanciaHorizontalQuadrada > raio * raio)
+                    return true;
+            }
+            else if (ate.LengthSquared() > raio * raio)
                 return true;
+
+            // Armas de projétil com raio de contato próprio detonam no centro
+            // do alvo direto: ele recebe o dano inteiro; só os vizinhos sofrem falloff.
+            if (_raiosDeImpacto[i] > 0f)
+                _posicoes[i] = alvo.GlobalPosition;
 
             tocou = true;
             return false;
@@ -184,7 +203,11 @@ public sealed partial class ProjectilePool : Node
         AbilityTargeting.ForEachValidTarget(_alvosEmCache[i], _times[i], alvo =>
         {
             var ate = alvo.GlobalPosition - _posicoes[i];
-            if (ate.LengthSquared() > raioQuadrado)
+            var distanciaQuadrada = _alcancesVerticais[i] > 0f
+                ? (ate.X * ate.X) + (ate.Z * ate.Z)
+                : ate.LengthSquared();
+            if ((_alcancesVerticais[i] > 0f && Mathf.Abs(ate.Y) > _alcancesVerticais[i])
+                || distanciaQuadrada > raioQuadrado)
                 return true;
 
             var direcao = ate.LengthSquared() > 0.001f ? ate.Normalized() : Vector3.Up;
@@ -192,8 +215,8 @@ public sealed partial class ProjectilePool : Node
             // `!`: AbilityTargeting só chama este callback para alvos com
             // Health vivo -- é a própria checagem que filtra o candidato.
             alvo.Context!.Health!.ApplyDamage(new DamageInfo(
-            Amount: _danos[i] * ExplosionMath.DamageMultiplier(
-                ate.Length(), _raiosDeExplosao[i], _multiplicadoresNaBorda[i]),
+                Amount: _danos[i] * ExplosionMath.DamageMultiplier(
+                    Mathf.Sqrt(distanciaQuadrada), _raiosDeExplosao[i], _multiplicadoresNaBorda[i]),
                 Type: DamageType.Explosive,
                 HitPoint: alvo.GlobalPosition,
                 Direction: direcao,
@@ -235,6 +258,8 @@ public sealed partial class ProjectilePool : Node
         _restantes[indice] = evento.LifeTime;
         _danos[indice] = evento.Damage;
         _raiosDeExplosao[indice] = evento.ExplosionRadius;
+        _raiosDeImpacto[indice] = evento.ImpactRadius;
+        _alcancesVerticais[indice] = evento.VerticalReach;
         _maxAlvos[indice] = evento.MaxTargets;
         _repulsoes[indice] = evento.Knockback;
         _fontesId[indice] = evento.SourceId;

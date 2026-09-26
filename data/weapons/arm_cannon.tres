@@ -16,6 +16,7 @@ ReloadTime = 0.1
 SpreadDegrees = 0.0
 ExplosionRadius = 2.5
 ProjectileSpeed = 20.0
+ProjectileImpactRadius = 0.5
 EdgeDamageMultiplier = 0.6
 InfiniteAmmo = true
 HitstopSeconds = 0.04

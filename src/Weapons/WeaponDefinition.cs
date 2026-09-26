@@ -67,6 +67,9 @@ public sealed partial class WeaponDefinition : Resource
     /// <summary>Velocidade do projétil quando a arma dispara dano explosivo.</summary>
     [Export(PropertyHint.Range, "1,60,1")] public float ProjectileSpeed { get; set; } = 20f;
 
+    /// <summary>Raio de contato com o alvo; a explosão usa ExplosionRadius.</summary>
+    [Export(PropertyHint.Range, "0.05,2,0.05")] public float ProjectileImpactRadius { get; set; } = 0.5f;
+
     /// <summary>Multiplicador de dano na borda da explosão.</summary>
     [Export(PropertyHint.Range, "0,1,0.05")] public float EdgeDamageMultiplier { get; set; } = 0.6f;
 

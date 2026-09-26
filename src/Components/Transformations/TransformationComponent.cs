@@ -10,8 +10,8 @@ namespace Contenda.Components.Transformations;
 /// <summary>Seleciona, ativa e reverte as formas definidas para o personagem.</summary>
 public sealed partial class TransformationComponent : Node, ICharacterComponent
 {
-    [Export] public NodePath BodyMeshPath { get; set; } = new("../Corpo");
-    [Export] public NodePath CannonVisualPath { get; set; } = new("../CannonForma");
+    [Export] public NodePath BodyMeshPath { get; set; } = new("%Corpo");
+    [Export] public NodePath CannonVisualPath { get; set; } = new("%CannonForma");
     [Export] public TransformationDefinition[] Forms { get; set; } = [];
 
     private CharacterContext? _context;
@@ -37,7 +37,10 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
     {
         _bodyMesh = GetNodeOrNull<MeshInstance3D>(BodyMeshPath);
         _cannonVisual = GetNodeOrNull<Node3D>(CannonVisualPath);
-        _originalOverride = _bodyMesh?.MaterialOverride;
+        if (_bodyMesh is null || _cannonVisual is null)
+            throw new InvalidOperationException("TransformationComponent: Corpo e CannonForma precisam existir na cena.");
+
+        _originalOverride = _bodyMesh.MaterialOverride;
         _formMaterial = new StandardMaterial3D { Roughness = 0.6f };
     }
 

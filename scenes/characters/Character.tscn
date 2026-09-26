@@ -67,6 +67,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("Shape_corpo")
 
 [node name="Corpo" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("Mesh_corpo")
 
@@ -107,6 +108,7 @@ TorsoHeight = 1.0
 script = ExtResource("4_in")
 
 [node name="CannonForma" type="Node3D" parent="."]
+unique_name_in_owner = true
 visible = false
 
 [node name="Canhao" type="MeshInstance3D" parent="CannonForma"]

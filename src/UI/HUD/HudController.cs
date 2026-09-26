@@ -79,7 +79,7 @@ public sealed partial class HudController : CanvasLayer
         {
             // Falhar alto: um HUD "quase ligado" pareceria funcionar e nunca
             // atualizaria nada. Convenções §9.
-            GD.PushError($"{Name}: HealthBarPath, ManaBarPath, AbilityGuidePath ou BossBarPath não resolveram.");
+            GD.PushError($"{Name}: HealthBarPath, ManaBarPath, AbilityGuidePath, BossBarPath ou TransformationSelectorPath não resolveram.");
             SetPhysicsProcess(false);
         }
     }
