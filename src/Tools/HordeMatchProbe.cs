@@ -372,6 +372,10 @@ public sealed partial class HordeMatchProbe : Node
         var hud = Encontrar<ScoreDisplay>(GetTree().Root);
         Verificar(hud?.ScoreText == "SCORE  " + ScoreDisplay.FormatarPontos(_resultado.Score),
             $"o HUD deveria mostrar o placar final ({_resultado.Score}); mostra \"{hud?.ScoreText}\"");
+        Verificar(hud?.WaveText == "ONDA  5", $"o HUD deveria mostrar a quinta onda; mostra \"{hud?.WaveText}\"");
+        Verificar(hud is not null
+            && hud.TimeText.StartsWith("TEMPO  ", System.StringComparison.Ordinal)
+            && hud.TimeText.Contains(':'), $"o HUD deveria mostrar o relógio da partida; mostra \"{hud?.TimeText}\"");
 
         // Composição: cada onda traz algo que a anterior não trazia.
         Verificar(Especies(0).SetEquals(["grunt"]), $"onda 1 deveria ter só grunt; teve {string.Join(",", Especies(0))}");

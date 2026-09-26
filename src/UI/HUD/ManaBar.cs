@@ -1,4 +1,5 @@
 using Contenda.Components.Mana;
+using Contenda.Components.Transformations;
 using Godot;
 
 namespace Contenda.UI.HUD;
@@ -27,6 +28,8 @@ public sealed partial class ManaBar : Control
     /// <summary>Rótulo numérico opcional — "atual/máximo".</summary>
     [Export] public NodePath ValueLabelPath { get; set; } = new();
 
+    [Export] public NodePath StatusLabelPath { get; set; } = new();
+
     /// <summary>Largura total da barra, em pixels. Precisa bater com a cena.</summary>
     [Export(PropertyHint.Range, "40,600,1")] public float BarWidth { get; set; } = 220f;
 
@@ -35,12 +38,16 @@ public sealed partial class ManaBar : Control
 
     private Control? _preenchimento;
     private Label? _valor;
+    private Label? _status;
     private ManaComponent? _mana;
+    private TransformationComponent? _formas;
+    private float _tempo;
 
     public override void _Ready()
     {
         _preenchimento = GetNodeOrNull<Control>(FillPath);
         _valor = GetNodeOrNull<Label>(ValueLabelPath);
+        _status = GetNodeOrNull<Label>(StatusLabelPath);
 
         if (_preenchimento is null)
         {
@@ -49,14 +56,28 @@ public sealed partial class ManaBar : Control
         }
     }
 
-    /// <summary>Recebe a mana a exibir. Chamado uma vez pelo <see cref="HudController"/>.</summary>
-    public void Bind(ManaComponent mana)
+    /// <summary>Recebe a mana e a forma ativa. Chamado pelo <see cref="HudController"/>.</summary>
+    public void Bind(ManaComponent mana, TransformationComponent formas)
     {
         _mana = mana;
+        _formas = formas;
         Atualizar();
     }
 
-    public override void _PhysicsProcess(double delta) => Atualizar();
+    /// <summary>Libera as referências da partida encerrada.</summary>
+    public void Unbind()
+    {
+        _mana = null;
+        _formas = null;
+        if (_status is not null)
+            _status.Text = string.Empty;
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        _tempo += (float)delta;
+        Atualizar();
+    }
 
     private void Atualizar()
     {
@@ -69,6 +90,29 @@ public sealed partial class ManaBar : Control
 
         if (_valor is not null)
             _valor.Text = $"{_mana.Current:0}/{_mana.Max:0}";
+
+        var formaAtiva = _formas?.Active;
+        if (formaAtiva is null)
+        {
+            _preenchimento.SelfModulate = GetThemeColor("mana", "HudPalette");
+            if (_status is not null)
+                _status.Text = string.Empty;
+            return;
+        }
+
+        var baixa = _mana.Percent < 0.15f;
+        var cor = formaAtiva.ThemeColor;
+        if (baixa)
+        {
+            var pulso = 0.25f + (Mathf.Sin(_tempo * 8f) + 1f) * 0.375f;
+            cor = cor.Lerp(GetThemeColor("mana_low", "HudPalette"), pulso);
+        }
+
+        _preenchimento.SelfModulate = cor;
+        if (_status is not null)
+            _status.Text = baixa
+                ? "FORMA ATIVA · MANA BAIXA"
+                : $"FORMA ATIVA · DRENO {formaAtiva.ManaDrainPerSecond:0.#}/s";
     }
 
     /// <summary>Fração exibida agora. Para o probe/depuração.</summary>

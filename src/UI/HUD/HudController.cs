@@ -98,11 +98,9 @@ public sealed partial class HudController : CanvasLayer
         // O HUD é um autoload e sobrevive à troca de cena (retry, menu): um
         // jogador que saiu da árvore não é mais o jogador -- solta e procura o
         // novo, em vez de ficar ligado a um nó liberado.
-        if (_jogador is not null && !GodotObject.IsInstanceValid(_jogador))
+        if (_jogador is not null && (!GodotObject.IsInstanceValid(_jogador) || !_jogador.IsInsideTree()))
         {
-            _seletorDeForma?.Unbind();
-            _jogador = null;
-            Visible = false;
+            LiberarJogador();
         }
 
         if (_jogador is null)
@@ -122,6 +120,23 @@ public sealed partial class HudController : CanvasLayer
             AlternarArquetipo();
     }
 
+    public override void _ExitTree()
+    {
+        LiberarJogador();
+        _barraDoChefe?.Unbind();
+        _chefeAtual = null;
+    }
+
+    private void LiberarJogador()
+    {
+        _barraDeVida?.Unbind();
+        _barraDeMana?.Unbind();
+        _guiaDeHabilidades?.Unbind();
+        _seletorDeForma?.Unbind();
+        _jogador = null;
+        Visible = false;
+    }
+
     /// <remarks>
     /// Uma varredura por grupo por quadro de física, só enquanto o jogador
     /// ainda não apareceu — geralmente 1-2 quadros no boot. Depois de
@@ -137,7 +152,7 @@ public sealed partial class HudController : CanvasLayer
         _jogador = jogador;
         Visible = true;
         _barraDeVida?.Bind(vida);
-        _barraDeMana?.Bind(mana);
+        _barraDeMana?.Bind(mana, formas);
         _guiaDeHabilidades?.Bind(habilidades, mana);
         _seletorDeForma?.Bind(formas);
     }

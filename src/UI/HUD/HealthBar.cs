@@ -80,6 +80,13 @@ public sealed partial class HealthBar : Control
         Atualizar(0f);
     }
 
+    /// <summary>Libera a referência quando o personagem sai da árvore.</summary>
+    public void Unbind()
+    {
+        _vida = null;
+        _estado = null;
+    }
+
     public override void _PhysicsProcess(double delta)
     {
         if (_vida is null || _estado is null)

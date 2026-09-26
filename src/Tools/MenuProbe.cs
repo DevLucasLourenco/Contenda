@@ -174,10 +174,15 @@ public sealed partial class MenuProbe : Node
         menu.OpenModeMenu?.HordeButton?.EmitSignal(BaseButton.SignalName.Pressed);
         await AteACenaSer("CharacterSelectMenu");
         var selecaoParaVoltar = (CharacterSelectMenu)GetTree().CurrentScene;
-        Apertar(InputActionNames.MoveRight);
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveRight, Pressed = true, Strength = 1f });
         await Quadros(2);
-        Verificar(selecaoParaVoltar.SelectedIndex == 1, "D deveria escolher o próximo personagem");
-        Apertar(InputActionNames.MoveLeft);
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveRight, Pressed = false, Strength = 0f });
+        await Quadros(2);
+        Verificar(selecaoParaVoltar.SelectedIndex == 1,
+            $"D deveria escolher o próximo personagem; o índice ficou em {selecaoParaVoltar.SelectedIndex}");
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveLeft, Pressed = true, Strength = 1f });
+        await Quadros(2);
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveLeft, Pressed = false, Strength = 0f });
         await Quadros(2);
         Verificar(selecaoParaVoltar.SelectedIndex == 0, "A deveria escolher o personagem anterior");
         Verificar(selecaoParaVoltar.BackButton is not null, "VOLTAR deveria existir na seleção");
@@ -388,8 +393,8 @@ public sealed partial class MenuProbe : Node
 
     private static void Apertar(string acao)
     {
-        Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = true });
-        Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = false });
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = true, Strength = 1f });
+        Godot.Input.ParseInputEvent(new InputEventAction { Action = acao, Pressed = false, Strength = 0f });
     }
 
     /// <summary>Espera a condição valer (até ~1 s de jogo): entrada injetada com a árvore pausada nem sempre é entregue no mesmo quadro.</summary>

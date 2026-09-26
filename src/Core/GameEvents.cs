@@ -72,6 +72,11 @@ public readonly record struct EnemyKilledEvent(bool IsBoss, int ScoreValue);
 /// <param name="ComboMultiplier">Multiplicador de combo agora (1,0 sem sequência).</param>
 public readonly record struct ScoreChangedEvent(int Score, float ComboMultiplier);
 
+/// <summary>Tempo e onda atuais da partida para os indicadores compactos do HUD.</summary>
+/// <param name="Wave">Onda atual, começando em 1.</param>
+/// <param name="ElapsedSeconds">Segundos inteiros desde o início da partida.</param>
+public readonly record struct MatchStatusChangedEvent(int Wave, int ElapsedSeconds);
+
 /// <summary>A partida terminou -- para a tela de resultado (ticket 29).</summary>
 /// <param name="Result">O que sobrou da partida.</param>
 public readonly record struct MatchEndedEvent(Contenda.GameModes.GameModeResult Result);
@@ -138,6 +143,9 @@ public sealed partial class GameEvents : Node
     /// <summary>Avisa que o placar mudou. Ticket 29.</summary>
     public event Action<ScoreChangedEvent>? ScoreChanged;
 
+    /// <summary>Avisa quando o relógio ou a onda exibida no HUD muda. Ticket 33.</summary>
+    public event Action<MatchStatusChangedEvent>? MatchStatusChanged;
+
     /// <summary>Avisa que a partida terminou. Ticket 29.</summary>
     public event Action<MatchEndedEvent>? MatchEnded;
 
@@ -164,6 +172,9 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="ScoreChanged"/>.</summary>
     public void RaiseScoreChanged(in ScoreChangedEvent evento) => ScoreChanged?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="MatchStatusChanged"/>.</summary>
+    public void RaiseMatchStatusChanged(in MatchStatusChangedEvent evento) => MatchStatusChanged?.Invoke(evento);
 
     /// <summary>Dispara <see cref="MatchEnded"/>.</summary>
     public void RaiseMatchEnded(in MatchEndedEvent evento) => MatchEnded?.Invoke(evento);

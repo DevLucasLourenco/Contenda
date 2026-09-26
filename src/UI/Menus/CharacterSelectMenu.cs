@@ -116,7 +116,7 @@ public sealed partial class CharacterSelectMenu : Control
         _selectedIndex = index;
         var roster = _roster ?? throw new InvalidOperationException("Elenco não inicializado.");
         for (var i = 0; i < _cards.Count; i++)
-            _cards[i].AddThemeStyleboxOverride("panel", CardStyle(roster.Characters[i].ThemeColor, i == index));
+            _cards[i].ThemeTypeVariation = i == index ? "SelectedCharacterCard" : "CharacterCard";
 
         _selectButtons[index].GrabFocus();
         if (_confirmButton is not null)
@@ -125,31 +125,33 @@ public sealed partial class CharacterSelectMenu : Control
 
     private void MontarTela(ProfileData profile)
     {
-        var background = new ColorRect { Color = new Color(0.035f, 0.055f, 0.09f) };
+        var background = new Panel { ThemeTypeVariation = "ScreenBackdrop", MouseFilter = MouseFilterEnum.Ignore };
         background.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(background);
 
         var page = new VBoxContainer();
         page.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        page.AddThemeConstantOverride("separation", 14);
+        page.AnchorLeft = 0.03f;
+        page.AnchorTop = 0.03f;
+        page.AnchorRight = 0.97f;
+        page.AnchorBottom = 0.97f;
         AddChild(page);
 
         var title = new Label { Text = "ESCOLHA SEU PERSONAGEM", HorizontalAlignment = HorizontalAlignment.Center };
-        title.AddThemeFontSizeOverride("font_size", 34);
+        title.ThemeTypeVariation = "SectionTitle";
         page.AddChild(title);
 
         var subtitle = new Label
         {
-            Text = "Veja as habilidades e a forma antes de entrar na arena.  A / D ou ← / → para escolher.",
+            Text = $"Veja as habilidades e a forma antes de entrar na arena.  {SettingsStore.DescribeAction(InputActions.MoveLeft)} / {SettingsStore.DescribeAction(InputActions.MoveRight)} ou ← / → para escolher.",
             HorizontalAlignment = HorizontalAlignment.Center,
         };
-        subtitle.AddThemeFontSizeOverride("font_size", 17);
+        subtitle.ThemeTypeVariation = "HudHint";
         page.AddChild(subtitle);
 
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         page.AddChild(scroll);
         var cardRow = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        cardRow.AddThemeConstantOverride("separation", 18);
         scroll.AddChild(cardRow);
 
         var roster = _roster ?? throw new InvalidOperationException("Elenco não inicializado.");
@@ -164,7 +166,6 @@ public sealed partial class CharacterSelectMenu : Control
         }
 
         var actions = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        actions.AddThemeConstantOverride("separation", 18);
         page.AddChild(actions);
 
         _confirmButton = new Button { CustomMinimumSize = new Vector2(320, 52) };
@@ -178,21 +179,19 @@ public sealed partial class CharacterSelectMenu : Control
 
     private PanelContainer MontarCard(CharacterDefinition definition, ProfileData profile)
     {
-        var card = new PanelContainer { CustomMinimumSize = new Vector2(475, 0) };
+        var card = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(475, 0),
+            ThemeTypeVariation = "CharacterCard",
+        };
         var padding = new MarginContainer();
-        padding.AddThemeConstantOverride("margin_left", 16);
-        padding.AddThemeConstantOverride("margin_top", 12);
-        padding.AddThemeConstantOverride("margin_right", 16);
-        padding.AddThemeConstantOverride("margin_bottom", 12);
         card.AddChild(padding);
 
         var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 5);
         padding.AddChild(column);
 
         var name = new Label { Text = definition.DisplayName.ToUpperInvariant(), HorizontalAlignment = HorizontalAlignment.Center };
-        name.AddThemeFontSizeOverride("font_size", 26);
-        name.AddThemeColorOverride("font_color", definition.ThemeColor);
+        name.ThemeTypeVariation = "CharacterName";
         column.AddChild(name);
 
         var preview = new SubViewportContainer { CustomMinimumSize = new Vector2(430, 210), Stretch = true };
@@ -223,20 +222,19 @@ public sealed partial class CharacterSelectMenu : Control
             CustomMinimumSize = new Vector2(430, 42) };
         column.AddChild(bio);
 
-        AddRating(column, "DANO", definition.RatingDamage, definition.ThemeColor);
-        AddRating(column, "ALCANCE", definition.RatingRange, definition.ThemeColor);
-        AddRating(column, "VELOCIDADE", definition.RatingSpeed, definition.ThemeColor);
-        AddRating(column, "RESISTÊNCIA", definition.RatingDurability, definition.ThemeColor);
+        AddRating(column, "DANO", definition.RatingDamage);
+        AddRating(column, "ALCANCE", definition.RatingRange);
+        AddRating(column, "VELOCIDADE", definition.RatingSpeed);
+        AddRating(column, "RESISTÊNCIA", definition.RatingDurability);
 
         var abilitiesTitle = new Label { Text = "HABILIDADES  ·  sequência + " + SettingsStore.DescribeAction(InputActions.CommandConfirm) };
-        abilitiesTitle.AddThemeFontSizeOverride("font_size", 15);
-        abilitiesTitle.AddThemeColorOverride("font_color", definition.ThemeColor);
+        abilitiesTitle.ThemeTypeVariation = "HudHint";
         column.AddChild(abilitiesTitle);
 
         foreach (var ability in definition.Abilities)
         {
             var row = new Label { Text = $"{SequenceText(ability)}  + {SettingsStore.DescribeAction(InputActions.CommandConfirm)}     {ability.DisplayName}" };
-            row.AddThemeFontSizeOverride("font_size", 16);
+            row.ThemeTypeVariation = "HudHint";
             column.AddChild(row);
         }
 
@@ -245,8 +243,7 @@ public sealed partial class CharacterSelectMenu : Control
             var form = new Label { Text = $"★ {transformation.DisplayName}: {transformation.Description}",
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 CustomMinimumSize = new Vector2(430, 48) };
-            form.AddThemeFontSizeOverride("font_size", 15);
-            form.AddThemeColorOverride("font_color", transformation.ThemeColor);
+            form.ThemeTypeVariation = "HudHint";
             column.AddChild(form);
         }
 
@@ -265,7 +262,7 @@ public sealed partial class CharacterSelectMenu : Control
         return card;
     }
 
-    private static void AddRating(VBoxContainer column, string title, int rating, Color color)
+    private static void AddRating(VBoxContainer column, string title, int rating)
     {
         var row = new HBoxContainer();
         column.AddChild(row);
@@ -275,8 +272,6 @@ public sealed partial class CharacterSelectMenu : Control
             MinValue = 0, MaxValue = 5, Value = Mathf.Clamp(rating, 1, 5),
             ShowPercentage = false, CustomMinimumSize = new Vector2(255, 16),
         };
-        var fill = new StyleBoxFlat { BgColor = color };
-        bar.AddThemeStyleboxOverride("fill", fill);
         row.AddChild(bar);
         row.AddChild(new Label { Text = $" {rating}/5" });
     }
@@ -290,29 +285,15 @@ public sealed partial class CharacterSelectMenu : Control
                 text.Append(' ');
             text.Append(token switch
             {
-                CommandDirection.Up => 'W',
-                CommandDirection.Down => 'S',
-                CommandDirection.Left => 'A',
-                CommandDirection.Right => 'D',
-                _ => '?',
+                CommandDirection.Up => SettingsStore.DescribeAction(InputActions.MoveUp),
+                CommandDirection.Down => SettingsStore.DescribeAction(InputActions.MoveDown),
+                CommandDirection.Left => SettingsStore.DescribeAction(InputActions.MoveLeft),
+                CommandDirection.Right => SettingsStore.DescribeAction(InputActions.MoveRight),
+                _ => "?",
             });
         }
         return text.ToString();
     }
-
-    private static StyleBoxFlat CardStyle(Color color, bool selected) => new()
-    {
-        BgColor = new Color(0.08f, 0.12f, 0.18f),
-        BorderColor = selected ? color : new Color(0.2f, 0.25f, 0.3f),
-        BorderWidthLeft = selected ? 3 : 1,
-        BorderWidthTop = selected ? 3 : 1,
-        BorderWidthRight = selected ? 3 : 1,
-        BorderWidthBottom = selected ? 3 : 1,
-        CornerRadiusTopLeft = 8,
-        CornerRadiusTopRight = 8,
-        CornerRadiusBottomLeft = 8,
-        CornerRadiusBottomRight = 8,
-    };
 
     private void Back() => ServiceLocator.Router.GoToAsync(MainMenuScenePath);
 }

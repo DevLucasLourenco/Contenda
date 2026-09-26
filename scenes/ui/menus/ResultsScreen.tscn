@@ -24,14 +24,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Fundo" type="ColorRect" parent="Painel"]
+[node name="Fundo" type="Panel" parent="Painel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.72)
+theme_type_variation = &"OverlayBackdrop"
 
 [node name="Caixa" type="VBoxContainer" parent="Painel"]
 layout_mode = 1
@@ -46,55 +46,46 @@ offset_right = 220.0
 offset_bottom = 260.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 14
 
 [node name="Titulo" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 72
+theme_type_variation = &"ScreenTitle"
 text = "DERROTA"
 horizontal_alignment = 1
 
 [node name="Pontos" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
 text = "Pontos: 0"
 horizontal_alignment = 1
 
 [node name="Ondas" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "Ondas: 0"
 horizontal_alignment = 1
 
 [node name="Abates" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "Abates: 0"
 horizontal_alignment = 1
 
 [node name="Tempo" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "Tempo: 0:00"
 horizontal_alignment = 1
 
 [node name="Personagem" type="Label" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "Personagem: -"
 horizontal_alignment = 1
 
 [node name="TentarDeNovo" type="Button" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "TENTAR NOVAMENTE"
 
 [node name="TrocarPersonagem" type="Button" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "TROCAR PERSONAGEM"
 
 [node name="MenuPrincipal" type="Button" parent="Painel/Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "MENU PRINCIPAL"

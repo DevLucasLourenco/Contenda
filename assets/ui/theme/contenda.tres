@@ -1,0 +1,271 @@
+[gd_resource type="Theme" load_steps=18 format=3]
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.025, 0.045, 0.075, 0.94)
+border_color = Color(0.16, 0.35, 0.43, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="CardStyle"]
+bg_color = Color(0.035, 0.065, 0.1, 0.96)
+border_color = Color(0.16, 0.35, 0.43, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="SelectedCardStyle"]
+bg_color = Color(0.035, 0.065, 0.1, 0.98)
+border_color = Color(0.18, 0.88, 0.94, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+bg_color = Color(0.08, 0.16, 0.22, 0.98)
+border_color = Color(0.2, 0.55, 0.62, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+bg_color = Color(0.11, 0.25, 0.32, 1)
+border_color = Color(0.3, 0.92, 0.96, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
+bg_color = Color(0.035, 0.11, 0.15, 1)
+border_color = Color(0.18, 0.88, 0.94, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
+bg_color = Color(0.055, 0.075, 0.095, 0.96)
+border_color = Color(0.18, 0.22, 0.25, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="ProgressBackground"]
+bg_color = Color(0.08, 0.12, 0.16, 1)
+border_color = Color(0.2, 0.3, 0.35, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ProgressFill"]
+bg_color = Color(0.18, 0.82, 0.88, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ScreenBackdropStyle"]
+bg_color = Color(0.025, 0.045, 0.075, 0.96)
+
+[sub_resource type="StyleBoxFlat" id="OverlayBackdropStyle"]
+bg_color = Color(0.01, 0.02, 0.035, 0.78)
+
+[sub_resource type="StyleBoxFlat" id="BarBackgroundStyle"]
+bg_color = Color(0.06, 0.095, 0.13, 1)
+border_color = Color(0.2, 0.3, 0.36, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="HealthFillStyle"]
+bg_color = Color(0.88, 0.24, 0.3, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="PlayerHealthFillStyle"]
+bg_color = Color(0.18, 0.82, 0.88, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ManaFillStyle"]
+bg_color = Color(0.18, 0.82, 0.88, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="DamageFillStyle"]
+bg_color = Color(0.97, 0.76, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="ActiveFormFrameStyle"]
+bg_color = Color(0.025, 0.045, 0.075, 0.94)
+border_color = Color(0.22, 0.9, 0.96, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+
+[resource]
+default_font_size = 18
+default_color = Color(0.91, 0.95, 0.98, 1)
+Button/colors/font_color = Color(0.91, 0.95, 0.98, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(0.75, 0.96, 0.98, 1)
+Button/colors/font_disabled_color = Color(0.55, 0.61, 0.66, 1)
+Button/font_sizes/font_size = 20
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/pressed = SubResource("ButtonPressed")
+Button/styles/disabled = SubResource("ButtonDisabled")
+Button/styles/focus = SubResource("ButtonHover")
+Label/colors/font_color = Color(0.91, 0.95, 0.98, 1)
+Panel/styles/panel = SubResource("PanelStyle")
+PanelContainer/styles/panel = SubResource("PanelStyle")
+ProgressBar/styles/background = SubResource("ProgressBackground")
+ProgressBar/styles/fill = SubResource("ProgressFill")
+VBoxContainer/constants/separation = 12
+HBoxContainer/constants/separation = 12
+MarginContainer/constants/margin_left = 16
+MarginContainer/constants/margin_top = 12
+MarginContainer/constants/margin_right = 16
+MarginContainer/constants/margin_bottom = 12
+
+MenuTitle/base_type = &"Label"
+MenuTitle/font_sizes/font_size = 64
+ScreenTitle/base_type = &"Label"
+ScreenTitle/font_sizes/font_size = 40
+SectionTitle/base_type = &"Label"
+SectionTitle/font_sizes/font_size = 28
+HudBanner/base_type = &"Label"
+HudBanner/font_sizes/font_size = 42
+HudValue/base_type = &"Label"
+HudValue/font_sizes/font_size = 20
+HudHint/base_type = &"Label"
+HudHint/font_sizes/font_size = 16
+HudCombo/base_type = &"RichTextLabel"
+HudCombo/font_sizes/normal_font_size = 18
+CharacterCard/base_type = &"PanelContainer"
+CharacterCard/styles/panel = SubResource("CardStyle")
+SelectedCharacterCard/base_type = &"PanelContainer"
+SelectedCharacterCard/styles/panel = SubResource("SelectedCardStyle")
+CharacterName/base_type = &"Label"
+CharacterName/font_sizes/font_size = 24
+CharacterName/colors/font_color = Color(0.28, 0.88, 0.94, 1)
+StatusNote/base_type = &"Label"
+StatusNote/colors/font_color = Color(1, 0.82, 0.3, 1)
+ScreenBackdrop/base_type = &"Panel"
+ScreenBackdrop/styles/panel = SubResource("ScreenBackdropStyle")
+OverlayBackdrop/base_type = &"Panel"
+OverlayBackdrop/styles/panel = SubResource("OverlayBackdropStyle")
+HUDFrame/base_type = &"Panel"
+HUDFrame/styles/panel = SubResource("PanelStyle")
+ActiveFormFrame/base_type = &"Panel"
+ActiveFormFrame/styles/panel = SubResource("ActiveFormFrameStyle")
+BarBackground/base_type = &"Panel"
+BarBackground/styles/panel = SubResource("BarBackgroundStyle")
+BossHealthFill/base_type = &"Panel"
+BossHealthFill/styles/panel = SubResource("HealthFillStyle")
+PlayerHealthFill/base_type = &"Panel"
+PlayerHealthFill/styles/panel = SubResource("PlayerHealthFillStyle")
+ManaFill/base_type = &"Panel"
+ManaFill/styles/panel = SubResource("ManaFillStyle")
+DamageFill/base_type = &"Panel"
+DamageFill/styles/panel = SubResource("DamageFillStyle")
+HudCombo/colors/font_color = Color(1, 0.83, 0.34, 1)
+HudInstruction/base_type = &"Label"
+HudInstruction/font_sizes/font_size = 16
+HudInstruction/colors/font_color = Color(0.78, 0.87, 0.92, 1)
+HudPalette/base_type = &"Control"
+HudPalette/colors/mana = Color(0.18, 0.82, 0.88, 1)
+HudPalette/colors/mana_low = Color(0.96, 0.24, 0.28, 1)
+AbilityGuideTheme/base_type = &"Control"
+AbilityGuideTheme/colors/neutral = Color(0.86, 0.91, 0.94, 1)
+AbilityGuideTheme/colors/partial = Color(0.26, 0.9, 0.96, 1)
+AbilityGuideTheme/colors/impossible = Color(0.57, 0.66, 0.71, 1)
+AbilityGuideTheme/colors/ready = Color(1, 0.83, 0.34, 1)
+AbilityGuideTheme/colors/cooldown = Color(0.65, 0.74, 0.79, 1)
+AbilityGuideTheme/colors/unaffordable = Color(1, 0.34, 0.36, 1)

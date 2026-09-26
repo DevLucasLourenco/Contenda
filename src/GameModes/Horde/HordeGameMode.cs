@@ -49,6 +49,7 @@ public sealed partial class HordeGameMode : Node, IGameMode
     private ScoreKeeper _placar = new(new ScoreRulesDefinition().ToRules());
     private int _ondasLimpas;
     private int _abates;
+    private int _segundoExibido = -1;
     private float _duracao;
     private bool _prontoParaComecar;
 
@@ -128,6 +129,13 @@ public sealed partial class HordeGameMode : Node, IGameMode
 
         _duracao += (float)delta;
 
+        var segundoAtual = Mathf.FloorToInt(_duracao);
+        if (segundoAtual > _segundoExibido)
+        {
+            _segundoExibido = segundoAtual;
+            AvisarStatusDaPartida(_waveDirector?.CurrentWaveIndex ?? 0);
+        }
+
         if (_placar.ExpireCombo(_duracao))
             AvisarPlacar();
     }
@@ -197,13 +205,18 @@ public sealed partial class HordeGameMode : Node, IGameMode
         _ondasLimpas = 0;
         _abates = 0;
         _duracao = 0f;
+        _segundoExibido = 0;
 
         Mudar(GameModeState.Playing);
         AvisarPlacar();
         _waveDirector.Begin(WaveSet);
     }
 
-    private void AoComecarOnda(WaveDefinition onda, int indice) => _placar.StartWave();
+    private void AoComecarOnda(WaveDefinition onda, int indice)
+    {
+        _placar.StartWave();
+        AvisarStatusDaPartida(indice);
+    }
 
     private void AoLimparOnda(WaveDefinition onda, int indice)
     {
@@ -239,6 +252,9 @@ public sealed partial class HordeGameMode : Node, IGameMode
 
     private void AvisarPlacar()
         => ServiceLocator.Events.RaiseScoreChanged(new ScoreChangedEvent(_placar.Score, _placar.ComboMultiplier));
+
+    private void AvisarStatusDaPartida(int indiceDaOnda)
+        => ServiceLocator.Events.RaiseMatchStatusChanged(new MatchStatusChangedEvent(indiceDaOnda + 1, Mathf.FloorToInt(_duracao)));
 
     private GameModeResult MontarResultado(bool vitoria) => new(
         Victory: vitoria,

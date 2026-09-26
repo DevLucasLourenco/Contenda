@@ -13,14 +13,14 @@ script = ExtResource("1_modos")
 HordeButtonPath = NodePath("Caixa/Horda")
 BackButtonPath = NodePath("Caixa/Voltar")
 
-[node name="Fundo" type="ColorRect" parent="."]
+[node name="Fundo" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.55)
+theme_type_variation = &"OverlayBackdrop"
 
 [node name="Caixa" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -35,18 +35,16 @@ offset_right = 300.0
 offset_bottom = 260.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
 
 [node name="Titulo" type="Label" parent="Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 56
+theme_type_variation = &"ScreenTitle"
 text = "ESCOLHA O MODO"
 horizontal_alignment = 1
 
 [node name="Horda" type="Button" parent="Caixa"]
 custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
 text = "HORDE
 Sobreviva a cinco ondas e derrube o chefe"
 
@@ -55,7 +53,6 @@ custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 disabled = true
 tooltip_text = "Em breve"
-theme_override_font_sizes/font_size = 30
 text = "1 VS 1  -  EM BREVE
 Duelo contra outro personagem"
 
@@ -64,7 +61,6 @@ custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 disabled = true
 tooltip_text = "Em breve"
-theme_override_font_sizes/font_size = 30
 text = "BOSS RUSH  -  EM BREVE
 Uma sequência de chefes"
 
@@ -73,11 +69,9 @@ custom_minimum_size = Vector2(0, 90)
 layout_mode = 2
 disabled = true
 tooltip_text = "Em breve"
-theme_override_font_sizes/font_size = 30
 text = "ONLINE  -  EM BREVE
 Jogue com outras pessoas"
 
 [node name="Voltar" type="Button" parent="Caixa"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 text = "VOLTAR"
