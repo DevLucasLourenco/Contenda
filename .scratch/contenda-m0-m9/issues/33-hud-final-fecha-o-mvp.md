@@ -13,7 +13,7 @@ menu, escolha, partida, resultado, menu.
       convivem sem poluir a tela
 - [ ] Tudo legível sobre a cidade, nos três níveis, em qualquer iluminação
 - [x] Nada é comunicado **só** por cor
-- [ ] A interface se adapta de 16:9 a 21:9 sem cortar informação
+- [x] A interface se adapta de 16:9 a 21:9 sem cortar informação
 - [x] O ciclo menu → escolha → partida → resultado → menu fecha sem vazar nós
 - [ ] **Um jogador que nunca viu o projeto consegue, sem ajuda:** iniciar,
       entender que WASD move e o botão esquerdo ataca, **executar uma habilidade
@@ -40,7 +40,9 @@ a interface não está pronta.
   `HudProbe`, `ScoreAndResultsProbe`, `HordeMatchProbe`, `CharacterSelectProbe`
   e `MenuProbe` passaram.
 - A revisão do diff observou que os probes headless não demonstram contraste em
-  captura dos três níveis nem ausência de recorte de 16:9 a 21:9; esses dois
-  critérios aguardam validação visual.
+  captura dos três níveis; esse critério ainda aguarda validação visual.
+- Capturas da cena jogável `HordeMatch.tscn` em 1920×1080 (16:9) e 2560×1061
+  (~2,41:1, mais largo que 21:9) mostram vida, mana, guia, forma, placar, onda
+  e relógio completos, sem cortes.
 - O teste com uma pessoa de fora continua pendente; por isso o ticket aguarda
   revisão humana antes de fechar o MVP.

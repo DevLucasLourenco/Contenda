@@ -98,12 +98,14 @@ dele) e do próprio `EnemyDefinition.IsBoss` da entrada; não existe um
 ### `HordeGameMode` e o fim da partida
 
 `IGameMode`/`GameModeState`/`GameModeConfig`/`GameModeResult` (spec 10 §1) +
-`HordeGameMode` (nó filho da arena): `StartMatch` prewarma as espécies, espera o
-pool ficar pronto e chama `WaveDirector.Begin`. Vitória = limpar a última onda
-(na hora, sem esperar o respiro final); derrota = `HealthComponent.Died` do
-jogador. `EndMatch` para o `WaveDirector`, guarda o resultado em
-`GameSession.LastResult` e dispara `MatchEnded` -- a tela de resultado é o
-ticket 29.
+`HordeGameMode` (nó filho da arena): `StartMatch` aguarda o prewarm padrão do
+`EnemyPool`, prepara as espécies extras e chama `WaveDirector.Begin`. A cena
+`HordeMatch.tscn` dispara `StartMatch` no `_Ready`, então adiar o prewarm do
+roster até o pool indicar `IsReady` evita que o grunt sem `Scene` gere erros
+antes do prewarm assíncrono do autoload. Vitória = limpar a última onda (na
+hora, sem esperar o respiro final); derrota = `HealthComponent.Died` do jogador.
+`EndMatch` para o `WaveDirector`, guarda o resultado em `GameSession.LastResult`
+e dispara `MatchEnded` -- a tela de resultado é o ticket 29.
 
 O modo fica inerte em `Arena.tscn` (é a cena principal e a base de todos os
 probes); `scenes/arena/HordeMatch.tscn` herda a arena e liga `AutoStart` -- é a
@@ -126,6 +128,8 @@ Fora de escopo, deliberadamente: `PauseMatch`/`Loading` (ticket 32), contagem
   chegam reforços enquanto o chefe vive e nenhum depois dele cair, e
   `GameSession.LastResult` guarda a vitória. `HordeDefeatProbe`: morrer encerra
   a partida em derrota e para o `WaveDirector`.
+- Inicialização real de `HordeMatch.tscn`: o auto-start prepara o roster depois
+  do `EnemyPool`; a partida abre sem erros de espécie ausente no log.
 
 ### O que não deu para verificar rigorosamente
 

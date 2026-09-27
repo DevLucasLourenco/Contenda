@@ -106,7 +106,6 @@ public sealed partial class HordeGameMode : Node, IGameMode
             return;
         }
 
-        PrewarmarEspecies(WaveSet);
         _prontoParaComecar = true;
     }
 
@@ -120,6 +119,8 @@ public sealed partial class HordeGameMode : Node, IGameMode
         if (_prontoParaComecar && State == GameModeState.Starting && _pool is { IsReady: true })
         {
             _prontoParaComecar = false;
+            if (WaveSet is { } conjunto)
+                PrewarmarEspecies(conjunto);
             ComecarDeVerdade();
             return;
         }
