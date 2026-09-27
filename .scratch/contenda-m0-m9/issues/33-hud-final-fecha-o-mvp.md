@@ -11,9 +11,9 @@ menu, escolha, partida, resultado, menu.
 - [x] Um único tema visual governa toda a interface; nenhum estilo solto em tela
 - [x] Vida, mana, guia de combos, seletor de forma, onda, tempo e placar
       convivem sem poluir a tela
-- [x] Tudo legível sobre a cidade, nos três níveis, em qualquer iluminação
+- [ ] Tudo legível sobre a cidade, nos três níveis, em qualquer iluminação
 - [x] Nada é comunicado **só** por cor
-- [x] A interface se adapta de 16:9 a 21:9 sem cortar informação
+- [ ] A interface se adapta de 16:9 a 21:9 sem cortar informação
 - [x] O ciclo menu → escolha → partida → resultado → menu fecha sem vazar nós
 - [ ] **Um jogador que nunca viu o projeto consegue, sem ajuda:** iniciar,
       entender que WASD move e o botão esquerdo ataca, **executar uma habilidade
@@ -39,5 +39,8 @@ a interface não está pronta.
 - Validação: build `ExportRelease` sem avisos; 435 testes xUnit e sondas
   `HudProbe`, `ScoreAndResultsProbe`, `HordeMatchProbe`, `CharacterSelectProbe`
   e `MenuProbe` passaram.
+- A revisão do diff observou que os probes headless não demonstram contraste em
+  captura dos três níveis nem ausência de recorte de 16:9 a 21:9; esses dois
+  critérios aguardam validação visual.
 - O teste com uma pessoa de fora continua pendente; por isso o ticket aguarda
   revisão humana antes de fechar o MVP.

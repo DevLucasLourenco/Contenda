@@ -175,13 +175,13 @@ public sealed partial class MenuProbe : Node
         await AteACenaSer("CharacterSelectMenu");
         var selecaoParaVoltar = (CharacterSelectMenu)GetTree().CurrentScene;
         Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveRight, Pressed = true, Strength = 1f });
-        await Quadros(2);
+        await AteQue(() => selecaoParaVoltar.SelectedIndex == 1);
         Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveRight, Pressed = false, Strength = 0f });
         await Quadros(2);
         Verificar(selecaoParaVoltar.SelectedIndex == 1,
             $"D deveria escolher o próximo personagem; o índice ficou em {selecaoParaVoltar.SelectedIndex}");
         Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveLeft, Pressed = true, Strength = 1f });
-        await Quadros(2);
+        await AteQue(() => selecaoParaVoltar.SelectedIndex == 0);
         Godot.Input.ParseInputEvent(new InputEventAction { Action = InputActionNames.MoveLeft, Pressed = false, Strength = 0f });
         await Quadros(2);
         Verificar(selecaoParaVoltar.SelectedIndex == 0, "A deveria escolher o personagem anterior");

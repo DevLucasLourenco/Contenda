@@ -14,11 +14,9 @@ namespace Contenda.UI.HUD;
 /// dura. Uma segunda camada aqui repetiria o que o ticket 12 já ganha do
 /// <c>ManaState</c> sem custo nenhum.
 ///
-/// Mesmas regras da <see cref="HealthBar"/>: não procura o jogador sozinha,
-/// só o <see cref="HudController"/> chama <see cref="Bind"/>; lê por polling
-/// em <c>_PhysicsProcess</c>, não em <c>_Process</c> — ver o comentário da
-/// classe <see cref="HealthBar"/> sobre por que a spec 01 §6 é seguida em
-/// espírito, não ao pé da letra, aqui.
+/// O <see cref="HudController"/> liga as referências. A barra e o pulso são
+/// apresentação em <c>_Process</c>; os textos são recalculados em chamada
+/// adiada quando muda a mana ou a forma.
 /// </remarks>
 public sealed partial class ManaBar : Control
 {
@@ -42,6 +40,12 @@ public sealed partial class ManaBar : Control
     private ManaComponent? _mana;
     private TransformationComponent? _formas;
     private float _tempo;
+    private TransformationDefinition? _ultimaFormaDoStatus;
+    private bool _ultimaLeituraManaBaixa;
+    private bool _statusInicializado;
+    private int _manaArredondadaAntes = -1;
+    private int _maxArredondadoAntes = -1;
+    private bool _textoAgendado;
 
     public override void _Ready()
     {
@@ -52,69 +56,127 @@ public sealed partial class ManaBar : Control
         if (_preenchimento is null)
         {
             GD.PushError($"{Name}: FillPath não resolveu.");
-            SetPhysicsProcess(false);
+            SetProcess(false);
         }
     }
 
     /// <summary>Recebe a mana e a forma ativa. Chamado pelo <see cref="HudController"/>.</summary>
     public void Bind(ManaComponent mana, TransformationComponent formas)
     {
+        Unbind();
         _mana = mana;
         _formas = formas;
-        Atualizar();
+        _mana.ManaChanged += AoMudarMana;
+        _formas.Activated += AoAtivarForma;
+        _formas.Reverted += AoReverterForma;
+        AgendarAtualizacaoTextos();
     }
 
     /// <summary>Libera as referências da partida encerrada.</summary>
     public void Unbind()
     {
+        if (_mana is not null)
+            _mana.ManaChanged -= AoMudarMana;
+
+        if (_formas is not null)
+        {
+            _formas.Activated -= AoAtivarForma;
+            _formas.Reverted -= AoReverterForma;
+        }
+
         _mana = null;
         _formas = null;
-        if (_status is not null)
-            _status.Text = string.Empty;
+        AgendarAtualizacaoTextos();
     }
 
-    public override void _PhysicsProcess(double delta)
+    public override void _ExitTree() => Unbind();
+
+    public override void _Process(double delta)
     {
         _tempo += (float)delta;
-        Atualizar();
-    }
-
-    private void Atualizar()
-    {
-        if (_mana is null || _preenchimento is null)
+        if (_preenchimento is null || _mana is null)
             return;
 
         // Encolhe pela ESQUERDA -- mesma armadilha da HealthBar/WorldHealthBar:
         // escalar sozinho encolheria pelos dois lados a partir do centro.
         _preenchimento.Size = new Vector2(BarWidth * _mana.Percent, BarHeight);
 
-        if (_valor is not null)
-            _valor.Text = $"{_mana.Current:0}/{_mana.Max:0}";
-
         var formaAtiva = _formas?.Active;
         if (formaAtiva is null)
         {
             _preenchimento.SelfModulate = GetThemeColor("mana", "HudPalette");
-            if (_status is not null)
-                _status.Text = string.Empty;
             return;
         }
 
-        var baixa = _mana.Percent < 0.15f;
         var cor = formaAtiva.ThemeColor;
-        if (baixa)
+        if (_mana.Percent < 0.15f)
         {
             var pulso = 0.25f + (Mathf.Sin(_tempo * 8f) + 1f) * 0.375f;
             cor = cor.Lerp(GetThemeColor("mana_low", "HudPalette"), pulso);
         }
 
         _preenchimento.SelfModulate = cor;
-        if (_status is not null)
-            _status.Text = baixa
-                ? "FORMA ATIVA · MANA BAIXA"
-                : $"FORMA ATIVA · DRENO {formaAtiva.ManaDrainPerSecond:0.#}/s";
     }
 
     /// <summary>Fração exibida agora. Para o probe/depuração.</summary>
     public float CurrentFraction => _mana?.Percent ?? 0f;
+
+    private void AoMudarMana(float atual, float maximo) => AgendarAtualizacaoTextos();
+
+    private void AoAtivarForma(TransformationDefinition forma) => AgendarAtualizacaoTextos();
+
+    private void AoReverterForma(TransformationDefinition forma, RevertReason motivo) => AgendarAtualizacaoTextos();
+
+    private void AgendarAtualizacaoTextos()
+    {
+        if (_textoAgendado || !IsInsideTree())
+            return;
+
+        _textoAgendado = true;
+        CallDeferred(nameof(AtualizarTextos));
+    }
+
+    private void AtualizarTextos()
+    {
+        _textoAgendado = false;
+
+        if (_mana is null)
+        {
+            if (_valor is not null && _valor.Text.Length > 0)
+                _valor.Text = string.Empty;
+            if (_status is not null && _status.Text.Length > 0)
+                _status.Text = string.Empty;
+
+            _manaArredondadaAntes = -1;
+            _maxArredondadoAntes = -1;
+            _ultimaFormaDoStatus = null;
+            _statusInicializado = false;
+            return;
+        }
+
+        var manaAtual = Mathf.RoundToInt(_mana.Current);
+        var manaMaxima = Mathf.RoundToInt(_mana.Max);
+        if (_valor is not null && (manaAtual != _manaArredondadaAntes || manaMaxima != _maxArredondadoAntes))
+            _valor.Text = $"{manaAtual}/{manaMaxima}";
+
+        _manaArredondadaAntes = manaAtual;
+        _maxArredondadoAntes = manaMaxima;
+
+        var formaAtiva = _formas?.Active;
+        var baixa = _mana.Percent < 0.15f;
+        if (_status is not null && (!_statusInicializado
+            || !ReferenceEquals(formaAtiva, _ultimaFormaDoStatus)
+            || (formaAtiva is not null && baixa != _ultimaLeituraManaBaixa)))
+        {
+            _status.Text = formaAtiva is null
+                ? string.Empty
+                : baixa
+                    ? "FORMA ATIVA · MANA BAIXA"
+                    : $"FORMA ATIVA · DRENO {formaAtiva.ManaDrainPerSecond:0.#}/s";
+        }
+
+        _ultimaFormaDoStatus = formaAtiva;
+        _ultimaLeituraManaBaixa = baixa;
+        _statusInicializado = true;
+    }
 }

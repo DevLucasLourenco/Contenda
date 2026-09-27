@@ -26,6 +26,13 @@ public sealed partial class ScoreDisplay : Control
     private Label? _combo;
     private Label? _onda;
     private Label? _tempo;
+    private int _placarPendente;
+    private float _comboPendente;
+    private int _ondaPendente;
+    private int _tempoPendente;
+    private bool _placarPendenteParaExibicao;
+    private bool _statusPendenteParaExibicao;
+    private bool _atualizacaoAdiada;
 
     /// <summary>O texto de pontos mostrado agora. Para o probe/depuração.</summary>
     public string ScoreText => _pontos?.Text ?? "";
@@ -70,27 +77,59 @@ public sealed partial class ScoreDisplay : Control
         ServiceLocator.Events.MatchStatusChanged -= AoMudarStatus;
     }
 
-    private void AoMudarPlacar(ScoreChangedEvent evento)
+    private void AdiarAtualizacao()
     {
-        if (_pontos is null || _combo is null || _onda is null || _tempo is null)
+        if (_atualizacaoAdiada)
             return;
 
-        Visible = true;
-        _pontos.Text = "SCORE  " + FormatarPontos(evento.Score);
+        _atualizacaoAdiada = true;
+        CallDeferred(nameof(AplicarAtualizacaoPendente));
+    }
 
-        // Só aparece quando há sequência de verdade: "x1,0" o tempo todo seria ruído.
-        _combo.Text = evento.ComboMultiplier > 1.0001f
-            ? "COMBO  x" + evento.ComboMultiplier.ToString("0.0", CultureInfo.InvariantCulture)
-            : "";
+    private void AplicarAtualizacaoPendente()
+    {
+        _atualizacaoAdiada = false;
+
+        if (_placarPendenteParaExibicao)
+        {
+            if (_pontos is not null && _combo is not null)
+            {
+                Visible = true;
+                _pontos.Text = "SCORE  " + FormatarPontos(_placarPendente);
+                _combo.Text = _comboPendente > 1.0001f
+                    ? "COMBO  x" + _comboPendente.ToString("0.0", CultureInfo.InvariantCulture)
+                    : "";
+            }
+
+            _placarPendenteParaExibicao = false;
+        }
+
+        if (_statusPendenteParaExibicao)
+        {
+            if (_onda is not null && _tempo is not null)
+            {
+                _onda.Text = $"ONDA  {_ondaPendente}";
+                _tempo.Text = "TEMPO  " + FormatarDuracao(_tempoPendente);
+            }
+
+            _statusPendenteParaExibicao = false;
+        }
+    }
+
+    private void AoMudarPlacar(ScoreChangedEvent evento)
+    {
+        _placarPendente = evento.Score;
+        _comboPendente = evento.ComboMultiplier;
+        _placarPendenteParaExibicao = true;
+        AdiarAtualizacao();
     }
 
     private void AoMudarStatus(MatchStatusChangedEvent evento)
     {
-        if (_onda is null || _tempo is null)
-            return;
-
-        _onda.Text = $"ONDA  {evento.Wave}";
-        _tempo.Text = "TEMPO  " + FormatarDuracao(evento.ElapsedSeconds);
+        _ondaPendente = evento.Wave;
+        _tempoPendente = evento.ElapsedSeconds;
+        _statusPendenteParaExibicao = true;
+        AdiarAtualizacao();
     }
 
     /// <summary>Milhar separado por espaço, como no mockup da spec 11: "4 250".</summary>
