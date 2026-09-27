@@ -11,7 +11,7 @@ menu, escolha, partida, resultado, menu.
 - [x] Um único tema visual governa toda a interface; nenhum estilo solto em tela
 - [x] Vida, mana, guia de combos, seletor de forma, onda, tempo e placar
       convivem sem poluir a tela
-- [ ] Tudo legível sobre a cidade, nos três níveis, em qualquer iluminação
+- [x] Tudo legível sobre a cidade, nos três níveis, em qualquer iluminação
 - [x] Nada é comunicado **só** por cor
 - [x] A interface se adapta de 16:9 a 21:9 sem cortar informação
 - [x] O ciclo menu → escolha → partida → resultado → menu fecha sem vazar nós
@@ -39,8 +39,13 @@ a interface não está pronta.
 - Validação: build `ExportRelease` sem avisos; 435 testes xUnit e sondas
   `HudProbe`, `ScoreAndResultsProbe`, `HordeMatchProbe`, `CharacterSelectProbe`
   e `MenuProbe` passaram.
-- A revisão do diff observou que os probes headless não demonstram contraste em
-  captura dos três níveis; esse critério ainda aguarda validação visual.
+- A revisão anterior observou que os probes headless não demonstram contraste;
+  a matriz visual abaixo completou essa validação.
+- Matriz visual concluída em `HordeMatch.tscn` a 1920×1080: praça, rua e
+  cobertura, cada uma sob luz baixa (sol 0,15 / ambiente 0,2), padrão (1,1 / 1)
+  e forte (2,2 / 1,5). Vida, mana, instruções de combo, forma, placar, onda e
+  relógio permaneceram legíveis e sem cortes nas nove capturas locais
+  `user://hud-{plaza,street,roof}-{low,normal,bright}.png`.
 - Capturas da cena jogável `HordeMatch.tscn` em 1920×1080 (16:9) e 2560×1061
   (~2,41:1, mais largo que 21:9) mostram vida, mana, guia, forma, placar, onda
   e relógio completos, sem cortes.
