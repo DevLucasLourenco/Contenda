@@ -38,13 +38,23 @@ public sealed partial class FramingCapture : Node
     /// </remarks>
     [Export] public int WarmupFrames { get; set; } = 30;
 
-    /// <summary>Posiciona e congela o jogador antes da captura, para validar outros níveis da arena.</summary>
+    /// <summary>
+    /// Habilita capturas em outros níveis sem depender do movimento da partida.
+    /// </summary>
     [Export] public bool OverridePlayerPosition { get; set; }
+
+    [Export] public NodePath PlayerPath { get; set; } = new("Jogador");
 
     [Export] public Vector3 PlayerPosition { get; set; }
 
-    /// <summary>Aplica uma condição de luz à cópia local do ambiente da cena.</summary>
+    /// <summary>
+    /// Permite variar a luz sem alterar os recursos compartilhados pela cena.
+    /// </summary>
     [Export] public bool OverrideLighting { get; set; }
+
+    [Export] public NodePath EnvironmentPath { get; set; } = new("WorldEnvironment");
+
+    [Export] public NodePath SunPath { get; set; } = new("Sol");
 
     [Export(PropertyHint.Range, "0,3,0.05")] public float SunEnergy { get; set; } = 1.1f;
 
@@ -68,10 +78,10 @@ public sealed partial class FramingCapture : Node
 
         if (OverridePlayerPosition)
         {
-            var jogador = Encontrar<CharacterController>(cena);
+            var jogador = cena.GetNodeOrNull<CharacterController>(PlayerPath);
             if (jogador is null)
             {
-                GD.PushError($"[captura] não encontrei o jogador em {ScenePath}");
+                GD.PushError($"[captura] PlayerPath '{PlayerPath}' não resolveu em {ScenePath}");
                 GetTree().Quit(1);
                 return;
             }
@@ -82,16 +92,33 @@ public sealed partial class FramingCapture : Node
 
         if (OverrideLighting)
         {
-            var ambiente = Encontrar<WorldEnvironment>(cena);
-            if (ambiente?.Environment?.Duplicate() is Environment copia)
+            var ambiente = cena.GetNodeOrNull<WorldEnvironment>(EnvironmentPath);
+            if (ambiente?.Environment is not Environment original)
             {
-                copia.AmbientLightEnergy = AmbientLightEnergy;
-                ambiente.Environment = copia;
+                GD.PushError($"[captura] EnvironmentPath '{EnvironmentPath}' sem ambiente em {ScenePath}");
+                GetTree().Quit(1);
+                return;
             }
 
-            var sol = Encontrar<DirectionalLight3D>(cena);
-            if (sol is not null)
-                sol.LightEnergy = SunEnergy;
+            if (original.Duplicate() is not Environment copia)
+            {
+                GD.PushError($"[captura] não consegui duplicar o Environment em {EnvironmentPath}");
+                GetTree().Quit(1);
+                return;
+            }
+
+            copia.AmbientLightEnergy = AmbientLightEnergy;
+            ambiente.Environment = copia;
+
+            var sol = cena.GetNodeOrNull<DirectionalLight3D>(SunPath);
+            if (sol is null)
+            {
+                GD.PushError($"[captura] SunPath '{SunPath}' não resolveu em {ScenePath}");
+                GetTree().Quit(1);
+                return;
+            }
+
+            sol.LightEnergy = SunEnergy;
         }
 
         GD.Print($"[captura] {ScenePath} carregada; aquecendo {WarmupFrames} quadros…");
@@ -121,20 +148,5 @@ public sealed partial class FramingCapture : Node
         GD.Print($"[captura] {imagem.GetWidth()}x{imagem.GetHeight()} salvo em {destino}");
         GD.Print($"[captura] caminho real: {ProjectSettings.GlobalizePath(destino)}");
         GetTree().Quit();
-    }
-
-    private static T? Encontrar<T>(Node raiz) where T : Node
-    {
-        if (raiz is T achado)
-            return achado;
-
-        foreach (var filho in raiz.GetChildren())
-        {
-            var dentro = Encontrar<T>(filho);
-            if (dentro is not null)
-                return dentro;
-        }
-
-        return null;
     }
 }
