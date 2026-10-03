@@ -58,6 +58,8 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     private bool _golpeSolicitado;
     private float _temporizadorDeMorte;
     private bool _liberado;
+    private const float MinimumProgressSpeed = 0.1f;
+    private readonly StuckMovementTimer _relogioDeTravamento = new(MinimumProgressSpeed);
 
     /// <remarks>
     /// Nasce já "vencido" (maior que <see cref="IntervaloDeLodSegundos"/>),
@@ -126,6 +128,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _relogioDePensamento = float.PositiveInfinity;
         _ultimaIntencao = IntentFrame.Idle;
         PensamentosCompletos = 0;
+        _relogioDeTravamento.Reset();
         _contexto?.AttackTelegraph?.DesligarAviso();
         AnunciarComoChefeSeForCaso();
     }
@@ -151,6 +154,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         _relogioDePensamento = float.PositiveInfinity;
         _ultimaIntencao = IntentFrame.Idle;
         PensamentosCompletos = 0;
+        _relogioDeTravamento.Reset();
         _contexto?.AttackTelegraph?.DesligarAviso();
         _contexto?.Combat?.Cancel();
         AnunciarComoChefeSeForCaso();
@@ -188,13 +192,27 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         // alvo nenhum, o resto de Poll() ainda tentaria ler `_contexto.Body`
         // normalmente, e não há percepção nenhuma para rodar num cadáver.
         if (_maquina.Estado == EnemyState.Death)
+        {
+            _relogioDeTravamento.Reset();
             return AtualizarMorte(delta);
+        }
 
         var alvo = ServiceLocator.Session.PlayerBody;
         if (alvo is null || !GodotObject.IsInstanceValid(alvo) || alvo.Context?.Health is not { IsAlive: true })
+        {
+            _relogioDeTravamento.Reset();
             return IntentFrame.Idle;
+        }
 
         var corpo = _contexto!.Body;
+        var velocidadeReal = corpo.GetRealVelocity();
+        var velocidadeHorizontal = new Vector2(velocidadeReal.X, velocidadeReal.Z).Length();
+        _relogioDeTravamento.Advance(
+            delta,
+            isChasing: _maquina.Estado == EnemyState.Chase,
+            hasMoveIntent: _ultimaIntencao.Move.LengthSquared() > 0.0001f,
+            horizontalSpeed: velocidadeHorizontal);
+
         var distancia = corpo.GlobalPosition.DistanceTo(alvo.GlobalPosition);
 
         // LOD de IA (spec 09 §9, ticket 23): distante, pensa a
@@ -251,6 +269,22 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
 
         _ultimaIntencao = MontarIntencao(corpo, alvo, pedirAtaqueAgora, deltaEfetivo);
         return _ultimaIntencao;
+    }
+
+    /// <summary>Marca uma única morte de segurança após travamento físico prolongado.</summary>
+    internal bool TryMarkStuckForRemoval(float timeoutSeconds)
+    {
+        if (_maquina.Estado != EnemyState.Chase
+            || _ultimaIntencao.Move.LengthSquared() <= 0.0001f
+            || _contexto is not { } contexto)
+            return false;
+
+        var velocidadeReal = contexto.Body.GetRealVelocity();
+        var velocidadeHorizontal = new Vector2(velocidadeReal.X, velocidadeReal.Z).Length();
+        if (velocidadeHorizontal >= MinimumProgressSpeed)
+            return false;
+
+        return _relogioDeTravamento.TryMarkForRemoval(timeoutSeconds);
     }
 
     /// <summary>

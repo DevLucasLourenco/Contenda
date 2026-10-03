@@ -1,3 +1,5 @@
+using Contenda.Components.AI;
+
 namespace Contenda.GameModes.Horde;
 
 /// <summary>
@@ -15,7 +17,8 @@ namespace Contenda.GameModes.Horde;
 /// Não sabe nada de spawn, pool nem definição de onda -- só recebe os dois
 /// sinais já resolvidos (<c>enemiesRemaining</c>, <c>realActiveCount</c>) a
 /// cada quadro. Quem produz esses sinais é o <c>WaveDirector</c>, na
-/// fronteira com a engine.
+/// fronteira com a engine. O travamento físico de um inimigo vivo é medido
+/// separadamente por <see cref="StuckMovementTimer"/> e removido pelo pool.
 /// </remarks>
 public sealed class WaveClearTimer
 {
@@ -51,15 +54,11 @@ public sealed class WaveClearTimer
     /// ENQUANTO essa discordância persistir, e o caminho comum (o pool zera
     /// antes do alçapão vencer) nunca o aciona.
     ///
-    /// Escopo deliberadamente estreito: isto cobre só a discordância de
-    /// CONTAGEM (um <c>EnemyKilled</c> que não chegou até aqui -- bug), não
-    /// um inimigo genuinamente vivo e inalcançável (<paramref
-    /// name="enemiesRemaining"/> continua maior que zero enquanto ele não
-    /// morre, e o relógio de travado nem começa a contar nesse caso -- de
-    /// propósito, senão qualquer inimigo vivo forçaria o avanço da onda). O
-    /// caso "vivo, preso atrás de um obstáculo" é responsabilidade do
-    /// sistema de navegação do ticket 23, não deste relógio. Ver a seção
-    /// "Alçapão de inimigo preso" do ticket 27 para a leitura completa.
+    /// Este relógio cobre só divergência de CONTAGEM: um <c>EnemyKilled</c>
+    /// que não chegou até aqui enquanto o pool continua ativo. O caso
+    /// diferente, de um inimigo vivo que pede movimento sem sair do lugar,
+    /// é medido por <see cref="StuckMovementTimer"/> e removido pelo
+    /// <c>EnemyPool</c> após o mesmo limite de segurança.
     /// </remarks>
     /// <param name="delta">Tempo do quadro, em segundos.</param>
     /// <param name="enemiesRemaining">Planejados mais ativos, menos abatidos -- o bookkeeping do dono.</param>

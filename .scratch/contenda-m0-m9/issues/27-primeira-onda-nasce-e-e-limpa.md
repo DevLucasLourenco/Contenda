@@ -90,42 +90,27 @@ isso. Zerar `EnemiesRemaining` só faz a onda avançar depois de
 `CompletionDelay` de respiro (`WaveCleared`/banner primeiro, depois a
 próxima `WaveStarted`).
 
-**Alçapão de inimigo preso**: `EnemiesRemaining == 0` sozinho NÃO significa
-"ninguém mais no mundo" -- um abate só libera o pool depois de
-`DeathDuration` (o corpo fica visível um instante, ticket 25), então
-`EnemyPool.ActiveCount` ainda mostrar alguém logo após o último abate é
-NORMAL, não travamento. O relógio de `StuckFallbackSeconds` (5 s, bem mais
-que o `DeathDuration` padrão de 1,2 s) só acumula enquanto essa discordância
-persistir; se o pool zerar antes disso (o caminho normal todo santo dia), a
-onda avança na hora, sem nunca tocar o alçapão. Só quando a discordância
-persiste além de 5 s (um abate que nunca chegou até aqui -- evento perdido,
-bug) é que ele força o avanço, com aviso no log.
+**Alçapão de inimigo preso**: há dois casos distintos. `EnemiesRemaining == 0`
+com `EnemyPool.ActiveCount > 0` normalmente é só o corpo morto aguardando
+`DeathDuration` antes de voltar ao pool (1,2 s por padrão); `WaveClearTimer`
+só força a limpeza se essa divergência persistir por `StuckFallbackSeconds`
+(5 s), cobrindo um evento de abate perdido. Para um inimigo VIVO que pede
+movimento mas não avança, `EnemyBrain` acumula o tempo sem progresso somente
+durante perseguição; o relógio reinicia quando ele se move, para de perseguir
+ou deixa de pedir movimento. `WaveDirector` consulta o `EnemyPool` a cada
+0,5 s e `KillStuckEnemies` enfileira uma morte para cada perseguidor parado
+além do limite. O evento normal de abate atualiza a contagem da onda e a
+liberação pelo pool ainda respeita `DeathDuration`.
 
-**Leitura honesta do escopo, mais estreita que o exemplo motivador do
-ticket.** O comentário original deste ticket usa "um inimigo perdido atrás
-de um carro" para justificar o critério -- mas um inimigo assim está VIVO
-e `EnemiesRemaining` continua maior que zero enquanto ele não morre
-(`TickWaitingForClear` nem começa a contar o relógio de travado nesse
-caso, por design: se qualquer inimigo vivo disparasse o alçapão, a regra
-"matar todos avança a onda" deixaria de existir). Este alçapão cobre
-literalmente só a discordância de CONTAGEM (`EnemiesRemaining == 0` mas o
-pool ainda ativo) -- um abate que o evento `GameEvents.EnemyKilled` não
-propagou por algum bug. Ele NÃO resolve, sozinho, um inimigo genuinamente
-vivo e inalcançável atrás de geometria: essa parte do problema é
-responsabilidade do sistema de navegação do ticket 23 (convergência
-espalhada + escalada por ligações de `NavigationLink3D`), que existe
-justamente para um inimigo sempre conseguir alcançar o jogador em vez de
-ficar fisicamente preso atrás de um obstáculo. Os dois mecanismos juntos
-cobrem o exemplo do carro; nenhum dos dois sozinho cobriria as duas
-metades do problema (contagem perdida vs. rota impossível).
+O watchdog usa a velocidade real horizontal do `CharacterBody3D` após a
+física, não a velocidade solicitada. Windup/ataque não contam como travamento,
+e a rotina percorre só o conjunto de inimigos ativos do pool — sem varredura
+da árvore de cena e sem alocação por quadro.
 
-Testado por SIMULAÇÃO da discordância, não por "nunca matar um inimigo
-vivo": um inimigo vivo que ninguém matou ainda NÃO é travamento (é o
-funcionamento normal de esperar a onda -- se qualquer inimigo vivo forçasse
-avanço, a própria regra "matar todos avança a onda" deixaria de existir).
-`WaveDirectorProbe` dispara `GameEvents.EnemyKilled` na mão, sem matar
-ninguém de verdade, para reproduzir a MESMA discordância que um abate
-perdido produziria, e prova que o alçapão reage a ela.
+`StuckMovementTimer` tem testes xUnit para acumular tempo enquanto há
+intenção de movimento sem deslocamento e reiniciar ao voltar a andar, sair
+da perseguição ou parar de pedir movimento. `WaveDirectorProbe` continua
+simulando também a divergência entre contagem e pool.
 
 ### Banner de onda
 
@@ -188,22 +173,16 @@ corrigidos:
   `is not { } x` (capturando o local para o resto do método, sem
   null-forgiving nenhum); `Begin`/`RequestSpawn` ganharam
   `ArgumentNullException.ThrowIfNull`.
-- **Escopo do alçapão de inimigo preso documentado de forma otimista
-  demais** (Spec review): a seção "Alçapão de inimigo preso" original
-  citava "um abate que nunca chegou até aqui, ou um inimigo genuinamente
-  preso" como os dois gatilhos do alçapão -- mas um inimigo genuinamente
-  vivo e preso NUNCA aciona esse relógio (`EnemiesRemaining` continua maior
-  que zero enquanto ele não morre, por design, senão "matar todos avança a
-  onda" deixaria de valer). É uma leitura mais estreita que o próprio
-  exemplo motivador do ticket ("um inimigo perdido atrás de um carro", nos
-  Comments) -- que descreve um inimigo VIVO e inalcançável, não um abate
-  perdido. Corrigido reescrevendo a seção para ser honesta sobre o
-  DE-escopo: o alçapão cobre só a discordância de contagem; o caso "vivo,
-  preso atrás de obstáculo" é responsabilidade do sistema de navegação do
-  ticket 23 (convergência espalhada + ligações de `NavigationLink3D`), não
-  deste relógio -- os dois mecanismos juntos, não um sozinho, cobrem o
-  exemplo do carro. Sem mudança de comportamento, só de documentação (ticket
-  27 e o doc comment de `WaveClearTimer.TickWaitingForClear`).
+- **Gap restante no critério anti-travamento** (Spec review posterior): a
+  correção anterior só cobria a divergência entre eventos de abate e o pool;
+  um inimigo vivo pedindo movimento sem sair do lugar ainda podia bloquear a
+  onda. Corrigido com `StuckMovementTimer`, que mede a velocidade real
+  horizontal enquanto o estado é perseguição e há intenção de movimento, e
+  com `EnemyPool.KillStuckEnemies`, que enfileira uma morte após
+  `StuckFallbackSeconds`. O `WaveDirector` consulta o pool em intervalos de
+  0,5 s; o evento normal de abate e a liberação por `DeathDuration` mantêm a
+  contagem e o ciclo de pooling existentes. Testes xUnit cobrem a acumulação
+  e os casos que reiniciam o relógio.
 
 A sub-agent Standards desta rodada ainda não retornou ao fechar esta seção;
 os quatro achados acima (teto global, cobertura xUnit, `Weight` morto,

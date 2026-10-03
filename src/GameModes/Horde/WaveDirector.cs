@@ -15,15 +15,14 @@ namespace Contenda.GameModes.Horde;
 /// 28, que ainda não existe) -- só orquestra a sequência de
 /// <see cref="WaveDefinition"/> de um <see cref="WaveSetDefinition"/>.
 ///
-/// A decisão de QUANDO uma onda está limpa (e o alçapão de inimigo preso)
-/// mora em <see cref="WaveClearTimer"/>, e QUEM nasce a seguir entre
-/// entradas concorrentes mora em <see cref="SpawnQueue"/> -- ambos POCOs
-/// testados em xUnit (spec 15 §1-2: "WaveDirector avança com relógio
+/// A decisão de QUANDO uma onda está limpa mora em <see cref="WaveClearTimer"/>;
+/// o tempo sem movimento real em <see cref="StuckMovementTimer"/>; e QUEM
+/// nasce a seguir entre entradas concorrentes em <see cref="SpawnQueue"/> --
+/// POCOs testados em xUnit (spec 15 §1-2: "WaveDirector avança com relógio
 /// simulado; fallback do inimigo preso" é literalmente um requisito de
-/// teste da spec). Este nó só produz os sinais que os dois consomem
-/// (contagem de abates, `EnemyPool.ActiveCount`) e traduz o resultado de
-/// volta em ações de engine (pedir um spawn, disparar eventos) -- a mesma
-/// fronteira que <c>EnemyBrain</c> já mantém para <c>EnemyStateMachine</c>.
+/// teste da spec). Este nó só produz os sinais e traduz os resultados em
+/// ações de engine (pedir um spawn, consultar o pool, disparar eventos) -- a
+/// mesma fronteira que <c>EnemyBrain</c> já mantém para <c>EnemyStateMachine</c>.
 ///
 /// Contagem de abates por <see cref="GameEvents.EnemyKilled"/>, nunca por
 /// varredura de cena a cada quadro (spec 10 §4) -- <see cref="EnemiesRemaining"/>
@@ -36,15 +35,15 @@ public sealed partial class WaveDirector : Node
     [Export] public NodePath SpawnDirectorPath { get; set; } = new();
 
     /// <summary>
-    /// Quanto tempo <see cref="EnemiesRemaining"/> pode ficar em zero com o
-    /// pool ainda reportando alguém ativo antes de forçar a próxima onda.
+    /// Quanto tempo um inimigo pode pedir movimento sem avançar antes de o
+    /// sistema removê-lo para impedir que uma rota presa bloqueie a onda.
+    /// Também é o limite para a divergência entre contagem e pool.
     /// </summary>
     /// <remarks>
-    /// "Um inimigo preso no cenário não trava a partida" -- ticket 27. Rede
-    /// de segurança, não o caminho normal: um abate perdido (bug) ou um
-    /// inimigo genuinamente preso atrás de um obstáculo são a MESMA coisa do
-    /// ponto de vista de quem está jogando, e os dois precisam do mesmo
-    /// alçapão.
+    /// "Um inimigo preso no cenário não trava a partida" -- ticket 27. Só
+    /// conta enquanto ele está perseguindo, pedindo movimento e a velocidade
+    /// horizontal real fica abaixo do limiar. O combate normal e os windups
+    /// não contam como falta de progresso.
     /// </remarks>
     [Export(PropertyHint.Range, "1,30,0.5")] public float StuckFallbackSeconds { get; set; } = 5f;
 
@@ -73,6 +72,9 @@ public sealed partial class WaveDirector : Node
     private WaveClearTimer? _relogio;
     private ReinforcementClock? _reforcos;
     private float _relogioDeSpawn;
+    private float _relogioDeVerificacaoDeTravamento;
+
+    private const float IntervaloDeVerificacaoDeTravamento = 0.5f;
 
     // O chefe da onda já saiu da fila de spawn / já morreu. Reforços só chegam
     // entre os dois -- ver TickReforcos (ticket 28).
@@ -139,6 +141,24 @@ public sealed partial class WaveDirector : Node
 
     public override void _PhysicsProcess(double delta)
     {
+        if (_fase is Fase.Spawnando or Fase.EsperandoLimpeza)
+        {
+            _relogioDeVerificacaoDeTravamento += (float)delta;
+            if (_relogioDeVerificacaoDeTravamento >= IntervaloDeVerificacaoDeTravamento)
+            {
+                _relogioDeVerificacaoDeTravamento -= IntervaloDeVerificacaoDeTravamento;
+                var removidos = _pool?.KillStuckEnemies(StuckFallbackSeconds) ?? 0;
+                if (removidos > 0)
+                {
+                    GD.PushWarning("Watchdog da horda removeu inimigo(s) travado(s) para liberar a onda.");
+                }
+            }
+        }
+        else
+        {
+            _relogioDeVerificacaoDeTravamento = 0f;
+        }
+
         switch (_fase)
         {
             case Fase.Spawnando: TickSpawnando((float)delta); break;
@@ -176,6 +196,7 @@ public sealed partial class WaveDirector : Node
         _relogio = new WaveClearTimer(onda.CompletionDelay, StuckFallbackSeconds);
         _reforcos = new ReinforcementClock(onda.ReinforcementEnemy is null ? 0f : onda.ReinforcementInterval);
         _relogioDeSpawn = 0f;
+        _relogioDeVerificacaoDeTravamento = 0f;
         _abatidosNaOnda = 0;
         _chefeNasceu = false;
         _chefeMorreu = false;

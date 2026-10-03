@@ -100,6 +100,30 @@ public sealed partial class EnemyPool : Node
     }
 
     /// <summary>
+    /// Enfileira a morte de cada inimigo que pediu movimento mas ficou sem
+    /// avançar pelo tempo limite. Retorna quantos foram marcados.
+    /// </summary>
+    public int KillStuckEnemies(float timeoutSeconds)
+    {
+        var marcados = 0;
+
+        foreach (var ativo in _ativos)
+        {
+            if (!GodotObject.IsInstanceValid(ativo)
+                || ativo.Context is not { } contexto
+                || contexto.Health is not { IsAlive: true, IsInvulnerable: false } vida
+                || contexto.EnemyBrain is not { } cerebro
+                || !cerebro.TryMarkStuckForRemoval(timeoutSeconds))
+                continue;
+
+            vida.Kill("stuck-enemy-fallback");
+            marcados++;
+        }
+
+        return marcados;
+    }
+
+    /// <summary>
     /// Se o prewarm padrão (grunt, no boot) já terminou. Falso por um ou dois
     /// quadros logo no início -- ver o remark de <see cref="_Ready"/>.
     /// </summary>
