@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Contenda.Core;
 using Godot;
 
@@ -20,9 +22,11 @@ namespace Contenda.Camera;
 /// um shader para isto.
 ///
 /// Um raio fino, não uma forma larga: repetimos a consulta excluindo cada
-/// corpo encontrado para revelar os outros no mesmo segmento. Continua sendo
-/// uma câmera e poucos corpos por quadro, abaixo do custo dos raycasts de
-/// percepção feitos por cada inimigo.
+/// corpo encontrado para revelar os outros no mesmo segmento. Quando um corpo
+/// reúne vários visuais, só os AABBs atravessados por esse segmento recebem
+/// fade; numa MultiMesh, o proxy mantém esse fade restrito às instâncias
+/// atingidas. Continua sendo uma câmera e poucos corpos por quadro, abaixo do
+/// custo dos raycasts de percepção feitos por cada inimigo.
 ///
 /// Roda em <c>_PhysicsProcess</c>, não em <c>_Process</c>: mesma disciplina
 /// de <c>HealthBar</c>/<c>HudController</c> -- <c>_Process</c> não roda de
@@ -31,44 +35,37 @@ namespace Contenda.Camera;
 /// </remarks>
 public sealed partial class CameraOcclusionFader : Node
 {
+    private readonly record struct OcclusionTarget(
+        Node Collider,
+        GeometryInstance3D? Geometry,
+        int MultiMeshInstanceIndex);
+
+    private readonly record struct HiddenMultiMeshInstance(
+        MultiMeshInstance3D Instance,
+        int InstanceIndex,
+        Transform3D OriginalTransform,
+        int SurfaceCount);
+
     private readonly struct GeometryAccess
     {
         private readonly MeshInstance3D? _meshInstance;
-        private readonly MultiMeshInstance3D? _multiMeshInstance;
 
         private GeometryAccess(MeshInstance3D meshInstance)
         {
             _meshInstance = meshInstance;
-            _multiMeshInstance = null;
         }
 
-        private GeometryAccess(MultiMeshInstance3D multiMeshInstance)
-        {
-            _meshInstance = null;
-            _multiMeshInstance = multiMeshInstance;
-        }
+        public static GeometryAccess From(GeometryInstance3D instance) =>
+            instance is MeshInstance3D mesh ? new GeometryAccess(mesh) : default;
 
-        public static GeometryAccess From(GeometryInstance3D instance) => instance switch
-        {
-            MeshInstance3D mesh => new GeometryAccess(mesh),
-            MultiMeshInstance3D multiMesh => new GeometryAccess(multiMesh),
-            _ => default
-        };
+        public Mesh? Mesh => _meshInstance?.Mesh;
 
-        public Mesh? Mesh => _meshInstance?.Mesh ?? _multiMeshInstance?.Multimesh?.Mesh;
-        public bool IsMultiMesh => _multiMeshInstance is not null;
-        public int SurfaceKey(int surface) => IsMultiMesh ? -1 : surface;
-
-        public Material? GetOverride(int surface) => _meshInstance is not null
-            ? _meshInstance.GetSurfaceOverrideMaterial(surface)
-            : surface < 0 ? _multiMeshInstance?.MaterialOverride : null;
+        public Material? GetOverride(int surface) => _meshInstance?.GetSurfaceOverrideMaterial(surface);
 
         public void SetOverride(int surface, Material? material)
         {
             if (_meshInstance is not null)
                 _meshInstance.SetSurfaceOverrideMaterial(surface, material);
-            else if (_multiMeshInstance is not null && surface < 0)
-                _multiMeshInstance.MaterialOverride = material;
         }
     }
 
@@ -90,13 +87,50 @@ public sealed partial class CameraOcclusionFader : Node
     private Camera3D? _camera;
     private Node3D? _alvo;
     private RayCast3D? _raycast;
-    private readonly List<Node> _oclusoresAtuais = [];
-    private readonly List<Node> _oclusoresOcultos = [];
+    private readonly List<OcclusionTarget> _oclusoresAtuais = [];
+    private readonly List<OcclusionTarget> _oclusoresOcultos = [];
+    private readonly List<HiddenMultiMeshInstance> _instanciasMultiMeshOcultas = [];
     private readonly List<(GeometryInstance3D Instance, int Surface, Material? OriginalOverride)> _overridesAnteriores = [];
     private readonly Dictionary<(GeometryInstance3D Instance, int Surface), BaseMaterial3D> _materiaisDeFade = [];
     private readonly Dictionary<Node, GeometryInstance3D[]> _geometriasPorOclusor = [];
     private readonly Dictionary<Node, List<GeometryInstance3D>> _geometriasEmConstrucao = [];
+    private readonly Dictionary<GeometryInstance3D, Aabb[]> _limitesMundoPorGeometria = [];
+    private readonly Dictionary<MultiMeshInstance3D, MultiMeshInstance3D> _proxiesDeFadeMultiMesh = [];
+    private readonly Dictionary<MultiMeshInstance3D, int> _quantidadeDeInstanciasNoProxy = [];
+    private readonly StringBuilder _caminhosOcultosBuffer = new();
     private int _limiteDeOclusoresNoRaio;
+
+    internal long TotalDeTicksDeOclusao { get; private set; }
+    internal long TotalDeTestesDeRaio { get; private set; }
+    internal long TotalDeColisoresEncontrados { get; private set; }
+    internal ulong TempoTotalDeBuscaUsec { get; private set; }
+    internal ulong TempoMaximoDeBuscaUsec { get; private set; }
+    internal int MaximoDeTestesDeRaioPorTick { get; private set; }
+    internal int MaximoDeColisoresPorTick { get; private set; }
+    internal int LimiteDeColisoresNoRaio => _limiteDeOclusoresNoRaio;
+    internal int SuperficiesOcultasAgora => _overridesAnteriores.Count + _superficiesMultiMeshOcultas;
+
+    private int _superficiesMultiMeshOcultas;
+
+    internal string CaminhosDosOclusoresOcultosAgora
+    {
+        get
+        {
+            _caminhosOcultosBuffer.Clear();
+            for (var i = 0; i < _oclusoresOcultos.Count; i++)
+            {
+                if (i > 0)
+                    _caminhosOcultosBuffer.Append(", ");
+
+                var alvo = _oclusoresOcultos[i];
+                _caminhosOcultosBuffer.Append((alvo.Geometry ?? (Node)alvo.Collider).GetPath());
+                if (alvo.MultiMeshInstanceIndex >= 0)
+                    _caminhosOcultosBuffer.Append('[').Append(alvo.MultiMeshInstanceIndex).Append(']');
+            }
+
+            return _caminhosOcultosBuffer.ToString();
+        }
+    }
 
     public override void _Ready()
     {
@@ -114,8 +148,6 @@ public sealed partial class CameraOcclusionFader : Node
 
         IndexarGeometrias(GetTree().Root, null);
         PrepararMateriaisDeFade();
-        _oclusoresAtuais.Capacity = _geometriasPorOclusor.Count;
-        _oclusoresOcultos.Capacity = _geometriasPorOclusor.Count;
 
         if (_camera is null)
         {
@@ -129,7 +161,12 @@ public sealed partial class CameraOcclusionFader : Node
         if (_camera is null || _alvo is null)
             return;
 
+        TotalDeTicksDeOclusao++;
+        var inicioBuscaUsec = Time.GetTicksUsec();
         EncontrarOclusores(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
+        var tempoBuscaUsec = Time.GetTicksUsec() - inicioBuscaUsec;
+        TempoTotalDeBuscaUsec += tempoBuscaUsec;
+        TempoMaximoDeBuscaUsec = Math.Max(TempoMaximoDeBuscaUsec, tempoBuscaUsec);
         if (MesmoConjuntoDeOclusores())
             return;
 
@@ -140,6 +177,17 @@ public sealed partial class CameraOcclusionFader : Node
             Esconder(oclusor);
             _oclusoresOcultos.Add(oclusor);
         }
+    }
+
+    internal void ResetarDiagnosticosDoBenchmark()
+    {
+        TotalDeTicksDeOclusao = 0;
+        TotalDeTestesDeRaio = 0;
+        TotalDeColisoresEncontrados = 0;
+        TempoTotalDeBuscaUsec = 0;
+        TempoMaximoDeBuscaUsec = 0;
+        MaximoDeTestesDeRaioPorTick = 0;
+        MaximoDeColisoresPorTick = 0;
     }
 
     /// <remarks>O raio e a lista de exceções são reutilizados entre quadros.</remarks>
@@ -153,23 +201,34 @@ public sealed partial class CameraOcclusionFader : Node
         _raycast.TargetPosition = _raycast.ToLocal(alvo);
         _raycast.CollisionMask = OcclusionMask;
         _raycast.ClearExceptions();
+        var testesDeRaio = 0;
+        var colisoresEncontrados = 0;
         for (var quantidadeDeTestes = 0; quantidadeDeTestes < _limiteDeOclusoresNoRaio; quantidadeDeTestes++)
         {
+            testesDeRaio++;
             _raycast.ForceRaycastUpdate();
             if (!_raycast.IsColliding())
-                return;
+                break;
 
             // O raio acerta o corpo de colisão, não a malha. A cidade pode ter
             // vários corpos com modelos entre a câmera e o jogador; coletamos
             // todos para que nenhum deles continue opaco.
             var collider = _raycast.GetCollider() as CollisionObject3D;
             if (collider is null)
-                return;
+                break;
 
-            if (_geometriasPorOclusor.ContainsKey(collider))
-                _oclusoresAtuais.Add(collider);
+            colisoresEncontrados++;
+
+            if (_geometriasPorOclusor.TryGetValue(collider, out var geometrias))
+                AdicionarGeometriasQueCruzamSegmento(collider, geometrias, origem, alvo);
+
             _raycast.AddExceptionRid(collider.GetRid());
         }
+
+        TotalDeTestesDeRaio += testesDeRaio;
+        TotalDeColisoresEncontrados += colisoresEncontrados;
+        MaximoDeTestesDeRaioPorTick = Math.Max(MaximoDeTestesDeRaioPorTick, testesDeRaio);
+        MaximoDeColisoresPorTick = Math.Max(MaximoDeColisoresPorTick, colisoresEncontrados);
     }
 
     private bool MesmoConjuntoDeOclusores()
@@ -179,7 +238,9 @@ public sealed partial class CameraOcclusionFader : Node
 
         for (var i = 0; i < _oclusoresAtuais.Count; i++)
         {
-            if (_oclusoresAtuais[i] != _oclusoresOcultos[i])
+            if (_oclusoresAtuais[i].Collider != _oclusoresOcultos[i].Collider
+                || _oclusoresAtuais[i].Geometry != _oclusoresOcultos[i].Geometry
+                || _oclusoresAtuais[i].MultiMeshInstanceIndex != _oclusoresOcultos[i].MultiMeshInstanceIndex)
                 return false;
         }
 
@@ -191,41 +252,108 @@ public sealed partial class CameraOcclusionFader : Node
     /// e albedo. Os materiais são preparados no <c>_Ready</c>, fora do caminho
     /// por quadro, e cada malha mantém o override anterior para restauração.
     /// </remarks>
-    private void Esconder(Node oclusor)
+    private void AdicionarGeometriasQueCruzamSegmento(
+        Node collider,
+        GeometryInstance3D[] instancias,
+        Vector3 origem,
+        Vector3 alvo)
     {
-        if (!_geometriasPorOclusor.TryGetValue(oclusor, out var instancias))
+        foreach (var instancia in instancias)
+        {
+            if (!instancia.Visible || !_limitesMundoPorGeometria.TryGetValue(instancia, out var limitesPorInstancia))
+                continue;
+
+            for (var i = 0; i < limitesPorInstancia.Length; i++)
+            {
+                var cruza = SegmentoCruzaAabb(origem, alvo, limitesPorInstancia[i]);
+                if (cruza)
+                    _oclusoresAtuais.Add(new OcclusionTarget(
+                        collider,
+                        instancia,
+                        instancia is MultiMeshInstance3D ? i : -1));
+            }
+        }
+    }
+
+    private void Esconder(OcclusionTarget alvo)
+    {
+        if (alvo.Geometry is MultiMeshInstance3D multiMesh && alvo.MultiMeshInstanceIndex >= 0)
+        {
+            EsconderInstanciaMultiMesh(multiMesh, alvo.MultiMeshInstanceIndex);
+            return;
+        }
+
+        if (alvo.Geometry is { } geometriaEscolhida)
+        {
+            Esconder(geometriaEscolhida);
+            return;
+        }
+
+        if (!_geometriasPorOclusor.TryGetValue(alvo.Collider, out var instancias))
             return;
 
         foreach (var instancia in instancias)
+            Esconder(instancia);
+    }
+
+    private void Esconder(GeometryInstance3D instancia)
+    {
+        if (instancia is MultiMeshInstance3D)
+            return;
+
+        var geometry = GeometryAccess.From(instancia);
+        var malha = geometry.Mesh;
+        if (!instancia.Visible || malha is null)
+            return;
+
+        for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
         {
-            var geometry = GeometryAccess.From(instancia);
-            var malha = geometry.Mesh;
-            if (!instancia.Visible || malha is null)
+            var chaveSuperficie = superficie;
+            var materialBase = instancia.MaterialOverride
+                ?? geometry.GetOverride(chaveSuperficie)
+                ?? malha.SurfaceGetMaterial(superficie);
+            if (materialBase is not BaseMaterial3D)
                 continue;
 
-            for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
-            {
-                if (geometry.IsMultiMesh && superficie > 0)
-                    break;
+            var key = (instancia, chaveSuperficie);
+            if (!_materiaisDeFade.TryGetValue(key, out var materialFade))
+                continue;
 
-                var chaveSuperficie = geometry.SurfaceKey(superficie);
-                var materialBase = instancia.MaterialOverride
-                    ?? geometry.GetOverride(chaveSuperficie)
-                    ?? malha.SurfaceGetMaterial(superficie);
-                if (materialBase is not BaseMaterial3D materialBase3D)
-                    continue;
-
-                var key = (instancia, chaveSuperficie);
-                if (!_materiaisDeFade.TryGetValue(key, out var materialFade))
-                    continue;
-
-                var overrideAnterior = geometry.GetOverride(chaveSuperficie);
-                var corBase = materialFade.AlbedoColor;
-                materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
-                geometry.SetOverride(chaveSuperficie, materialFade);
-                _overridesAnteriores.Add((instancia, chaveSuperficie, overrideAnterior));
-            }
+            var overrideAnterior = geometry.GetOverride(chaveSuperficie);
+            var corBase = materialFade.AlbedoColor;
+            materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+            geometry.SetOverride(chaveSuperficie, materialFade);
+            _overridesAnteriores.Add((instancia, chaveSuperficie, overrideAnterior));
         }
+    }
+
+    private void EsconderInstanciaMultiMesh(MultiMeshInstance3D instancia, int indice)
+    {
+        if (instancia.Multimesh is not { } multimesh
+            || indice < 0
+            || indice >= multimesh.InstanceCount
+            || !_proxiesDeFadeMultiMesh.TryGetValue(instancia, out var proxy)
+            || proxy.Multimesh is not { } multimeshProxy
+            || !_quantidadeDeInstanciasNoProxy.TryGetValue(instancia, out var indiceProxy)
+            || indiceProxy >= multimeshProxy.InstanceCount)
+            return;
+
+        // O material de uma MultiMesh é compartilhado por todas as instâncias:
+        // colapsamos só as atingidas e as desenhamos no proxy em AlphaHash.
+        var transformacaoOriginal = multimesh.GetInstanceTransform(indice);
+        var transformacaoOculta = new Transform3D(
+            transformacaoOriginal.Basis.Scaled(Vector3.Zero),
+            transformacaoOriginal.Origin);
+        multimesh.SetInstanceTransform(indice, transformacaoOculta);
+        multimeshProxy.SetInstanceTransform(indiceProxy, transformacaoOriginal);
+        multimeshProxy.VisibleInstanceCount = indiceProxy + 1;
+        proxy.Visible = true;
+
+        var quantidadeDeSuperficies = multimesh.Mesh?.GetSurfaceCount() ?? 0;
+        _instanciasMultiMeshOcultas.Add(new HiddenMultiMeshInstance(
+            instancia, indice, transformacaoOriginal, quantidadeDeSuperficies));
+        _quantidadeDeInstanciasNoProxy[instancia] = indiceProxy + 1;
+        _superficiesMultiMeshOcultas += quantidadeDeSuperficies;
     }
 
     private void Restaurar()
@@ -237,6 +365,28 @@ public sealed partial class CameraOcclusionFader : Node
         }
 
         _overridesAnteriores.Clear();
+        foreach (var escondida in _instanciasMultiMeshOcultas)
+        {
+            if (GodotObject.IsInstanceValid(escondida.Instance)
+                && escondida.Instance.Multimesh is { } multimesh
+                && escondida.InstanceIndex < multimesh.InstanceCount)
+                multimesh.SetInstanceTransform(escondida.InstanceIndex, escondida.OriginalTransform);
+        }
+
+        foreach (var (instancia, proxy) in _proxiesDeFadeMultiMesh)
+        {
+            if (GodotObject.IsInstanceValid(proxy))
+            {
+                proxy.Visible = false;
+                if (proxy.Multimesh is { } multimeshProxy)
+                    multimeshProxy.VisibleInstanceCount = 0;
+            }
+
+            _quantidadeDeInstanciasNoProxy[instancia] = 0;
+        }
+
+        _instanciasMultiMeshOcultas.Clear();
+        _superficiesMultiMeshOcultas = 0;
         _oclusoresOcultos.Clear();
     }
 
@@ -273,17 +423,37 @@ public sealed partial class CameraOcclusionFader : Node
             _geometriasPorOclusor.Add(oclusor, fotografadas);
             foreach (var instancia in fotografadas)
             {
-                var geometry = GeometryAccess.From(instancia);
-                if (geometry.Mesh is { } malha)
-                    capacidade += geometry.IsMultiMesh ? 1 : malha.GetSurfaceCount();
+                var malha = instancia is MultiMeshInstance3D multiMesh
+                    ? multiMesh.Multimesh?.Mesh
+                    : GeometryAccess.From(instancia).Mesh;
+                if (malha is not null)
+                    _limitesMundoPorGeometria.Add(instancia, CalcularLimitesMundo(instancia, malha));
+
+                if (malha is not null)
+                {
+                    if (instancia is MultiMeshInstance3D multiMeshInstance)
+                        PrepararProxyDeFadeMultiMesh(multiMeshInstance, malha);
+                    else
+                        capacidade += malha.GetSurfaceCount();
+                }
             }
         }
 
         _geometriasEmConstrucao.Clear();
         _overridesAnteriores.Capacity = capacidade;
+        var capacidadeDeAlvos = 0;
+        foreach (var limites in _limitesMundoPorGeometria.Values)
+            capacidadeDeAlvos += limites.Length;
+
+        _oclusoresAtuais.Capacity = capacidadeDeAlvos;
+        _oclusoresOcultos.Capacity = capacidadeDeAlvos;
+        _instanciasMultiMeshOcultas.Capacity = capacidadeDeAlvos;
         foreach (var instancias in _geometriasPorOclusor.Values)
         foreach (var instancia in instancias)
         {
+            if (instancia is MultiMeshInstance3D)
+                continue;
+
             var geometry = GeometryAccess.From(instancia);
             var malha = geometry.Mesh;
             if (malha is null)
@@ -291,10 +461,7 @@ public sealed partial class CameraOcclusionFader : Node
 
             for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
             {
-                if (geometry.IsMultiMesh && superficie > 0)
-                    break;
-
-                var chaveSuperficie = geometry.SurfaceKey(superficie);
+                var chaveSuperficie = superficie;
                 var materialBase = instancia.MaterialOverride
                     ?? geometry.GetOverride(chaveSuperficie)
                     ?? malha.SurfaceGetMaterial(superficie);
@@ -306,5 +473,125 @@ public sealed partial class CameraOcclusionFader : Node
                 _materiaisDeFade.Add((instancia, chaveSuperficie), materialFade);
             }
         }
+    }
+
+    private void PrepararProxyDeFadeMultiMesh(MultiMeshInstance3D instancia, Mesh malha)
+    {
+        if (malha.GetSurfaceCount() == 0)
+            return;
+
+        var malhaFade = (Mesh)malha.Duplicate();
+
+        for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
+        {
+            var materialOriginal = instancia.MaterialOverride ?? malha.SurfaceGetMaterial(superficie);
+            if (materialOriginal is not null and not BaseMaterial3D)
+            {
+                malhaFade.Free();
+                return;
+            }
+
+            var materialBase = materialOriginal as BaseMaterial3D ?? new StandardMaterial3D();
+            var materialFade = (BaseMaterial3D)materialBase.Duplicate();
+            materialFade.Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash;
+            var corBase = materialFade.AlbedoColor;
+            materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+            malhaFade.SurfaceSetMaterial(superficie, materialFade);
+        }
+
+        var multimeshOriginal = instancia.Multimesh;
+        if (multimeshOriginal is null)
+        {
+            malhaFade.Free();
+            return;
+        }
+
+        var multimeshFade = new MultiMesh
+        {
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+            Mesh = malhaFade,
+            InstanceCount = multimeshOriginal.InstanceCount,
+            VisibleInstanceCount = 0
+        };
+        var proxy = new MultiMeshInstance3D
+        {
+            Name = $"{instancia.Name}FadeProxy",
+            Multimesh = multimeshFade,
+            Visible = false
+        };
+        instancia.AddChild(proxy);
+        _proxiesDeFadeMultiMesh.Add(instancia, proxy);
+        _quantidadeDeInstanciasNoProxy.Add(instancia, 0);
+    }
+
+    private static Aabb TransformarAabb(Aabb local, Transform3D transform)
+    {
+        var minimo = transform * local.Position;
+        var maximo = minimo;
+        var fim = local.End;
+        for (var mask = 1; mask < 8; mask++)
+        {
+            var cantoLocal = new Vector3(
+                (mask & 1) == 0 ? local.Position.X : fim.X,
+                (mask & 2) == 0 ? local.Position.Y : fim.Y,
+                (mask & 4) == 0 ? local.Position.Z : fim.Z);
+            var cantoMundo = transform * cantoLocal;
+            minimo = new Vector3(
+                Mathf.Min(minimo.X, cantoMundo.X),
+                Mathf.Min(minimo.Y, cantoMundo.Y),
+                Mathf.Min(minimo.Z, cantoMundo.Z));
+            maximo = new Vector3(
+                Mathf.Max(maximo.X, cantoMundo.X),
+                Mathf.Max(maximo.Y, cantoMundo.Y),
+                Mathf.Max(maximo.Z, cantoMundo.Z));
+        }
+
+        return new Aabb(minimo, maximo - minimo);
+    }
+
+    private static Aabb[] CalcularLimitesMundo(GeometryInstance3D instancia, Mesh malha)
+    {
+        if (instancia is not MultiMeshInstance3D { Multimesh: { } multimesh })
+            return [TransformarAabb(malha.GetAabb(), instancia.GlobalTransform)];
+
+        var limites = new Aabb[multimesh.InstanceCount];
+        var transformacaoGlobal = instancia.GlobalTransform;
+        var limitesLocais = malha.GetAabb();
+        for (var i = 0; i < limites.Length; i++)
+            limites[i] = TransformarAabb(limitesLocais, transformacaoGlobal * multimesh.GetInstanceTransform(i));
+
+        return limites;
+    }
+
+    private static bool SegmentoCruzaAabb(Vector3 origem, Vector3 alvo, Aabb aabb)
+    {
+        var direcao = alvo - origem;
+        var entrada = 0f;
+        var saida = 1f;
+        var maximo = aabb.End;
+        return CortarSegmentoNoEixo(origem.X, direcao.X, aabb.Position.X, maximo.X, ref entrada, ref saida)
+            && CortarSegmentoNoEixo(origem.Y, direcao.Y, aabb.Position.Y, maximo.Y, ref entrada, ref saida)
+            && CortarSegmentoNoEixo(origem.Z, direcao.Z, aabb.Position.Z, maximo.Z, ref entrada, ref saida);
+    }
+
+    private static bool CortarSegmentoNoEixo(
+        float origem,
+        float direcao,
+        float minimo,
+        float maximo,
+        ref float entrada,
+        ref float saida)
+    {
+        if (Mathf.Abs(direcao) < 0.000001f)
+            return origem >= minimo && origem <= maximo;
+
+        var primeiro = (minimo - origem) / direcao;
+        var segundo = (maximo - origem) / direcao;
+        if (primeiro > segundo)
+            (primeiro, segundo) = (segundo, primeiro);
+
+        entrada = Mathf.Max(entrada, primeiro);
+        saida = Mathf.Min(saida, segundo);
+        return entrada <= saida;
     }
 }

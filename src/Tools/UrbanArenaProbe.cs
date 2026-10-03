@@ -39,11 +39,14 @@ public sealed partial class UrbanArenaProbe : Node
     private CameraOcclusionFader? _fade;
     private MeshInstance3D? _malhaDoConteiner;
     private MeshInstance3D? _malhaSegundoOclusor;
+    private MultiMeshInstance3D? _oclusorMultiMesh;
+    private MultiMeshInstance3D? _proxyFadeMultiMesh;
     private Node3D? _camera;
     private Node3D? _jogador;
     private Vector3 _posicaoDaCameraAntesDoFade;
 
     private int _quadro;
+    private bool _transformsDoMultiMeshDisponiveis;
 
     public override void _Ready()
     {
@@ -76,6 +79,59 @@ public sealed partial class UrbanArenaProbe : Node
             Shape = new BoxShape3D { Size = new Vector3(1.2f, 1.5f, 1.2f) }
         });
         arena.AddChild(segundoOclusor);
+
+        var oclusorMultiMesh = new StaticBody3D
+        {
+            Name = "ProbeMultiMeshOccluder",
+            Position = new Vector3(-11f, 0.75f, -16.5f),
+            CollisionLayer = Contenda.Core.PhysicsLayers.World,
+            CollisionMask = 0
+        };
+        var malhaRepetida = new BoxMesh { Size = new Vector3(0.8f, 1.5f, 0.8f) };
+        var multiMesh = new MultiMesh
+        {
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+            Mesh = malhaRepetida,
+            InstanceCount = 4
+        };
+        for (var i = 0; i < multiMesh.InstanceCount; i++)
+        {
+            var posicao = i < 3
+                ? new Vector3(0f, 0f, (i - 1) * 0.6f)
+                : new Vector3(3f, 0f, 0f);
+            multiMesh.SetInstanceTransform(i,
+                new Transform3D(Basis.Identity, posicao));
+        }
+
+        _transformsDoMultiMeshDisponiveis = true;
+        for (var i = 0; i < multiMesh.InstanceCount; i++)
+        {
+            var esperado = i < 3
+                ? new Vector3(0f, 0f, (i - 1) * 0.6f)
+                : new Vector3(3f, 0f, 0f);
+            if (multiMesh.GetInstanceTransform(i).Origin.DistanceTo(esperado) > 0.01f)
+            {
+                // O renderer nulo do modo headless não expõe os transforms
+                // escritos ao ler a MultiMesh; nesse caso, as caixas coincidem
+                // e a sonda não consegue confirmar quais instâncias cruzam o raio.
+                _transformsDoMultiMeshDisponiveis = false;
+                GD.Print("[arena-urbana] renderer headless: verificando proxy/restauração do MultiMesh sem índice espacial");
+                break;
+            }
+        }
+
+        _oclusorMultiMesh = new MultiMeshInstance3D
+        {
+            Name = "GroupedInstances",
+            Multimesh = multiMesh
+        };
+        oclusorMultiMesh.AddChild(_oclusorMultiMesh);
+        oclusorMultiMesh.AddChild(new CollisionShape3D
+        {
+            Shape = new BoxShape3D { Size = new Vector3(7.8f, 1.5f, 2.4f) }
+        });
+        arena.AddChild(oclusorMultiMesh);
+
         AddChild(arena);
         CachearReferenciasDaCena();
     }
@@ -100,6 +156,17 @@ public sealed partial class UrbanArenaProbe : Node
         if (_quadro == 17)
         {
             VerificarFadeDeOclusao();
+            if (_camera is not null && _jogador is not null)
+            {
+                _camera.GlobalPosition = new Vector3(50f, 20f, -18f);
+                _jogador.GlobalPosition = new Vector3(50f, 19f, 0f);
+            }
+            return;
+        }
+
+        if (_quadro == 19)
+        {
+            VerificarRestauracaoFade();
             Concluir();
         }
     }
@@ -170,8 +237,8 @@ public sealed partial class UrbanArenaProbe : Node
             return;
         }
 
-        // Contêiner em (-11, 0.75, -12), 5×1,5×2,5 -- um raio reto em
-        // x=-11, y=0,75 (seu próprio centro), de z=-20 a z=0 atravessa
+        // Contêiner em (-11, 0.75, -12) -- sua malha visual vai de y=0 a 0,4.
+        // Um raio reto em x=-11, y=0,2, de z=-20 a z=0 atravessa
         // seu meio de ponta a ponta (z ∈ [-13.25, -10.75]).
         // Começa antes do contêiner, mas além da fachada norte: raycasts
         // iniciados dentro de um StaticBody não retornam esse próprio corpo.
@@ -181,8 +248,8 @@ public sealed partial class UrbanArenaProbe : Node
         _camera.GetParent()?.SetPhysicsProcess(false);
         _camera.SetProcess(false);
         _camera.SetPhysicsProcess(false);
-        _camera.GlobalPosition = new Vector3(-11f, 0.75f, -18f);
-        _jogador.GlobalPosition = new Vector3(-11f, -0.25f, 0f); // + TargetOffset (0,1,0) do fader = (-11, 0.75, 0)
+        _camera.GlobalPosition = new Vector3(-11f, 0.2f, -18f);
+        _jogador.GlobalPosition = new Vector3(-11f, -0.8f, 0f); // + TargetOffset (0,1,0) do fader = (-11, y=0.2, z=0)
         _posicaoDaCameraAntesDoFade = _camera.GlobalPosition;
     }
 
@@ -195,15 +262,56 @@ public sealed partial class UrbanArenaProbe : Node
             "o contêiner está no caminho câmera→jogador; deveria estar com fade aplicado.");
         Verificar(_malhaSegundoOclusor?.GetSurfaceOverrideMaterial(0) is not null,
             "o segundo objeto também está no caminho câmera→jogador; ambos deveriam receber fade.");
+        var multimesh = _oclusorMultiMesh?.Multimesh;
+        var multimeshFade = _proxyFadeMultiMesh?.Multimesh;
+        Verificar(_proxyFadeMultiMesh?.Visible == true,
+            "o proxy translúcido da instância do MultiMesh deveria estar visível durante a oclusão.");
+        var quantidadeEsperadaDeInstanciasComFade = _transformsDoMultiMeshDisponiveis ? 3 : 4;
+        Verificar(multimeshFade?.VisibleInstanceCount == quantidadeEsperadaDeInstanciasComFade,
+            "todas as instâncias que cruzam o raio, e somente elas, deveriam aparecer no proxy com fade.");
+        if (_transformsDoMultiMeshDisponiveis && multimesh is not null)
+        {
+            var tresInstanciasDaLinhaForamOcultas = true;
+            for (var i = 0; i < 3; i++)
+                tresInstanciasDaLinhaForamOcultas &= Mathf.Abs(multimesh.GetInstanceTransform(i).Basis.Determinant()) < 0.001f;
+
+            Verificar(tresInstanciasDaLinhaForamOcultas,
+                "as três instâncias do mesmo colisor que cruzam a linha deveriam ser substituídas pelo fade.");
+            Verificar(Mathf.Abs(multimesh.GetInstanceTransform(3).Basis.Determinant()) > 0.9f,
+                "a instância fora da linha câmera→jogador deveria permanecer visível.");
+        }
         var movimentoDaCamera = _camera?.GlobalPosition.DistanceTo(_posicaoDaCameraAntesDoFade) ?? float.PositiveInfinity;
         Verificar(movimentoDaCamera < 0.001f,
             $"o fader não deveria mover a câmera para desviar do oclusor (deslocamento {movimentoDaCamera:0.000} m).");
+    }
+
+    private void VerificarRestauracaoFade()
+    {
+        Verificar(_malhaDoConteiner?.GetSurfaceOverrideMaterial(0) is null,
+            "o fade do contêiner deveria ser removido quando ele deixa de ocluir a câmera.");
+        Verificar(_malhaSegundoOclusor?.GetSurfaceOverrideMaterial(0) is null,
+            "o fade do segundo objeto deveria ser removido quando ele deixa de ocluir a câmera.");
+
+        var multimesh = _oclusorMultiMesh?.Multimesh;
+        var multimeshFade = _proxyFadeMultiMesh?.Multimesh;
+        Verificar(multimesh is not null
+            && multimesh.InstanceCount == 4
+            && Mathf.Abs(multimesh.GetInstanceTransform(0).Basis.Determinant()) > 0.9f
+            && Mathf.Abs(multimesh.GetInstanceTransform(1).Basis.Determinant()) > 0.9f
+            && Mathf.Abs(multimesh.GetInstanceTransform(2).Basis.Determinant()) > 0.9f
+            && Mathf.Abs(multimesh.GetInstanceTransform(3).Basis.Determinant()) > 0.9f,
+            "as instâncias do MultiMesh deveriam recuperar seus transforms ao restaurar a cena.");
+        Verificar(multimeshFade?.VisibleInstanceCount == 0,
+            "o MultiMesh proxy deveria deixar de desenhar instâncias ao restaurar a cena.");
+        Verificar(_proxyFadeMultiMesh?.Visible == false,
+            "o proxy translúcido do MultiMesh deveria ser ocultado ao restaurar a cena.");
     }
 
     private void CachearReferenciasDaCena()
     {
         _fade = GetNodeOrNull<CameraOcclusionFader>(FadePath);
         _malhaDoConteiner = GetNodeOrNull<MeshInstance3D>(ContainerMeshPath);
+        _proxyFadeMultiMesh = _oclusorMultiMesh?.GetNodeOrNull<MultiMeshInstance3D>("GroupedInstancesFadeProxy");
         _camera = GetNodeOrNull<Node3D>(CameraPath);
         _jogador = GetNodeOrNull<Node3D>(PlayerPath);
     }
