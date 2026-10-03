@@ -6,15 +6,15 @@ build. A partir daqui todo ticket seguinte tem onde colocar teste.
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** concluído
 
-- [ ] Existe um projeto de testes unitários na solução, com pelo menos um teste
+- [x] Existe um projeto de testes unitários na solução, com pelo menos um teste
       real passando
-- [ ] Existe um projeto separado para testes de cena, ainda que vazio
-- [ ] O CI roda build e testes em todo push e PR
-- [ ] Um warning introduzido de propósito reprova o build no CI
-- [ ] Existe `.editorconfig` com as regras de estilo do projeto
-- [ ] A checagem de estilo em build é reativada junto com o `.editorconfig`
+- [x] Existe um projeto separado para testes de cena, ainda que vazio
+- [x] O CI roda build e testes em todo push e PR
+- [x] Um warning introduzido de propósito reprova o build no CI
+- [x] Existe `.editorconfig` com as regras de estilo do projeto
+- [x] A checagem de estilo em build é reativada junto com o `.editorconfig`
 
 ## Comments
 

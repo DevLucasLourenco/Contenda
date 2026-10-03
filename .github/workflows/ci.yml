@@ -34,6 +34,9 @@ jobs:
       - name: Compilar (ExportRelease, warning = erro)
         run: dotnet build Contenda.sln -c ExportRelease --no-restore
 
+      - name: Verificar que warning reprova a build
+        run: bash tools/check-warnings-as-errors.sh
+
       - name: Testes unitários
         run: dotnet test tests/Contenda.Tests/Contenda.Tests.csproj --no-restore --verbosity normal
 
