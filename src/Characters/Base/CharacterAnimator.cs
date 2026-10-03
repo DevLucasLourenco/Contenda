@@ -58,6 +58,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private float _attackRemaining;
 
     public AnimationTree? Tree => _tree;
+    public AnimationPlayer? AnimationPlayer => _animationPlayer;
+    public BoneAttachment3D? WeaponSocket => _weaponSocket;
 
     public void Bind(CharacterContext context)
     {

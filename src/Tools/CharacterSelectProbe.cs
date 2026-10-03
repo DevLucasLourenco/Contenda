@@ -91,34 +91,18 @@ public sealed partial class CharacterSelectProbe : Node
         return count;
     }
 
-    private static T? FindNode<T>(Node root) where T : Node
-    {
-        if (root is T match)
-            return match;
-
-        foreach (var child in root.GetChildren())
-        {
-            var found = FindNode<T>(child);
-            if (found is not null)
-                return found;
-        }
-
-        return null;
-    }
-
     private static bool HasAnimationPresentation(CharacterController character)
     {
-        if (character.CurrentModel is not { } model
+        if (character.CurrentModel is null
             || character.Definition?.AnimationSet is not { } animationSet
-            || character.Context?.Animator?.Tree is not { Active: true } tree)
+            || character.Context?.Animator is not { } animator
+            || animator.Tree is not { Active: true } tree
+            || animator.AnimationPlayer is not { } animationPlayer
+            || animator.WeaponSocket is not { } weaponSocket)
             return false;
 
-        var skeleton = CharacterPresentation.FindSkeleton(model);
-        var animationPlayer = FindNode<AnimationPlayer>(model);
-        var weaponSocket = skeleton is null ? null : FindNode<BoneAttachment3D>(skeleton);
         return tree.TreeRoot is AnimationNodeBlendTree
-            && animationPlayer?.HasAnimation($"motion/{animationSet.Idle}") == true
-            && weaponSocket is not null
+            && animationPlayer.HasAnimation($"motion/{animationSet.Idle}")
             && weaponSocket.GetChildCount() > 0;
     }
 
