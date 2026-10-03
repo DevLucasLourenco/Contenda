@@ -6,7 +6,7 @@ transformação — e os dois personagens igualmente viáveis.
 
 **Blocked by:** 35, 36
 
-**Status:** ready-for-agent
+**Status:** ready-for-human — registrar dez partidas completas por personagem antes de ajustar os valores finais
 
 - [ ] Dez partidas completas com cada personagem, registradas por escrito
 - [ ] A curva de dificuldade bate com a intenção acima
@@ -29,3 +29,11 @@ semana.
 O critério das quatro habilidades é o mais revelador. Se uma nunca sai, ou o
 custo está caro, ou a sequência é desconfortável, ou o efeito é fraco — e cada
 causa tem remédio diferente.
+
+Os tickets 35 e 36 estão liberados. A auditoria dos dados confirmou que as
+formas duram aproximadamente 20 s (Berserker: 80/4) e 19 s (Overdrive:
+95/5): `ManaComponent.Drain` reinicia o atraso de regeneração em cada quadro,
+portanto a mana não regenera enquanto a forma está ativa. A spec 16 também
+removeu explicitamente o antigo bônus de cadência do Overdrive ao trocar para o
+braço-canhão. Não altere esses valores sem resultados de partidas; use a ficha
+em [`docs/playtests/37-balanceamento.md`](../../../docs/playtests/37-balanceamento.md).
