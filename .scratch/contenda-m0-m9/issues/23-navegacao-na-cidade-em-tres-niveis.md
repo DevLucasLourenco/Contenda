@@ -6,7 +6,7 @@ chegando espalhados, não empilhados uns dentro dos outros.
 
 **Blocked by:** 22, 21
 
-**Status:** concluído (com medição de desempenho em máquina de referência pendente)
+**Status:** implementado; pendente medição de 40 inimigos a 60 FPS em máquina de referência
 
 - [x] Inimigos contornam obstáculos em vez de encostar e ficar raspando na parede
 - [x] Descem e sobem as rampas da praça sem travar em quina

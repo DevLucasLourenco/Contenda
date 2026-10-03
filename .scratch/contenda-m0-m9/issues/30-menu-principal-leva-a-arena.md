@@ -6,7 +6,7 @@ partida sem a tela congelar durante o carregamento.
 
 **Blocked by:** 28
 
-**Status:** ready-for-agent
+**Status:** concluído
 
 - [x] O menu principal oferece iniciar, configurações e sair
 - [x] O fundo é a própria cidade em 3D, vista pela câmera do jogo

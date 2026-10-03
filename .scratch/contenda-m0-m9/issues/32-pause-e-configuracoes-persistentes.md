@@ -6,7 +6,7 @@ continuam valendo na próxima vez que o jogo abrir.
 
 **Blocked by:** 30
 
-**Status:** ready-for-agent
+**Status:** concluído
 
 - [x] Esc congela a partida e abre continuar, configurações, reiniciar e sair
 - [x] O HUD continua visível atrás do menu — o jogador pausa justamente para ler

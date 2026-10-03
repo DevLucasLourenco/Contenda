@@ -6,7 +6,7 @@ o jogador cair antes.
 
 **Blocked by:** 27, 24
 
-**Status:** ready-for-agent
+**Status:** implementado; pendente playtest para validar duração de 8 a 12 minutos
 
 - [x] As cinco ondas rodam do início ao fim sem travar
 - [x] A composição varia, não só a quantidade: aparecem tipos que **mudam** o

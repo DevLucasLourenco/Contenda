@@ -6,7 +6,7 @@ começa — com um anúncio na tela.
 
 **Blocked by:** 25, 23
 
-**Status:** ready-for-agent
+**Status:** concluído
 
 - [x] Os inimigos de uma onda aparecem espaçados no tempo, não todos de uma vez
 - [x] **Nenhum inimigo nasce dentro do campo de visão imediato do jogador**

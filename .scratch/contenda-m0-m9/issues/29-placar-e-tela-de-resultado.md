@@ -6,7 +6,7 @@ passo.
 
 **Blocked by:** 28
 
-**Status:** ready-for-agent
+**Status:** concluído
 
 - [x] Cada abate soma pontos, e ondas mais avançadas valem mais
 - [x] Abates em sequência rápida multiplicam o ganho
