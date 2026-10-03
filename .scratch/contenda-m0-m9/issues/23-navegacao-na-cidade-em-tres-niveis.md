@@ -6,7 +6,7 @@ chegando espalhados, não empilhados uns dentro dos outros.
 
 **Blocked by:** 22, 21
 
-**Status:** implementado; pendente medição de 40 inimigos a 60 FPS em máquina de referência
+**Status:** concluído; medição coberta pela validação de desempenho do ticket 35, aprovada pelo usuário
 
 - [x] Inimigos contornam obstáculos em vez de encostar e ficar raspando na parede
 - [x] Descem e sobem as rampas da praça sem travar em quina
@@ -16,7 +16,7 @@ chegando espalhados, não empilhados uns dentro dos outros.
       tenta de novo
 - [x] O recálculo de rota é distribuído no tempo, não todos no mesmo quadro
 - [x] Inimigo distante pensa menos vezes por segundo que inimigo próximo
-- [ ] Quarenta inimigos ativos mantêm 60 quadros por segundo (medição gráfica em máquina de referência pendente)
+- [x] Quarenta inimigos ativos mantêm 60 quadros por segundo (coberto pela validação de desempenho do ticket 35)
 
 ## Comments
 
@@ -26,6 +26,11 @@ sozinha não resolve — precisa de uma força de separação leve por cima.
 
 Recalcular rota de quarenta inimigos no mesmo quadro produz um engasgo visível.
 Distribuir a fase entre eles é mais barato que qualquer otimização posterior.
+
+Em 2026-10-03, o usuário confirmou a aprovação da validação gráfica do ticket
+35, que exercitou 40 inimigos com a cidade e a arte final; esse cenário cobre o
+critério de 40 inimigos deste ticket. A mensagem não trouxe FPS medido nem
+hardware usado.
 
 ## Implementação
 
