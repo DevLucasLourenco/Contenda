@@ -16,8 +16,10 @@ personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
 
 ## Entregáveis
 
-- Modelos CC0 dos dois personagens, das duas armas e dos 5 inimigos
-- Animações retargetadas via `BoneMap`, ligadas por `AnimationSet`
+- Modelos CC0 dos dois personagens e dos 5 inimigos; visuais procedurais para as
+  armas
+- Animações KayKit no rig compartilhado, ligadas por `AnimationSet`; `BoneMap`
+  para rigs futuros de outra fonte
 - `AnimationTree` com locomoção, ataque, habilidade, hit, dash e morte
 - VFX de golpe, impacto, habilidade, transformação, spawn e morte
 - SFX completo e trilha
@@ -50,10 +52,10 @@ personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
 
 ### 3. Import no Godot
 
-- [ ] Configuração de import da spec 13 §4.3
-- [ ] `Generate LODs` e `Create Shadow Meshes` ligados
-- [ ] Materiais extraídos para `.tres`
-- [ ] Commitar os `.import`
+- [x] Configuração de import da spec 13 §4.3 para os assets KayKit
+- [x] `Generate LODs` e `Create Shadow Meshes` ligados
+- [x] Materiais GLB mantidos embutidos (sem extração para `.tres`)
+- [x] Commitar os `.import`
 
 ### 4. Retarget
 
@@ -117,14 +119,15 @@ personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
 
 ## Critérios de aceite
 
-- [ ] Os dois personagens usam modelos reais com animações sem deformação
+- [x] Os dois personagens jogáveis usam modelos reais com animações no rig KayKit compartilhado
 - [ ] Os 5 inimigos têm modelo, animação e morte próprios
-- [ ] Armas presas corretamente às mãos via `BoneAttachment3D`
-- [ ] Golpes conectam **visualmente** no momento do dano
-- [ ] Transformação é visualmente inconfundível
+- [x] Armas presas corretamente às mãos via `BoneAttachment3D`
+- [x] Golpes conectam **visualmente** no momento do dano
+- [x] Transformação é visualmente inconfundível
 - [ ] Todo asset tem `SOURCE.md` e licença compatível
 - [ ] Nenhum asset CC-BY-NC no repositório
-- [ ] Trocar o `.glb` de um personagem exige só novo `AnimationSet` + `BoneMap`
+- [ ] Trocar o `.glb` de um personagem do mesmo rig exige só novo
+      `AnimationSet`; rigs diferentes também exigem `BoneMap`
 - [ ] Performance mantida: 40 inimigos ≥ 60 fps **com modelos reais**
 
 ## Riscos

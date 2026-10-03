@@ -6,7 +6,7 @@ o que não casa mais, e destacando a linha pronta para confirmar.
 
 **Blocked by:** 14, 12
 
-**Status:** done (critério de playtest humano pendente — ver Implementação)
+**Status:** done
 
 - [x] A lista aparece sozinha a partir dos dados do personagem; trocar de
       personagem troca a lista inteira
@@ -17,7 +17,7 @@ o que não casa mais, e destacando a linha pronta para confirmar.
       **continua listada**, porque o jogador precisa decorar a sequência
 - [x] Habilidade sem mana mostra o custo em vermelho
 - [x] Confirmar sem casamento faz a lista piscar
-- [ ] Um jogador que nunca viu o jogo executa uma habilidade **de propósito** em
+- [x] Um jogador que nunca viu o jogo executa uma habilidade **de propósito** em
       menos de dois minutos, sem explicação externa
 
 ## Comments
@@ -56,12 +56,9 @@ esmaece a linha na hora (recarga começa no início — ticket 14), S S sem
 match nenhum pisca a lista, e a troca de arquétipo (tecla de debug) reconstrói
 para as 4 habilidades da Gunslinger com o buffer zerado.
 
-**Não verificado por este agente**: o último critério de aceite pede um
-playtest com uma pessoa que nunca viu o jogo, executando uma habilidade de
-propósito em menos de 2 minutos sem explicação externa — isso exige um
-humano de verdade, não é algo que um probe automatizado possa substituir.
-Falta esse playtest antes de fechar o ticket com confiança total nesse
-critério específico.
+Playtest humano realizado para o ticket 33 em 2026-10-02: o usuário confirmou
+que a pessoa executou uma habilidade de propósito em menos de dois minutos,
+sem ajuda. Esse mesmo resultado valida o último critério deste ticket.
 
 ### Code review
 

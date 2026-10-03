@@ -44,10 +44,11 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     ];
 
     private CharacterContext? _context;
-    private CharacterAnimationSet? _set;
+    private CharacterAnimationSet? _animationSet;
     private AnimationTree? _tree;
     private AnimationNodeBlendTree? _root;
     private AnimationPlayer? _animationPlayer;
+    private BoneAttachment3D? _weaponSocket;
     private readonly Dictionary<StringName, StringName> _animationPaths = [];
     private bool _falling;
     private bool _dead;
@@ -93,7 +94,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
 
     public void Configure(CharacterDefinition definition)
     {
-        _set = definition.AnimationSet;
+        var previousSocket = _weaponSocket;
+        _animationSet = definition.AnimationSet;
         _tree = null;
         _root = null;
         _animationPlayer = null;
@@ -104,14 +106,25 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _deathRemaining = 0f;
         _attackRemaining = 0f;
 
-        if (_context?.Owner.CurrentModel is not { } model || _set is null)
+        if (_context?.Owner.CurrentModel is not { } model || _animationSet is null)
+        {
+            if (previousSocket is not null
+                && GodotObject.IsInstanceValid(previousSocket)
+                && previousSocket.GetParent() is { } parent)
+            {
+                parent.RemoveChild(previousSocket);
+                previousSocket.Free();
+            }
+            _weaponSocket = null;
             return;
+        }
 
-        CacheAnimationPaths(_set);
-        _tree = CharacterPresentation.BuildAnimationTree(model, _set);
+        CacheAnimationPaths(_animationSet);
+        var presentation = CharacterPresentation.BuildAnimationTree(model, _animationSet);
+        _tree = presentation?.Tree;
         _root = _tree?.TreeRoot as AnimationNodeBlendTree;
-        _animationPlayer = model.GetNodeOrNull<AnimationPlayer>(new NodePath("CharacterAnimationPlayer"));
-        CharacterPresentation.MountWeapon(model, definition.Weapon, definition.WeaponBoneName);
+        _animationPlayer = presentation?.Player;
+        _weaponSocket = CharacterPresentation.MountWeapon(model, definition.Weapon, definition.WeaponBoneName, previousSocket);
     }
 
     public void RefreshWeaponVisual()
@@ -119,12 +132,12 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         if (_context?.Owner.CurrentModel is not { } model || _context.Owner.Definition is not { } definition)
             return;
 
-        CharacterPresentation.MountWeapon(model, _context.Combat?.EquippedWeapon, definition.WeaponBoneName);
+        _weaponSocket = CharacterPresentation.MountWeapon(model, _context.Combat?.EquippedWeapon, definition.WeaponBoneName, _weaponSocket);
     }
 
     public void Tick(float delta)
     {
-        if (_tree is null || _set is null || _context is null)
+        if (_tree is null || _animationSet is null || _context is null)
             return;
 
         if (_dead)
@@ -141,10 +154,10 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _tree.Set(LocomotionBlendPositionPath, Mathf.Clamp(horizontalSpeed / topSpeed, 0f, 1f));
         _attackRemaining = Mathf.Max(0f, _attackRemaining - delta);
 
-        if (_reloadPending && _attackRemaining <= 0f && !IsReloadActive())
+        if (_reloadPending && _attackRemaining <= 0f && !IsAttackActive() && !IsReloadActive())
         {
             _reloadPending = false;
-            Play(AnimationLayer.Reload, _set.Reload);
+            Play(AnimationLayer.Reload, _animationSet.Reload);
         }
     }
 
@@ -208,14 +221,14 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
 
     private void OnAttack(int step)
     {
-        if (_context?.Combat is not { } combat || _set is null)
+        if (_context?.Combat is not { } combat || _animationSet is null)
             return;
 
         if (combat.EquippedWeapon.Kind == WeaponKind.Melee)
         {
             var attacks = _context.Movement is { IsGroundedConfiavel: false }
-                ? _set.AerialAttacks
-                : _set.MeleeAttacks;
+                ? _animationSet.AerialAttacks
+                : _animationSet.MeleeAttacks;
             if (attacks.Length == 0)
                 return;
             var clip = attacks[Mathf.Clamp(step - 1, 0, attacks.Length - 1)];
@@ -225,70 +238,63 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         }
 
         var isCannon = _context.Transformations?.Active?.ShowCannonVisual == true;
-        var rangedClip = isCannon ? _set.ArmCannonShoot : _set.Shoot;
+        var rangedClip = isCannon ? _animationSet.ArmCannonShoot : _animationSet.Shoot;
         Play(AnimationLayer.Attack, rangedClip);
         _attackRemaining = AnimationLength(rangedClip);
     }
 
     private void OnAbility(AbilityDefinition ability)
     {
-        if (_set is null)
+        if (_animationSet is null)
             return;
 
-        var clip = _set.AnimationForAbility(ability.Id);
+        var clip = _animationSet.AnimationForAbility(ability.Id);
         if (!clip.IsEmpty)
             Play(AnimationLayer.Ability, clip);
     }
 
     private void OnReload()
     {
-        if (_attackRemaining > 0f || IsAttackActive())
-        {
-            _reloadPending = true;
-            return;
-        }
-
-        if (_set is not null)
-            Play(AnimationLayer.Reload, _set.Reload);
+        _reloadPending = _animationSet is not null;
     }
 
     private void OnJump()
     {
-        if (_set is not null)
+        if (_animationSet is not null)
         {
             Play(AnimationLayer.Fall, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Land, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
-            Play(AnimationLayer.Jump, _set.Jump);
+            Play(AnimationLayer.Jump, _animationSet.Jump);
         }
         _falling = false;
     }
 
-    private void OnFall() { if (_set is not null) Play(AnimationLayer.Fall, _set.Fall); _falling = true; }
+    private void OnFall() { if (_animationSet is not null) Play(AnimationLayer.Fall, _animationSet.Fall); _falling = true; }
     private void OnLand()
     {
-        if (_set is not null && _falling)
+        if (_animationSet is not null && _falling)
         {
             Play(AnimationLayer.Fall, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
-            Play(AnimationLayer.Land, _set.Land);
+            Play(AnimationLayer.Land, _animationSet.Land);
         }
         _falling = false;
     }
-    private void OnDash() { if (_set is not null) Play(AnimationLayer.Dash, _set.Dash); }
-    private void OnDive() { if (_set is not null) Play(AnimationLayer.Dive, _set.Dive); }
-    private void OnDamaged(DamageInfo _) { if (!_dead && _set is not null) Play(AnimationLayer.Hit, _set.Hit); }
-    private void OnTransform(TransformationDefinition _) { if (_set is not null) Play(AnimationLayer.Transform, _set.Transform); }
-    private void OnRevert(TransformationDefinition _, RevertReason __) { if (_set is not null) Play(AnimationLayer.Transform, _set.Transform); }
+    private void OnDash() { if (_animationSet is not null) Play(AnimationLayer.Dash, _animationSet.Dash); }
+    private void OnDive() { if (_animationSet is not null) Play(AnimationLayer.Dive, _animationSet.Dive); }
+    private void OnDamaged(DamageInfo _) { if (!_dead && _animationSet is not null) Play(AnimationLayer.Hit, _animationSet.Hit); }
+    private void OnTransform(TransformationDefinition _) { if (_animationSet is not null) Play(AnimationLayer.Transform, _animationSet.Transform); }
+    private void OnRevert(TransformationDefinition _, RevertReason __) { if (_animationSet is not null) Play(AnimationLayer.Transform, _animationSet.Transform); }
     private void OnWeaponChanged(WeaponDefinition _) => RefreshWeaponVisual();
 
     private void OnDied(DamageInfo _)
     {
         _dead = true;
         _reloadPending = false;
-        if (_set is null)
+        if (_animationSet is null)
             return;
 
-        Play(AnimationLayer.Death, _set.Death);
-        _deathRemaining = AnimationLength(_set.Death) + 0.12f;
+        Play(AnimationLayer.Death, _animationSet.Death);
+        _deathRemaining = AnimationLength(_animationSet.Death) + 0.12f;
     }
 
     private void Play(AnimationLayer layer, StringName clip, AnimationNodeOneShot.OneShotRequest request = AnimationNodeOneShot.OneShotRequest.Fire)
@@ -313,27 +319,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
 
     private void CacheAnimationPaths(CharacterAnimationSet set)
     {
-        Cache(set.Idle);
-        Cache(set.Walk);
-        Cache(set.Run);
-        Cache(set.Shoot);
-        Cache(set.Reload);
-        Cache(set.ArmCannonShoot);
-        Cache(set.Jump);
-        Cache(set.Fall);
-        Cache(set.Land);
-        Cache(set.Dash);
-        Cache(set.Dive);
-        Cache(set.Hit);
-        Cache(set.Death);
-        Cache(set.Transform);
-
-        foreach (var clip in set.MeleeAttacks)
+        foreach (var clip in set.EnumerateReferencedClips())
             Cache(clip);
-        foreach (var clip in set.AerialAttacks)
-            Cache(clip);
-        foreach (var binding in set.AbilityAnimations)
-            Cache(binding.Animation);
 
         void Cache(StringName clip)
         {

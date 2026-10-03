@@ -5,6 +5,8 @@ using Godot;
 
 namespace Contenda.Characters.Base;
 
+public readonly record struct AnimationPresentation(AnimationTree Tree, AnimationPlayer Player);
+
 /// <summary>Monta o rig visual reutilizado pela arena e pela seleção.</summary>
 public static class CharacterPresentation
 {
@@ -29,14 +31,14 @@ public static class CharacterPresentation
         return null;
     }
 
-    public static AnimationTree? BuildAnimationTree(Node3D model, CharacterAnimationSet? set)
+    public static AnimationPresentation? BuildAnimationTree(Node3D model, CharacterAnimationSet? set)
     {
         if (set is null)
             return null;
 
         var player = new AnimationPlayer { Name = AnimationPlayerName, RootNode = new NodePath("..") };
         var library = new AnimationLibrary();
-        var pendingClips = new HashSet<StringName>(ReferencedClips(set));
+        var pendingClips = new HashSet<StringName>(set.EnumerateReferencedClips());
         var pendingSnapshot = new List<StringName>();
         foreach (var bankScene in set.AnimationBanks)
         {
@@ -85,25 +87,23 @@ public static class CharacterPresentation
             Active = true,
         };
         model.AddChild(tree);
-        return tree;
+        return new AnimationPresentation(tree, player);
     }
 
-    public static BoneAttachment3D? MountWeapon(Node3D model, WeaponDefinition? weapon, StringName boneName)
+    public static BoneAttachment3D? MountWeapon(
+        Node3D model,
+        WeaponDefinition? weapon,
+        StringName boneName,
+        BoneAttachment3D? previousSocket = null)
     {
         var skeleton = FindSkeleton(model);
+        RemoveSocket(previousSocket);
         if (skeleton is null || weapon?.ModelScene is not { } weaponScene)
             return null;
 
         var boneIndex = skeleton.FindBone(boneName);
         if (boneIndex < 0)
             throw new InvalidOperationException($"{model.Name}: o rig não contém o osso de arma '{boneName}'.");
-
-        var previousSocket = skeleton.GetNodeOrNull<BoneAttachment3D>(new NodePath("WeaponSocket"));
-        if (previousSocket is not null)
-        {
-            skeleton.RemoveChild(previousSocket);
-            previousSocket.Free();
-        }
 
         var socket = new BoneAttachment3D { Name = "WeaponSocket", BoneName = boneName };
         skeleton.AddChild(socket);
@@ -160,21 +160,14 @@ public static class CharacterPresentation
     private static StringName FirstAbilityClip(CharacterAnimationSet set) =>
         set.AbilityAnimations.Length > 0 ? set.AbilityAnimations[0].Animation : set.Dive;
 
-    private static IEnumerable<StringName> ReferencedClips(CharacterAnimationSet set)
+    private static void RemoveSocket(BoneAttachment3D? socket)
     {
-        var seen = new HashSet<StringName>();
-        Add(set.Idle); Add(set.Walk); Add(set.Run); Add(set.Shoot); Add(set.Reload);
-        Add(set.ArmCannonShoot); Add(set.Jump); Add(set.Fall); Add(set.Land); Add(set.Dash);
-        Add(set.Dive); Add(set.Hit); Add(set.Death); Add(set.Transform);
-        foreach (var clip in set.MeleeAttacks) Add(clip);
-        foreach (var clip in set.AerialAttacks) Add(clip);
-        foreach (var binding in set.AbilityAnimations) Add(binding.Animation);
-        foreach (var clip in seen) yield return clip;
-
-        void Add(StringName clip)
+        if (socket is not null
+            && GodotObject.IsInstanceValid(socket)
+            && socket.GetParent() is { } parent)
         {
-            if (!clip.IsEmpty)
-                seen.Add(clip);
+            parent.RemoveChild(socket);
+            socket.Free();
         }
     }
 

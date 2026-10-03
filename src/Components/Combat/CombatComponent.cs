@@ -82,8 +82,8 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     {
         // _contexto já existe: o CharacterController garante Bind em todos os
         // componentes antes de Configure em qualquer um. Ver spec 01 §4.1.
+        DescartarInstanciasDeArma();
         _armaBase = definicao.Weapon ?? Fallback ?? new WeaponDefinition();
-        _instanciasDeArma.Clear();
         _instanciasDeArma.Add(_armaBase, WeaponFactory.Criar(_armaBase, _contexto!, this, TargetGroup, VerticalReach));
         Equipar(_armaBase);
     }
@@ -93,7 +93,9 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
 
     private void Equipar(WeaponDefinition weapon)
     {
-        if (ReferenceEquals(weapon, EquippedWeapon))
+        if (ReferenceEquals(weapon, EquippedWeapon)
+            && _instanciasDeArma.TryGetValue(weapon, out var equipada)
+            && ReferenceEquals(_arma, equipada))
             return;
 
         _arma.Cancel();
@@ -126,6 +128,8 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
         _arma.ResetForSpawn();
         _locks.Reset();
     }
+
+    public override void _ExitTree() => DescartarInstanciasDeArma();
 
     /// <summary>
     /// Avança a arma e a expiração das travas. Chamado pelo contêiner.
@@ -167,6 +171,20 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
         _arma.HitLanded -= RepassarAcerto;
         _arma.ReloadStarted -= RepassarRecarga;
         _arma.DiveStarted -= RepassarMergulho;
+    }
+
+    private void DescartarInstanciasDeArma()
+    {
+        _arma.Cancel();
+        DesligarEventos();
+        foreach (var instancia in _instanciasDeArma.Values)
+        {
+            if (instancia is IDisposable descartavel)
+                descartavel.Dispose();
+        }
+
+        _instanciasDeArma.Clear();
+        _arma = NullWeapon.Instance;
     }
 
     private void RepassarInicio(int passo) => AttackStarted?.Invoke(passo);

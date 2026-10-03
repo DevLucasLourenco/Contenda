@@ -93,12 +93,12 @@ Corrigir no Blender, não com `scale` no nó — escala em nó quebra física e
 | Opção | Valor |
 |---|---|
 | Root type | `Node3D` |
-| Skeleton | preservar, `Import as Skeleton Bones` ligado |
+| Skeleton | preservar o nó `Skeleton3D`; `Import as Skeleton Bones` desligado para manter esse nó acessível a animações e `BoneAttachment3D` |
 | Animation → Import | ligado; `Trimming` desligado nos bancos KayKit para preservar o tempo original dos clipes |
 | Animation → Loop mode | `Linear` em Idle/Walk/Run; `None` em ataques |
 | Meshes → Generate LODs | ligado |
 | Meshes → Create Shadow Meshes | ligado |
-| Materials → Extract | extrair para `.tres` (permite editar sem reimportar) |
+| Materials → Extract | desligado para os GLBs KayKit; materiais importados permanecem embutidos no asset |
 
 Os `.import` gerados **são commitados**.
 
@@ -190,28 +190,24 @@ o que também dá coerência visual entre fontes diferentes.
 
 ## 9. `THIRD-PARTY-NOTICES.md`
 
-Mantido na raiz, atualizado a cada asset novo:
+Mantido na raiz, atualizado a cada asset novo. Registre somente fontes
+efetivamente incorporadas; fontes futuras ficam na seção separada do próprio
+arquivo. Hoje, a tabela de assets incorporados registra:
 
 ```
-## Quaternius — Ultimate Animated Character Pack
-Autor: Quaternius · https://quaternius.com · CC0 · baixado em AAAA-MM-DD
-Uso: modelo do Gunslinger e inimigos.
+KayKit Adventurers Character Pack 2.0 — Kay Lousberg — CC0 1.0
+Uso: Knight do Swordsman e Rogue da Gunslinger.
 
-## KayKit — Adventurers
-Autor: Kay Lousberg · https://kaylousberg.itch.io · CC0 · baixado em AAAA-MM-DD
-Uso: modelo do Swordsman e espada.
-
-## Mixamo (Adobe)
-https://mixamo.com · uso permitido em projetos pessoais e comerciais.
-Uso: animações de locomoção e combate, retargetadas.
+KayKit Character Animations 1.1 — Kay Lousberg — CC0 1.0
+Uso: animações dos dois personagens jogáveis no rig compartilhado.
 ```
 
 ## 10. Critérios de aceite (M8)
 
 - [ ] Todo asset tem `SOURCE.md` com licença registrada.
 - [ ] Nenhum asset CC-BY-NC no repositório (auditável por grep nos `SOURCE.md`).
-- [ ] Os dois personagens usam animações retargetadas do Mixamo sem
+- [ ] Os dois personagens usam as animações KayKit do rig compartilhado sem
       deformação visível.
-- [ ] Trocar o `.glb` do Swordsman por outro modelo exige apenas novo
-      `AnimationSet` + `BoneMap`.
+- [ ] Trocar o `.glb` do Swordsman exige um novo `AnimationSet`; usar um rig
+      diferente também exige um `BoneMap` compatível.
 - [ ] `THIRD-PARTY-NOTICES.md` completo antes de qualquer distribuição.

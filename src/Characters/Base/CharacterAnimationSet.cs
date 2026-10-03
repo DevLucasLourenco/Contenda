@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace Contenda.Characters.Base;
@@ -24,6 +25,23 @@ public sealed partial class CharacterAnimationSet : Resource
     [Export] public StringName Death { get; set; } = new("Death_A");
     [Export] public StringName Transform { get; set; } = new("EXPERIMENTAL_Medium_Transform");
     [Export] public AbilityAnimationBinding[] AbilityAnimations { get; set; } = [];
+
+    public IEnumerable<StringName> EnumerateReferencedClips()
+    {
+        var seen = new HashSet<StringName>();
+        Add(Idle); Add(Walk); Add(Run); Add(Shoot); Add(Reload); Add(ArmCannonShoot);
+        Add(Jump); Add(Fall); Add(Land); Add(Dash); Add(Dive); Add(Hit); Add(Death); Add(Transform);
+        foreach (var clip in MeleeAttacks) Add(clip);
+        foreach (var clip in AerialAttacks) Add(clip);
+        foreach (var binding in AbilityAnimations) Add(binding.Animation);
+        return seen;
+
+        void Add(StringName clip)
+        {
+            if (!clip.IsEmpty)
+                seen.Add(clip);
+        }
+    }
 
     public StringName AnimationForAbility(StringName abilityId)
     {

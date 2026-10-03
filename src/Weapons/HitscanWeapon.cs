@@ -20,7 +20,7 @@ namespace Contenda.Weapons;
 /// posição do alvo (<see cref="HitscanMath"/>), não colisão de camadas — o
 /// projeto ainda não tem <c>Area3D</c> de dano em lugar nenhum.
 /// </remarks>
-public sealed class HitscanWeapon : IWeapon
+public sealed class HitscanWeapon : IWeapon, IDisposable
 {
     /// <summary>Tolerância lateral para contar como acerto — raio da cápsula do personagem mais folga.</summary>
     private const float HitRadius = 0.5f;
@@ -99,6 +99,8 @@ public sealed class HitscanWeapon : IWeapon
     {
         _estado.ResetForSpawn();
     }
+
+    public void Dispose() => _estado.ReloadStarted -= RepassarRecarga;
 
     private void RepassarRecarga() => ReloadStarted?.Invoke();
 

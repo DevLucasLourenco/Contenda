@@ -44,6 +44,13 @@ public sealed partial class CharacterSelectProbe : Node
                 "as transformações não explicam o que alteram");
 
             menu.Select(1);
+            var gunslingerAnimations = menu.SelectedDefinition?.AnimationSet
+                ?? throw new InvalidOperationException("AnimationSet da Gunslinger ausente");
+            Check(gunslingerAnimations.AnimationForAbility(new StringName("gunslinger.deadeye")) == new StringName("Ranged_1H_Aiming"),
+                "a habilidade Deadeye não resolveu para sua animação configurada");
+            Check(gunslingerAnimations.AnimationForAbility(new StringName("ability.missing")).IsEmpty,
+                "uma habilidade sem associação não retornou animação vazia");
+
             Check(menu.SelectedDefinition?.Id.ToString() == "gunslinger", "a seleção não mudou");
             QuitAfterSceneChange(GetTree());
             menu.Confirm();

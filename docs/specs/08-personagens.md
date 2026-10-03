@@ -20,7 +20,7 @@ public partial class CharacterDefinition : Resource
     [Export] public PackedScene ModelScene;      // .glb já importado
     [Export] public AnimationSet AnimationSet;
     [Export] public float ModelScale = 1f;
-    [Export] public StringName WeaponBoneName = "mixamorig:RightHand";
+    [Export] public StringName WeaponBoneName = "handslot.r"; // mão direita do rig KayKit atual
 
     // Atributos
     [Export] public HealthDefinition Health;
