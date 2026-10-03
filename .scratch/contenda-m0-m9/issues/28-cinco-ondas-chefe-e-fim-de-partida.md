@@ -6,14 +6,14 @@ o jogador cair antes.
 
 **Blocked by:** 27, 24
 
-**Status:** implementado; pendente playtest para validar duração de 8 a 12 minutos
+**Status:** implementado; pendente playtest da duração, do salto de dificuldade do elite e do funil da praça
 
 - [x] As cinco ondas rodam do início ao fim sem travar
 - [x] A composição varia, não só a quantidade: aparecem tipos que **mudam** o
       comportamento do jogador, não apenas mais do mesmo
-- [x] Um elite aparece antes do chefe e é sentido como salto de dificuldade
+- [ ] Um elite aparece antes do chefe e é sentido como salto de dificuldade — o spawn e os valores estão configurados, falta validar a sensação no playtest
 - [x] O chefe tem mais de um golpe e reforços chegando, em vez de só muita vida
-- [x] A praça funciona como funil na onda do elite e na do chefe
+- [ ] A praça funciona como funil na onda do elite e na do chefe — os spawns usam a praça, falta validar o efeito durante o combate
 - [x] Morrer encerra a partida em derrota; limpar a última onda, em vitória
 - [x] Trocar o arquivo do conjunto de ondas muda toda a progressão sem recompilar
 - [ ] Uma partida completa leva entre oito e doze minutos

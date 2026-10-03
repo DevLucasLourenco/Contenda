@@ -6,14 +6,14 @@ continuam valendo na próxima vez que o jogo abrir.
 
 **Blocked by:** 30
 
-**Status:** concluído
+**Status:** implementado; pendente verificar que os volumes soam diferentes em execução com áudio
 
 - [x] Esc congela a partida e abre continuar, configurações, reiniciar e sair
 - [x] O HUD continua visível atrás do menu — o jogador pausa justamente para ler
       as combinações
 - [x] Vídeo: modo de janela, resolução, sincronização, limite de quadros, sombras
       e escala de renderização
-- [x] Áudio: volumes separados, todos audivelmente diferentes ao mexer
+- [ ] Áudio: volumes separados, todos audivelmente diferentes ao mexer — o probe confirma os níveis em dB; falta ouvir em execução com áudio
 - [x] Teclas: **todas** as ações remapeáveis, com aviso de conflito e opção de
       restaurar padrões
 - [x] Jogo: intensidade do tremor de tela, números de dano, guia de combos e a
@@ -108,9 +108,10 @@ perfil de teste desta máquina foram apagadas.)
 
 ### O que não deu para verificar rigorosamente
 
-- **Volumes "audivelmente diferentes"**: não há som no jogo ainda (o
-  `AudioDirector` é vazio) e o `AudioServer` do headless é mudo. Confere-se o dB
-  de cada bus, não o que se ouve.
+- **Volumes "audivelmente diferentes"**: o `AudioDirector` já define música e
+  efeitos, mas ainda falta verificar a diferença audível numa execução com áudio;
+  o `AudioServer` do headless é mudo. O probe confere o dB de cada bus, não o que
+  se ouve.
 - **Vídeo aplicado no headless**: sem `DisplayServer` de verdade, modo de janela
   e vsync só foram conferidos numa execução COM janela (tamanho e vsync); tela
   cheia / sem borda e as sombras/escala não foram verificadas visualmente.
