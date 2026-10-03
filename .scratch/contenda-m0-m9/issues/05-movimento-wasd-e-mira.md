@@ -73,3 +73,10 @@ Rode `tools/abrir-editor.cmd` e jogue: é o mesmo momento do **go/no-go do M1**.
 **Dívida registrada:** o `switch` de registro de componentes vira ponto de edição
 repetida junto com o `CharacterContext` conforme os componentes crescem. Trocar
 por auto-registro quando passar de meia dúzia — anotado no próprio código.
+
+**Revalidação em 2026-10-03:** corrigida a pose de mira da pistoleira. O
+`CharacterAnimator` agora mantém o clipe `Alert` enquanto a mira é válida e
+interrompe a pose ao perder o alvo ou morrer. A verificação automatizada confirma
+que a camada `Alert` fica ativa com um ponto de mira válido. Os critérios de
+teclado, enquadramento e leitura da plataforma acima ainda dependem de validação
+manual.

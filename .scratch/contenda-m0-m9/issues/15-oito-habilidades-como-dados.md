@@ -71,3 +71,7 @@ o `MeleeWeapon` já proíbem. Corrigido amostrando o grupo **uma vez, no
 disparo** (`_alvosEmCache`, uma `List&lt;CharacterController&gt;` reaproveitada
 por slot), a mesma escolha de "quem estava lá quando começou" que o combo
 corpo a corpo já fazia — não mais alocação nenhuma por quadro.
+
+**Revalidação em 2026-10-03:** `AbilityCatalogProbe` foi executada novamente
+após as correções de entrada e animação; as oito habilidades causaram dano ao
+manequim e a verificação de reutilização do pool passou.

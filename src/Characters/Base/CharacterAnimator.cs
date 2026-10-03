@@ -3,6 +3,7 @@ using Contenda.Components.Abilities;
 using Contenda.Components.AI;
 using Contenda.Components.Health;
 using Contenda.Components.Transformations;
+using Contenda.Core;
 using Contenda.Weapons;
 using Godot;
 
@@ -57,6 +58,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private bool _falling;
     private bool _diving;
     private bool _dead;
+    private bool _playerAimActive;
     private bool _reloadPending;
     private float _deathRemaining;
     private float _attackRemaining;
@@ -114,6 +116,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _animationPlayer = null;
         _animationPaths.Clear();
         _dead = false;
+        _playerAimActive = false;
         _reloadPending = false;
         _falling = false;
         _diving = false;
@@ -140,6 +143,15 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _animationPlayer = presentation?.Player;
         _weaponSocket = CharacterPresentation.MountWeapon(
             _context.Owner.CurrentSkeleton, definition.Weapon, definition.WeaponBoneName, previousSocket);
+
+        if (_context.Team == Team.Player
+            && _context.Combat?.EquippedWeapon.Kind == WeaponKind.Hitscan
+            && !_animationSet.Alert.IsEmpty
+            && _root?.GetNode("Alert") is AnimationNodeOneShot aimPose)
+        {
+            aimPose.Autorestart = true;
+            aimPose.AutorestartDelay = 0f;
+        }
     }
 
     public void RefreshWeaponVisual()
@@ -164,6 +176,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
             return;
         }
 
+        AtualizarMiraDoJogador();
+
         var velocity = _context.Movement?.Velocity ?? Vector3.Zero;
         var horizontalSpeed = new Vector2(velocity.X, velocity.Z).Length();
         var topSpeed = Mathf.Max(0.01f, _context.Movement?.Settings.MoveSpeed ?? 1f);
@@ -180,6 +194,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     public void ResetForSpawn()
     {
         _dead = false;
+        _playerAimActive = false;
         _reloadPending = false;
         _falling = false;
         _diving = false;
@@ -331,9 +346,28 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private void OnRevert(TransformationDefinition _, RevertReason __) { if (_animationSet is not null) Play(AnimationLayer.Transform, _animationSet.Transform); }
     private void OnWeaponChanged(WeaponDefinition _) => RefreshWeaponVisual();
 
+    private void AtualizarMiraDoJogador()
+    {
+        var mirando = _context?.Team == Team.Player
+            && _context.Combat?.EquippedWeapon.Kind == WeaponKind.Hitscan
+            && _context.Targeting?.HasAim == true
+            && _animationSet is { Alert.IsEmpty: false };
+
+        if (_playerAimActive == mirando)
+            return;
+
+        _playerAimActive = mirando;
+        Play(
+            AnimationLayer.Alert,
+            mirando ? _animationSet!.Alert : new StringName(),
+            mirando ? AnimationNodeOneShot.OneShotRequest.Fire : AnimationNodeOneShot.OneShotRequest.Abort);
+    }
+
     private void OnDied(DamageInfo _)
     {
         _dead = true;
+        _playerAimActive = false;
+        Play(AnimationLayer.Alert, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
         _reloadPending = false;
         _diving = false;
         if (_animationSet is null)

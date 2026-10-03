@@ -7,14 +7,15 @@ using Godot;
 namespace Contenda.Tools;
 
 /// <summary>
-/// Verifica o ataque básico do revólver na árvore de nós real, sem teclado.
+/// Verifica o ataque básico do revólver e um clique M1 curto na árvore real.
 /// </summary>
 /// <remarks>
 /// Espelha a <c>CombatProbe</c> do ticket 08: os testes de xUnit cobrem
 /// <c>RevolverState</c> e <c>HitscanMath</c> isolados; o que eles não alcançam
 /// é a fiação — se o `.tres` do revólver carrega, se a mira resolve, se o
 /// dano chega à vida e se munição/recarga/cadência funcionam com a árvore de
-/// verdade.
+/// verdade. Também confirma que a camada de animação entra na pose de mira e
+/// que a borda de um clique breve chega ao combate pelo PlayerInputController.
 ///
 /// A gunslinger e o manequim vêm de <c>RevolverArena.tscn</c>, uma cena
 /// dedicada e menor que a <c>Arena</c> principal — só o necessário para a
@@ -44,6 +45,8 @@ public sealed partial class RevolverProbe : Node
     private int _acertosAntesDoSegundoHold;
     private int _cadenciaBase;
     private int _tirosSeguradosSemBuff;
+    private int _disparosBasicos;
+    private int _disparosAntesDoCliqueFisico;
 
     public override void _Ready()
     {
@@ -66,6 +69,7 @@ public sealed partial class RevolverProbe : Node
         }
 
         _jogador.Context.Combat.HitLanded += _ => _acertos++;
+        _jogador.Context.Combat.AttackStarted += _ => _disparosBasicos++;
         _vidaAntes = _alvo.Context.Health.Current;
 
         GD.Print($"[revolver] jogador e alvo prontos; vida do alvo {_vidaAntes:0}");
@@ -80,6 +84,14 @@ public sealed partial class RevolverProbe : Node
             return;
 
         _quadro++;
+
+        if (_quadro == 20)
+        {
+            Verificar(mira.HasAim, "o cursor deveria produzir um ponto de mira válido");
+            var tree = _jogador?.Context?.Animator?.Tree;
+            var poseDeMiraAtiva = tree is not null && tree.Get("parameters/Alert/active").AsBool();
+            Verificar(poseDeMiraAtiva, "a Gunslinger deveria manter a pose de mira enquanto o cursor tem um alvo");
+        }
 
         // O tiro é instantâneo: reposicionar o alvo em cima da mira, a cada
         // quadro, isola munição/recarga/cadência da geometria de projeção do
@@ -118,6 +130,21 @@ public sealed partial class RevolverProbe : Node
                 combate.RequestBasicAttack();
                 Verificar(_acertos == _cadenciaBase + 1,
                     $"a recarga automática deveria ter devolvido o tiro; acertos {_acertos}, esperado {_cadenciaBase + 1}");
+                break;
+
+            case 220:
+                // Clique físico simulado: percorre PlayerInputController._Input
+                // e o mesmo pedido de ataque usado pelo mouse em jogo. Os testes
+                // anteriores chamavam RequestBasicAttack diretamente.
+                combate.ResetForSpawn();
+                _disparosAntesDoCliqueFisico = _disparosBasicos;
+                SimularCliqueMouse1(pressionado: true);
+                SimularCliqueMouse1(pressionado: false);
+                break;
+
+            case 222:
+                Verificar(_disparosBasicos == _disparosAntesDoCliqueFisico + 1,
+                    $"um clique M1 breve deveria iniciar um tiro; disparos {_disparosBasicos - _disparosAntesDoCliqueFisico}");
                 break;
 
             case 260:
@@ -189,6 +216,22 @@ public sealed partial class RevolverProbe : Node
         var combate = _jogador!.Context!.Combat!;
         combate.RequestBasicAttack();
         Verificar(_acertos == numeroDoTiro, $"tiro {numeroDoTiro} deveria conectar; acertos totais {_acertos}");
+    }
+
+    private void SimularCliqueMouse1(bool pressionado)
+    {
+        var viewport = _jogador?.GetViewport();
+        if (viewport is null)
+            return;
+
+        var posicao = viewport.GetMousePosition();
+        Godot.Input.ParseInputEvent(new InputEventMouseButton
+        {
+            ButtonIndex = MouseButton.Left,
+            Pressed = pressionado,
+            Position = posicao,
+            GlobalPosition = posicao,
+        });
     }
 
     private void Verificar(bool condicao, string mensagem)

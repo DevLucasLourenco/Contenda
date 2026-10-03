@@ -9,9 +9,9 @@ namespace Contenda.Input;
 /// <c>Input</c>.
 /// </summary>
 /// <remarks>
-/// Roda em <c>_PhysicsProcess</c> de propósito: ler <c>IsActionJustPressed</c>
-/// em <c>_Process</c> **engole entradas** quando o framerate é alto — um dos
-/// bugs previsíveis da spec 15 §5.
+/// Mantém os estados contínuos em <c>_PhysicsProcess</c>. A borda de ataque é
+/// capturada em <c>_Input</c> e consumida pelo próximo tique de física, para um
+/// clique curto não sumir entre dois tiques.
 ///
 /// Ele **não** atualiza a mira. Só reporta onde o cursor está; quem projeta o
 /// cursor no mundo é o <c>TargetingComponent</c>, chamado pelo contêiner na
@@ -21,6 +21,7 @@ namespace Contenda.Input;
 public sealed partial class PlayerInputController : Node, ICharacterComponent
 {
     private Viewport? _viewport;
+    private bool _basicAttackPressed;
 
     /// <summary>A intenção deste tique.</summary>
     public IntentFrame Current { get; private set; } = IntentFrame.Idle;
@@ -30,6 +31,13 @@ public sealed partial class PlayerInputController : Node, ICharacterComponent
         // Cacheado no Bind: buscar o viewport a cada quadro é lookup de nó em
         // caminho crítico, proibido pelas convenções §5.
         _viewport = contexto.Body.GetViewport();
+        SetProcessInput(true);
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (@event.IsActionPressed(InputActions.AttackBasic))
+            _basicAttackPressed = true;
     }
 
     public void Configure(CharacterDefinition definicao)
@@ -43,6 +51,7 @@ public sealed partial class PlayerInputController : Node, ICharacterComponent
     /// </summary>
     public void ResetForSpawn()
     {
+        _basicAttackPressed = false;
     }
 
     /// <summary>Lê os controles e monta a intenção bruta, sem mira resolvida.</summary>
@@ -50,6 +59,9 @@ public sealed partial class PlayerInputController : Node, ICharacterComponent
     {
         if (_viewport is null)
             return IntentFrame.Idle;
+
+        var attackPressed = _basicAttackPressed;
+        _basicAttackPressed = false;
 
         var scroll = 0;
         if (Godot.Input.IsActionJustPressed(InputActions.FormPrev)) scroll -= 1;
@@ -63,7 +75,7 @@ public sealed partial class PlayerInputController : Node, ICharacterComponent
             AimPoint: Vector3.Zero,
             AimDirection: Vector3.Zero,
             HasAim: false,
-            AttackPressed: Godot.Input.IsActionJustPressed(InputActions.AttackBasic),
+            AttackPressed: attackPressed,
             AttackHeld: Godot.Input.IsActionPressed(InputActions.AttackBasic),
             ConfirmPressed: Godot.Input.IsActionJustPressed(InputActions.CommandConfirm),
             CommandUpPressed: Godot.Input.IsActionJustPressed(InputActions.MoveUp),

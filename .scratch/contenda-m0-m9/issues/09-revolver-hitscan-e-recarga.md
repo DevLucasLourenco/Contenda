@@ -99,3 +99,9 @@ playtest manual no editor — a CLI não renderiza. A física de bloqueio por
 parede (`AlcanceAteParede`) está implementada e é direta (raycast contra
 `PhysicsLayers.World`), mas não tem uma verificação automatizada dedicada;
 ficou de fora para não inflar o escopo da sonda além do que o ticket pede.
+
+**Revalidação em 2026-10-03:** a sonda também simula um clique M1 breve
+(pressionar e soltar entre tiques de física) através do `PlayerInputController`
+e confirma que um disparo começa. A borda do ataque agora é capturada em
+`_Input` e consumida uma vez no próximo tique de física, evitando perder cliques
+curtos. O usuário informou que a validação foi aprovada.

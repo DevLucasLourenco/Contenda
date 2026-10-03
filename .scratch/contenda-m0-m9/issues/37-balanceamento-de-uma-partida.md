@@ -37,3 +37,10 @@ portanto a mana não regenera enquanto a forma está ativa. A spec 16 também
 removeu explicitamente o antigo bônus de cadência do Overdrive ao trocar para o
 braço-canhão. Não altere esses valores sem resultados de partidas; use a ficha
 em [`docs/playtests/37-balanceamento.md`](../../../docs/playtests/37-balanceamento.md).
+
+**Observação de playtest em 2026-10-03:** o usuário relatou que o espadachim
+está funcionando bem, mas a pistoleira não mirava e o M1 normal não disparava.
+As correções foram feitas e a validação foi aprovada pelo usuário. Este relato
+não registra dez partidas completas por personagem nem resultados numéricos;
+os critérios de balanceamento permanecem abertos até esses dados serem
+registrados na ficha de playtest.
