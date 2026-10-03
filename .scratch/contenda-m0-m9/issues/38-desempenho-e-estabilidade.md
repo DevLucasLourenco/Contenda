@@ -32,13 +32,13 @@ quantidade.
 os dez registros do ticket 37. A sonda `EnemyPoolProbe` passou em 500 ciclos
 reais de aquisição/liberação; `MenuProbe` passou com 79 transições confirmadas
 e contagem de nós estável após o aquecimento. Uma execução anterior de
-`dotnet test Contenda.sln -c ExportRelease --no-restore` passou (442/442), e
-builds Debug e `ExportRelease` passaram sem warnings ou erros. As sondas de
-catálogo de habilidades e de revólver também passaram (o probe de revólver
-registrou 18 acertos). Após as alterações finais do fader, o teste xUnit foi
-repetido em Debug e `ExportRelease`, mas o Windows App Control bloqueou a DLL
-do runner (`0x800711C7`); portanto, o estado final da suíte não pôde ser
-confirmado.
+`dotnet test Contenda.sln -c ExportRelease --no-restore` passou (442/442), mas
+foi anterior à correção de `MultiMesh.VisibleInstanceCount`. Na tentativa final
+após essa correção, o projeto compilou, mas o Windows App Control bloqueou o
+carregamento da DLL de testes (`0x800711C7`), então a suíte desta versão não foi
+confirmada. O build Debug passou sem warnings ou erros. As sondas de catálogo
+de habilidades e de revólver também passaram (o probe de revólver registrou 18
+acertos).
 
 O benchmark foi executado por 60 s duas vezes com 40 inimigos posicionados
 dentro do raio de detecção e VFX, mas em modo headless. Os resultados variaram:
@@ -67,13 +67,17 @@ incluindo transforms individuais de `MultiMesh`. Para cada `MultiMesh`, um
 proxy translúcido recebe somente as instâncias selecionadas e suas transformações;
 as originais são restauradas ao sair da linha de visão. O `UrbanArenaProbe`
 gráfico verificou várias instâncias no mesmo colisor, preservando a instância
-fora do segmento. No benchmark gráfico final de 60 s com essa versão, o fade
-atingiu duas superfícies: 1.123 quadros, p50 52,73 ms, p99 73,73 ms, máximo
-88,62 ms e 100% acima de 16,6 ms; processo médio 40,33 ms, física 9,91 ms e
-navegação 0,58 ms. Foram 3.602 ticks de oclusão, dois testes de raio e um
-colisor por tick, com busca média/máxima de 30,6/442 μs. O custo continua acima
-do orçamento, portanto 60 fps não foi aprovado nesta máquina. A execução a
-960×540 também ficou acima do orçamento (p50 36,12 ms, p99 50,83 ms).
+fora do segmento, além de uma instância no segmento mas oculta por
+`VisibleInstanceCount`. No benchmark gráfico final de 60 s com essa versão, o
+fade atingiu duas superfícies: 1.993 quadros, p50 29,48 ms, p99 50,03 ms,
+máximo 88,52 ms e 99,95% acima de 16,6 ms; processo médio 27,11 ms, física
+10,34 ms e navegação 0,43 ms. Foram 3.603 ticks de oclusão, dois testes de raio
+e um colisor por tick, com busca média/máxima de 28,3/154 μs. O fader alocou
+0 bytes em 3.603 ticks; o processo inteiro alocou 2.171.688 bytes em 1.022 de
+1.993 intervalos, com pico de 582.576 bytes. A contagem de nós ficou estável
+em 2.992. O custo continua acima do orçamento, portanto 60 fps não foi
+aprovado nesta máquina. A execução a 960×540 também ficou acima do orçamento
+(p50 36,12 ms, p99 50,83 ms).
 
 A execução final da `EnemyPoolProbe`, depois da limpeza dos streams e da
 rajada do pool, concluiu 500 ciclos, verificou o estoque cheio, devolveu todos

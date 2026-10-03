@@ -41,14 +41,16 @@ executáveis para Windows, Linux e macOS. **Build 0.1.**
 
 **Validação parcial em 2026-10-03:** o benchmark de 40 inimigos foi medido em
 modo headless e em uma GPU local GeForce MX110 abaixo da classe de referência.
-Na resolução 1080p, a execução gráfica final ficou em p50 52,73 ms e p99
-73,73 ms, ainda acima do orçamento de 60 fps. O fade da câmera seleciona todas
-as geometrias que cruzam o segmento de oclusão; instâncias de `MultiMesh`
+Na resolução 1080p, a execução gráfica final de 60 s ficou em p50 29,48 ms e
+p99 50,03 ms, ainda acima do orçamento de 60 fps. O fade da câmera seleciona
+todas as geometrias que cruzam o segmento de oclusão; instâncias de `MultiMesh`
 recebem fade por proxy seletivo. A sonda gráfica confirmou o fade e o restauro
 de múltiplas instâncias dentro do mesmo colisor. Medir e otimizar na máquina de
 referência segue pendente. Os tempos, alocações restantes e validações manuais
 estão registrados no
 [ticket 38](../../.scratch/contenda-m0-m9/issues/38-desempenho-e-estabilidade.md).
+A execução final de 60 s atribuiu 0 bytes gerenciados ao fader em 3.603 ticks;
+as alocações do restante do jogo continuam pendentes de análise.
 
 ### 3. Estabilidade
 

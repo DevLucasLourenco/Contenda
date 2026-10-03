@@ -43,8 +43,7 @@ public sealed partial class CameraOcclusionFader : Node
     private readonly record struct HiddenMultiMeshInstance(
         MultiMeshInstance3D Instance,
         int InstanceIndex,
-        Transform3D OriginalTransform,
-        int SurfaceCount);
+        Transform3D OriginalTransform);
 
     private readonly struct GeometryAccess
     {
@@ -99,6 +98,8 @@ public sealed partial class CameraOcclusionFader : Node
     private readonly Dictionary<MultiMeshInstance3D, int> _quantidadeDeInstanciasNoProxy = [];
     private readonly StringBuilder _caminhosOcultosBuffer = new();
     private int _limiteDeOclusoresNoRaio;
+    private int _superficiesMultiMeshOcultas;
+    private bool _medirAlocacoesGerenciadas;
 
     internal long TotalDeTicksDeOclusao { get; private set; }
     internal long TotalDeTestesDeRaio { get; private set; }
@@ -107,10 +108,11 @@ public sealed partial class CameraOcclusionFader : Node
     internal ulong TempoMaximoDeBuscaUsec { get; private set; }
     internal int MaximoDeTestesDeRaioPorTick { get; private set; }
     internal int MaximoDeColisoresPorTick { get; private set; }
+    internal long TotalDeBytesGerenciadosAlocados { get; private set; }
+    internal long TicksComAlocacaoGerenciada { get; private set; }
+    internal long MaximoDeBytesAlocadosEmUmTick { get; private set; }
     internal int LimiteDeColisoresNoRaio => _limiteDeOclusoresNoRaio;
     internal int SuperficiesOcultasAgora => _overridesAnteriores.Count + _superficiesMultiMeshOcultas;
-
-    private int _superficiesMultiMeshOcultas;
 
     internal string CaminhosDosOclusoresOcultosAgora
     {
@@ -161,26 +163,43 @@ public sealed partial class CameraOcclusionFader : Node
         if (_camera is null || _alvo is null)
             return;
 
-        TotalDeTicksDeOclusao++;
-        var inicioBuscaUsec = Time.GetTicksUsec();
-        EncontrarOclusores(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
-        var tempoBuscaUsec = Time.GetTicksUsec() - inicioBuscaUsec;
-        TempoTotalDeBuscaUsec += tempoBuscaUsec;
-        TempoMaximoDeBuscaUsec = Math.Max(TempoMaximoDeBuscaUsec, tempoBuscaUsec);
-        if (MesmoConjuntoDeOclusores())
-            return;
-
-        Restaurar();
-        for (var i = 0; i < _oclusoresAtuais.Count; i++)
+        var medirAlocacoes = _medirAlocacoesGerenciadas;
+        var bytesGerenciadosAntes = medirAlocacoes ? GC.GetAllocatedBytesForCurrentThread() : 0;
+        try
         {
-            var oclusor = _oclusoresAtuais[i];
-            Esconder(oclusor);
-            _oclusoresOcultos.Add(oclusor);
+            TotalDeTicksDeOclusao++;
+            var inicioBuscaUsec = Time.GetTicksUsec();
+            EncontrarOclusores(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
+            var tempoBuscaUsec = Time.GetTicksUsec() - inicioBuscaUsec;
+            TempoTotalDeBuscaUsec += tempoBuscaUsec;
+            TempoMaximoDeBuscaUsec = Math.Max(TempoMaximoDeBuscaUsec, tempoBuscaUsec);
+            if (MesmoConjuntoDeOclusores())
+                return;
+
+            Restaurar();
+            for (var i = 0; i < _oclusoresAtuais.Count; i++)
+            {
+                var oclusor = _oclusoresAtuais[i];
+                Esconder(oclusor);
+                _oclusoresOcultos.Add(oclusor);
+            }
+        }
+        finally
+        {
+            if (medirAlocacoes)
+            {
+                var bytesAlocadosNesteTick = GC.GetAllocatedBytesForCurrentThread() - bytesGerenciadosAntes;
+                TotalDeBytesGerenciadosAlocados += bytesAlocadosNesteTick;
+                if (bytesAlocadosNesteTick > 0)
+                    TicksComAlocacaoGerenciada++;
+                MaximoDeBytesAlocadosEmUmTick = Math.Max(MaximoDeBytesAlocadosEmUmTick, bytesAlocadosNesteTick);
+            }
         }
     }
 
     internal void ResetarDiagnosticosDoBenchmark()
     {
+        _medirAlocacoesGerenciadas = true;
         TotalDeTicksDeOclusao = 0;
         TotalDeTestesDeRaio = 0;
         TotalDeColisoresEncontrados = 0;
@@ -188,7 +207,12 @@ public sealed partial class CameraOcclusionFader : Node
         TempoMaximoDeBuscaUsec = 0;
         MaximoDeTestesDeRaioPorTick = 0;
         MaximoDeColisoresPorTick = 0;
+        TotalDeBytesGerenciadosAlocados = 0;
+        TicksComAlocacaoGerenciada = 0;
+        MaximoDeBytesAlocadosEmUmTick = 0;
     }
+
+    internal void PararDiagnosticosDeAlocacoesDoBenchmark() => _medirAlocacoesGerenciadas = false;
 
     /// <remarks>O raio e a lista de exceções são reutilizados entre quadros.</remarks>
     private void EncontrarOclusores(Vector3 origem, Vector3 alvo)
@@ -263,7 +287,15 @@ public sealed partial class CameraOcclusionFader : Node
             if (!instancia.Visible || !_limitesMundoPorGeometria.TryGetValue(instancia, out var limitesPorInstancia))
                 continue;
 
-            for (var i = 0; i < limitesPorInstancia.Length; i++)
+            var limiteDeInstanciasVisiveis = limitesPorInstancia.Length;
+            if (instancia is MultiMeshInstance3D { Multimesh: { } multiMesh })
+            {
+                var quantidadeVisivel = multiMesh.VisibleInstanceCount;
+                if (quantidadeVisivel >= 0)
+                    limiteDeInstanciasVisiveis = Math.Min(quantidadeVisivel, limiteDeInstanciasVisiveis);
+            }
+
+            for (var i = 0; i < limiteDeInstanciasVisiveis; i++)
             {
                 var cruza = SegmentoCruzaAabb(origem, alvo, limitesPorInstancia[i]);
                 if (cruza)
@@ -320,8 +352,7 @@ public sealed partial class CameraOcclusionFader : Node
                 continue;
 
             var overrideAnterior = geometry.GetOverride(chaveSuperficie);
-            var corBase = materialFade.AlbedoColor;
-            materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+            AplicarOpacidadeDeFade(materialFade);
             geometry.SetOverride(chaveSuperficie, materialFade);
             _overridesAnteriores.Add((instancia, chaveSuperficie, overrideAnterior));
         }
@@ -332,6 +363,7 @@ public sealed partial class CameraOcclusionFader : Node
         if (instancia.Multimesh is not { } multimesh
             || indice < 0
             || indice >= multimesh.InstanceCount
+            || (multimesh.VisibleInstanceCount >= 0 && indice >= multimesh.VisibleInstanceCount)
             || !_proxiesDeFadeMultiMesh.TryGetValue(instancia, out var proxy)
             || proxy.Multimesh is not { } multimeshProxy
             || !_quantidadeDeInstanciasNoProxy.TryGetValue(instancia, out var indiceProxy)
@@ -351,7 +383,7 @@ public sealed partial class CameraOcclusionFader : Node
 
         var quantidadeDeSuperficies = multimesh.Mesh?.GetSurfaceCount() ?? 0;
         _instanciasMultiMeshOcultas.Add(new HiddenMultiMeshInstance(
-            instancia, indice, transformacaoOriginal, quantidadeDeSuperficies));
+            instancia, indice, transformacaoOriginal));
         _quantidadeDeInstanciasNoProxy[instancia] = indiceProxy + 1;
         _superficiesMultiMeshOcultas += quantidadeDeSuperficies;
     }
@@ -468,8 +500,7 @@ public sealed partial class CameraOcclusionFader : Node
                 if (materialBase is not BaseMaterial3D materialBase3D)
                     continue;
 
-                var materialFade = (BaseMaterial3D)materialBase3D.Duplicate();
-                materialFade.Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash;
+                var materialFade = CriarMaterialDeFade(materialBase3D);
                 _materiaisDeFade.Add((instancia, chaveSuperficie), materialFade);
             }
         }
@@ -492,10 +523,7 @@ public sealed partial class CameraOcclusionFader : Node
             }
 
             var materialBase = materialOriginal as BaseMaterial3D ?? new StandardMaterial3D();
-            var materialFade = (BaseMaterial3D)materialBase.Duplicate();
-            materialFade.Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash;
-            var corBase = materialFade.AlbedoColor;
-            materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+            var materialFade = CriarMaterialDeFade(materialBase);
             malhaFade.SurfaceSetMaterial(superficie, materialFade);
         }
 
@@ -522,6 +550,20 @@ public sealed partial class CameraOcclusionFader : Node
         instancia.AddChild(proxy);
         _proxiesDeFadeMultiMesh.Add(instancia, proxy);
         _quantidadeDeInstanciasNoProxy.Add(instancia, 0);
+    }
+
+    private BaseMaterial3D CriarMaterialDeFade(BaseMaterial3D materialBase)
+    {
+        var materialFade = (BaseMaterial3D)materialBase.Duplicate();
+        materialFade.Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash;
+        AplicarOpacidadeDeFade(materialFade);
+        return materialFade;
+    }
+
+    private void AplicarOpacidadeDeFade(BaseMaterial3D materialFade)
+    {
+        var corBase = materialFade.AlbedoColor;
+        materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
     }
 
     private static Aabb TransformarAabb(Aabb local, Transform3D transform)

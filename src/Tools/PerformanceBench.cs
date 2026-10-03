@@ -56,6 +56,9 @@ public sealed partial class PerformanceBench : Node
         int RayLimit,
         double AverageSearchUsec,
         ulong MaxSearchUsec,
+        long ManagedAllocatedBytes,
+        long TicksWithManagedAllocations,
+        long MaxManagedAllocationBytesPerTick,
         string ActiveOccluderPaths,
         int HiddenSurfaces);
 
@@ -439,6 +442,7 @@ public sealed partial class PerformanceBench : Node
             ? p99 <= FrameBudgetMilliseconds ? "PASS" : "FAIL"
             : "NOT_RUN_HEADLESS";
         var occlusion = CaptureOcclusionMetrics();
+        _occlusionFader?.PararDiagnosticosDeAlocacoesDoBenchmark();
 
         var reportPath = $"user://bench-40enemies-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{OS.GetProcessId()}.csv";
         WriteReport(reportPath, p50, p99, overBudgetPercent, processAverage, physicsAverage, navigationAverage, graphicalResult, occlusion);
@@ -447,6 +451,7 @@ public sealed partial class PerformanceBench : Node
         GD.Print($"[bench] alocações gerenciadas={_allocatedBytes} bytes em {_allocationFrames}/{_frameSamples} intervalos; pico={_maxFrameAllocationBytes} bytes; nós={_minNodeCount:F0}..{_maxNodeCount:F0}; memória estática={_minStaticMemoryMegabytes:F1}..{_maxStaticMemoryMegabytes:F1} MiB");
         GD.Print($"[bench] alocação atribuída à sonda={_benchmarkInstrumentationAllocatedBytes} bytes; ao disparo de VFX={_vfxAllocatedBytes} bytes");
         GD.Print($"[bench] oclusão={occlusion.Ticks} ticks; testes de raio={occlusion.Raycasts} (média {occlusion.RaycastsPerTick:F2}/tick; máx {occlusion.MaxRaycastsPerTick}); colisores encontrados={occlusion.Colliders} (média {occlusion.CollidersPerTick:F2}/tick; máx {occlusion.MaxCollidersPerTick}); busca média/máxima={occlusion.AverageSearchUsec:F1}/{occlusion.MaxSearchUsec} μs; limite por tick={occlusion.RayLimit}");
+        GD.Print($"[bench] alocação gerenciada no fader={occlusion.ManagedAllocatedBytes} bytes em {occlusion.TicksWithManagedAllocations}/{occlusion.Ticks} ticks; pico/tick={occlusion.MaxManagedAllocationBytesPerTick} bytes");
         GD.Print($"[bench] fade atual: caminhos={occlusion.ActiveOccluderPaths}; superfícies={occlusion.HiddenSurfaces}");
         var resolutionBase = ConfiguredViewportResolution();
         var windowResolution = DisplayServer.WindowGetSize();
@@ -478,7 +483,7 @@ public sealed partial class PerformanceBench : Node
 
         var resolutionBase = ConfiguredViewportResolution();
         var windowResolution = DisplayServer.WindowGetSize();
-        file.StoreLine("utc,revision,duration_seconds,frames,p50_frame_ms,p99_frame_ms,max_frame_ms,budget_ms,over_budget_percent,process_avg_ms,physics_avg_ms,navigation_avg_ms,managed_allocated_bytes,allocation_frames,max_frame_allocation_bytes,histogram_overflow_frames,node_count_min,node_count_max,static_memory_min_mib,static_memory_max_mib,os,cpu,cores,gpu,viewport_width,viewport_height,window_width,window_height,occlusion_enabled,graphical_result,occlusion_ticks,occlusion_raycast_checks,occlusion_raycast_checks_avg,occlusion_raycast_checks_max,occlusion_colliders_hit,occlusion_colliders_hit_avg,occlusion_colliders_hit_max,occlusion_ray_limit,occlusion_query_avg_us,occlusion_query_max_us");
+        file.StoreLine("utc,revision,duration_seconds,frames,p50_frame_ms,p99_frame_ms,max_frame_ms,budget_ms,over_budget_percent,process_avg_ms,physics_avg_ms,navigation_avg_ms,managed_allocated_bytes,allocation_frames,max_frame_allocation_bytes,histogram_overflow_frames,node_count_min,node_count_max,static_memory_min_mib,static_memory_max_mib,os,cpu,cores,gpu,viewport_width,viewport_height,window_width,window_height,occlusion_enabled,graphical_result,occlusion_ticks,occlusion_raycast_checks,occlusion_raycast_checks_avg,occlusion_raycast_checks_max,occlusion_colliders_hit,occlusion_colliders_hit_avg,occlusion_colliders_hit_max,occlusion_ray_limit,occlusion_query_avg_us,occlusion_query_max_us,occlusion_managed_allocated_bytes,occlusion_allocation_ticks,occlusion_max_allocation_per_tick_bytes");
         file.StoreLine(string.Join(",",
             DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
             Csv(_revision),
@@ -505,26 +510,39 @@ public sealed partial class PerformanceBench : Node
             occlusion.MaxCollidersPerTick.ToString(CultureInfo.InvariantCulture),
             occlusion.RayLimit.ToString(CultureInfo.InvariantCulture),
             Number(occlusion.AverageSearchUsec),
-            occlusion.MaxSearchUsec.ToString(CultureInfo.InvariantCulture)));
+            occlusion.MaxSearchUsec.ToString(CultureInfo.InvariantCulture),
+            occlusion.ManagedAllocatedBytes.ToString(CultureInfo.InvariantCulture),
+            occlusion.TicksWithManagedAllocations.ToString(CultureInfo.InvariantCulture),
+            occlusion.MaxManagedAllocationBytesPerTick.ToString(CultureInfo.InvariantCulture)));
     }
 
     private OcclusionMetrics CaptureOcclusionMetrics()
     {
         var fader = _occlusionFader;
-        var ticks = fader?.TotalDeTicksDeOclusao ?? 0;
+        if (fader is null)
+        {
+            return new OcclusionMetrics(
+                0, 0, 0d, 0, 0, 0d, 0, 0, 0d, 0,
+                0, 0, 0, "indisponível", 0);
+        }
+
+        var ticks = fader.TotalDeTicksDeOclusao;
         return new OcclusionMetrics(
             ticks,
-            fader?.TotalDeTestesDeRaio ?? 0,
-            ticks == 0 ? 0d : (double)fader!.TotalDeTestesDeRaio / ticks,
-            fader?.MaximoDeTestesDeRaioPorTick ?? 0,
-            fader?.TotalDeColisoresEncontrados ?? 0,
-            ticks == 0 ? 0d : (double)fader!.TotalDeColisoresEncontrados / ticks,
-            fader?.MaximoDeColisoresPorTick ?? 0,
-            fader?.LimiteDeColisoresNoRaio ?? 0,
-            ticks == 0 ? 0d : (double)fader!.TempoTotalDeBuscaUsec / ticks,
-            fader?.TempoMaximoDeBuscaUsec ?? 0,
-            fader?.CaminhosDosOclusoresOcultosAgora ?? "indisponível",
-            fader?.SuperficiesOcultasAgora ?? 0);
+            fader.TotalDeTestesDeRaio,
+            ticks == 0 ? 0d : (double)fader.TotalDeTestesDeRaio / ticks,
+            fader.MaximoDeTestesDeRaioPorTick,
+            fader.TotalDeColisoresEncontrados,
+            ticks == 0 ? 0d : (double)fader.TotalDeColisoresEncontrados / ticks,
+            fader.MaximoDeColisoresPorTick,
+            fader.LimiteDeColisoresNoRaio,
+            ticks == 0 ? 0d : (double)fader.TempoTotalDeBuscaUsec / ticks,
+            fader.TempoMaximoDeBuscaUsec,
+            fader.TotalDeBytesGerenciadosAlocados,
+            fader.TicksComAlocacaoGerenciada,
+            fader.MaximoDeBytesAlocadosEmUmTick,
+            fader.CaminhosDosOclusoresOcultosAgora,
+            fader.SuperficiesOcultasAgora);
     }
 
     private static Vector2I ConfiguredViewportResolution() => new(

@@ -92,13 +92,14 @@ public sealed partial class UrbanArenaProbe : Node
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
             Mesh = malhaRepetida,
-            InstanceCount = 4
+            InstanceCount = 5,
+            VisibleInstanceCount = 4
         };
         for (var i = 0; i < multiMesh.InstanceCount; i++)
         {
             var posicao = i < 3
                 ? new Vector3(0f, 0f, (i - 1) * 0.6f)
-                : new Vector3(3f, 0f, 0f);
+                : i == 3 ? new Vector3(3f, 0f, 0f) : new Vector3(0f, 0f, 1.2f);
             multiMesh.SetInstanceTransform(i,
                 new Transform3D(Basis.Identity, posicao));
         }
@@ -108,7 +109,7 @@ public sealed partial class UrbanArenaProbe : Node
         {
             var esperado = i < 3
                 ? new Vector3(0f, 0f, (i - 1) * 0.6f)
-                : new Vector3(3f, 0f, 0f);
+                : i == 3 ? new Vector3(3f, 0f, 0f) : new Vector3(0f, 0f, 1.2f);
             if (multiMesh.GetInstanceTransform(i).Origin.DistanceTo(esperado) > 0.01f)
             {
                 // O renderer nulo do modo headless não expõe os transforms
@@ -269,6 +270,8 @@ public sealed partial class UrbanArenaProbe : Node
         var quantidadeEsperadaDeInstanciasComFade = _transformsDoMultiMeshDisponiveis ? 3 : 4;
         Verificar(multimeshFade?.VisibleInstanceCount == quantidadeEsperadaDeInstanciasComFade,
             "todas as instâncias que cruzam o raio, e somente elas, deveriam aparecer no proxy com fade.");
+        Verificar(multimesh?.VisibleInstanceCount == 4,
+            "o fade não deveria alterar quantas instâncias do MultiMesh original estão visíveis.");
         if (_transformsDoMultiMeshDisponiveis && multimesh is not null)
         {
             var tresInstanciasDaLinhaForamOcultas = true;
@@ -279,6 +282,8 @@ public sealed partial class UrbanArenaProbe : Node
                 "as três instâncias do mesmo colisor que cruzam a linha deveriam ser substituídas pelo fade.");
             Verificar(Mathf.Abs(multimesh.GetInstanceTransform(3).Basis.Determinant()) > 0.9f,
                 "a instância fora da linha câmera→jogador deveria permanecer visível.");
+            Verificar(Mathf.Abs(multimesh.GetInstanceTransform(4).Basis.Determinant()) > 0.9f,
+                "a instância ocultada pelo VisibleInstanceCount não deveria ser substituída pelo proxy.");
         }
         var movimentoDaCamera = _camera?.GlobalPosition.DistanceTo(_posicaoDaCameraAntesDoFade) ?? float.PositiveInfinity;
         Verificar(movimentoDaCamera < 0.001f,
@@ -295,11 +300,13 @@ public sealed partial class UrbanArenaProbe : Node
         var multimesh = _oclusorMultiMesh?.Multimesh;
         var multimeshFade = _proxyFadeMultiMesh?.Multimesh;
         Verificar(multimesh is not null
-            && multimesh.InstanceCount == 4
+            && multimesh.InstanceCount == 5
+            && multimesh.VisibleInstanceCount == 4
             && Mathf.Abs(multimesh.GetInstanceTransform(0).Basis.Determinant()) > 0.9f
             && Mathf.Abs(multimesh.GetInstanceTransform(1).Basis.Determinant()) > 0.9f
             && Mathf.Abs(multimesh.GetInstanceTransform(2).Basis.Determinant()) > 0.9f
-            && Mathf.Abs(multimesh.GetInstanceTransform(3).Basis.Determinant()) > 0.9f,
+            && Mathf.Abs(multimesh.GetInstanceTransform(3).Basis.Determinant()) > 0.9f
+            && Mathf.Abs(multimesh.GetInstanceTransform(4).Basis.Determinant()) > 0.9f,
             "as instâncias do MultiMesh deveriam recuperar seus transforms ao restaurar a cena.");
         Verificar(multimeshFade?.VisibleInstanceCount == 0,
             "o MultiMesh proxy deveria deixar de desenhar instâncias ao restaurar a cena.");
