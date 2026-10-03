@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_passo")
 DamageMultiplier = 1.1
-HitWindowStart = 0.16
-HitWindowEnd = 0.30
+HitWindowStart = 0.25
+HitWindowEnd = 0.37
 ComboWindowEnd = 0.75
 ForwardStep = 0.7
 KnockbackMultiplier = 1.0

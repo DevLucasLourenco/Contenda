@@ -27,6 +27,8 @@ public sealed class NullWeapon : IWeapon
 
     public event Action<int>? AttackStarted { add { } remove { } }
     public event Action<Node3D>? HitLanded { add { } remove { } }
+    public event Action? ReloadStarted { add { } remove { } }
+    public event Action? DiveStarted { add { } remove { } }
 
     public void RequestBasicAttack()
     {

@@ -87,6 +87,8 @@ public sealed class MeleeWeapon : IWeapon
 
     public event Action<int>? AttackStarted;
     public event Action<Node3D>? HitLanded;
+    public event Action? ReloadStarted { add { } remove { } }
+    public event Action? DiveStarted;
 
     public void RequestBasicAttack()
     {
@@ -188,6 +190,7 @@ public sealed class MeleeWeapon : IWeapon
         if (AerialCombatMath.DeveComecarMergulho(noAr, velocidadeY, triggerHeld, combo.IsAttacking, _mergulhando))
         {
             _mergulhando = true;
+            DiveStarted?.Invoke();
             AtualizarMergulho(delta);
             return;
         }

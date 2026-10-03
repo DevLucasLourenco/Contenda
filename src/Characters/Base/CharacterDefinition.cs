@@ -33,8 +33,11 @@ public sealed partial class CharacterDefinition : Resource
 
     [Export] public Color ThemeColor { get; set; } = Colors.White;
 
-    /// <summary>Modelo 3D usado na seleção e na arena; a arte final entra no ticket 34.</summary>
+    /// <summary>Modelo 3D usado na seleção e na arena.</summary>
     [Export] public PackedScene? ModelScene { get; set; }
+
+    [Export] public CharacterAnimationSet? AnimationSet { get; set; }
+    [Export] public StringName WeaponBoneName { get; set; } = new("handslot.r");
 
     [Export(PropertyHint.Range, "1,5,1")] public int RatingDamage { get; set; } = 3;
     [Export(PropertyHint.Range, "1,5,1")] public int RatingRange { get; set; } = 3;

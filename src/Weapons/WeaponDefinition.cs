@@ -20,6 +20,13 @@ public sealed partial class WeaponDefinition : Resource
     /// <summary>Nome exibido.</summary>
     [Export] public string DisplayName { get; set; } = "Sem arma";
 
+    /// <summary>Modelo visual instanciado no socket da mão do rig, se houver.</summary>
+    [Export] public PackedScene? ModelScene { get; set; }
+
+    [Export] public Vector3 ModelPositionOffset { get; set; } = Vector3.Zero;
+    [Export] public Vector3 ModelRotationOffsetDegrees { get; set; } = Vector3.Zero;
+    [Export] public Vector3 ModelScale { get; set; } = Vector3.One;
+
     /// <summary>Corpo a corpo ou tiro.</summary>
     [Export] public WeaponKind Kind { get; set; } = WeaponKind.Melee;
 

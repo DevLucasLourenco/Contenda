@@ -47,6 +47,19 @@ public sealed class RevolverStateTests
     }
 
     [Fact]
+    public void Esvaziar_o_tambor_dispara_evento_de_inicio_de_recarga_uma_vez()
+    {
+        var tambor = Criar(capacidade: 1);
+        var recargas = 0;
+        tambor.ReloadStarted += () => recargas++;
+
+        Assert.True(tambor.TryFire(Interval));
+        Assert.False(tambor.TryFire(Interval));
+
+        Assert.Equal(1, recargas);
+    }
+
+    [Fact]
     public void Atirar_com_o_tambor_vazio_nao_faz_nada()
     {
         var tambor = Criar(capacidade: 1);

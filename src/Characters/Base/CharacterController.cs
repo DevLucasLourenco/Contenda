@@ -51,6 +51,7 @@ public sealed partial class CharacterController : CharacterBody3D
     private AbilityComponent? _habilidades;
     private DamageFlashComponent? _flash;
     private TransformationComponent? _transformations;
+    private CharacterAnimator? _animator;
     private Node3D? _model;
     private Node3D? _modelRoot;
     private MeshInstance3D? _placeholderBody;
@@ -91,6 +92,8 @@ public sealed partial class CharacterController : CharacterBody3D
         // Segunda passada: agora sim na ordem de dependência de dados.
         foreach (var componente in _componentes)
             componente.Configure(Definition);
+
+        _animator?.RefreshWeaponVisual();
 
         // Movimento é OPCIONAL: um manequim de treino tem vida e atributos, mas
         // não anda. Exigir locomoção obrigaria a inventar um componente inútil só
@@ -149,6 +152,7 @@ public sealed partial class CharacterController : CharacterBody3D
         MontarModelo(novaDefinicao);
         foreach (var componente in _componentes)
             componente.Configure(novaDefinicao);
+        _animator?.RefreshWeaponVisual();
     }
 
     private void MontarModelo(CharacterDefinition definition)
@@ -177,8 +181,8 @@ public sealed partial class CharacterController : CharacterBody3D
         _model = modelScene.Instantiate<Node3D>();
         root.AddChild(_model);
         // A malha é de uma instância criada agora; ainda não existia em _Ready.
-        var body = _model.GetNodeOrNull<MeshInstance3D>("%Body")
-            ?? throw new InvalidOperationException($"{Name}: ModelScene precisa ter a malha Body.");
+        var body = CharacterPresentation.FindBodyMesh(_model)
+            ?? throw new InvalidOperationException($"{Name}: ModelScene precisa conter uma malha cujo nome termina em '_Body'.");
         if (_placeholderBody is not null) _placeholderBody.Visible = false;
         if (_placeholderFacing is not null) _placeholderFacing.Visible = false;
         _transformations?.UseBodyMesh(body);
@@ -345,6 +349,10 @@ public sealed partial class CharacterController : CharacterBody3D
             case TransformationComponent tr:
                 _transformations = tr;
                 Context!.Transformations = tr;
+                break;
+            case CharacterAnimator animator:
+                _animator = animator;
+                Context!.Animator = animator;
                 break;
             case DamageFlashComponent f:
                 _flash = f;

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Contenda.Core;
+using Contenda.Characters.Base;
 using Contenda.Persistence;
 using Contenda.UI.Menus;
 using Godot;
@@ -31,6 +32,10 @@ public sealed partial class CharacterSelectProbe : Node
                 "os cards não possuem preview em SubViewport");
             Check(CountNodes<MeshInstance3D>(menu) >= 3,
                 "os previews não instanciaram modelos 3D reais");
+            Check(CountNodes<AnimationTree>(menu) == 3,
+                "os previews não carregaram os AnimationSets dos personagens");
+            Check(CountNodes<BoneAttachment3D>(menu) == 3,
+                "as armas não foram presas ao osso da mão nos previews");
             Check(ContainsLabel(menu, "7890") || ContainsLabel(menu, "7.890") || ContainsLabel(menu, "7,890"),
                 "o recorde do perfil não apareceu");
             Check(ContainsLabel(menu, "W W") && ContainsLabel(menu, "Deadeye"),
@@ -79,6 +84,22 @@ public sealed partial class CharacterSelectProbe : Node
         return count;
     }
 
+    private static bool HasAnimationPresentation(CharacterController character)
+    {
+        if (character.CurrentModel is not { } model
+            || character.Definition?.AnimationSet is not { } animationSet
+            || character.Context?.Animator?.Tree is not { Active: true } tree)
+            return false;
+
+        var animationPlayer = model.GetNodeOrNull<AnimationPlayer>(new NodePath("CharacterAnimationPlayer"));
+        var weaponSocket = CharacterPresentation.FindSkeleton(model)?
+            .GetNodeOrNull<BoneAttachment3D>(new NodePath("WeaponSocket"));
+        return tree.TreeRoot is AnimationNodeBlendTree
+            && animationPlayer?.HasAnimation($"motion/{animationSet.Idle}") == true
+            && weaponSocket is not null
+            && weaponSocket.GetChildCount() > 0;
+    }
+
     private static void Check(bool condition, string message)
     {
         if (!condition)
@@ -93,7 +114,10 @@ public sealed partial class CharacterSelectProbe : Node
             var player = ServiceLocator.Session.PlayerBody;
             if (player?.Definition?.Id.ToString() != "gunslinger"
                 || player.Context?.Abilities?.Abilities.Count != 4
-                || player.CurrentModel?.Name != "GunslingerPreview")
+                || player.CurrentModel is null
+                || CharacterPresentation.FindSkeleton(player.CurrentModel) is null
+                || CharacterPresentation.FindBodyMesh(player.CurrentModel) is null
+                || !HasAnimationPresentation(player))
             {
                 GD.PushError("[selecao] FALHOU: a arena não montou o Gunslinger escolhido.");
                 tree.Quit(1);

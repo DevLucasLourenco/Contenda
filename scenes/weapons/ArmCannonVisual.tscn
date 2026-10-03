@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3]
+
+[sub_resource type="StandardMaterial3D" id="metal"]
+albedo_color = Color(0.08, 0.58, 0.78, 1)
+emission_enabled = true
+emission = Color(0.02, 0.32, 0.58, 1)
+emission_energy_multiplier = 0.65
+metallic = 0.72
+roughness = 0.27
+
+[sub_resource type="StandardMaterial3D" id="dark"]
+albedo_color = Color(0.07, 0.12, 0.19, 1)
+metallic = 0.56
+roughness = 0.38
+
+[sub_resource type="CylinderMesh" id="forearm"]
+material = SubResource("dark")
+top_radius = 0.11
+bottom_radius = 0.15
+height = 0.55
+
+[sub_resource type="CylinderMesh" id="barrel"]
+material = SubResource("metal")
+top_radius = 0.09
+bottom_radius = 0.09
+height = 0.38
+
+[sub_resource type="BoxMesh" id="cuff"]
+material = SubResource("metal")
+size = Vector3(0.28, 0.16, 0.3)
+
+[node name="ArmCannonVisual" type="Node3D"]
+
+[node name="Forearm" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.03)
+mesh = SubResource("forearm")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.41)
+mesh = SubResource("barrel")
+
+[node name="Cuff" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.19)
+mesh = SubResource("cuff")

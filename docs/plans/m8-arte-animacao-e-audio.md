@@ -7,6 +7,10 @@ e áudio. O gameplay já está fechado — aqui ele ganha corpo.
 
 Spec: [13 — Assets, animação e licenças](../specs/13-assets-animacao-e-licencas.md)
 
+O ticket 34 entregou modelos, armas procedurais e animações dos dois
+personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
+áudio e cenário — continua pendente.
+
 > Deliberadamente **depois** do MVP. Investir em arte antes de o gameplay
 > fechar é a forma mais cara de descobrir que a mecânica não funciona.
 
@@ -23,11 +27,12 @@ Spec: [13 — Assets, animação e licenças](../specs/13-assets-animacao-e-lice
 
 ### 1. Aquisição
 
-- [ ] Baixar **KayKit Adventurers** (CC0) → Swordsman + espada
+- [x] Baixar **KayKit Adventurers** (CC0) → modelos Knight e Rogue dos personagens jogáveis
+- [x] Baixar **KayKit Character Animations** (CC0) → bancos de animação para os dois rigs
 - [ ] Baixar **Quaternius Ultimate Animated Character Pack** (CC0) →
-      Gunslinger + inimigos
+      inimigos
 - [ ] Baixar **Quaternius Animated Guns Pack** (CC0) → revólver
-- [ ] Criar `SOURCE.md` em cada pasta: autor, URL, licença, data
+- [x] Registrar `SOURCE.md` dos modelos jogáveis e dos bancos de animação
 - [ ] Verificar que **nada** CC-BY-NC entrou (auditoria por grep)
 
 > A alternativa paga (*Female Gunner 001/002*, US$ 22,50–30) corresponde melhor
@@ -52,31 +57,29 @@ Spec: [13 — Assets, animação e licenças](../specs/13-assets-animacao-e-lice
 
 ### 4. Retarget
 
-- [ ] `BoneMap` para cada esqueleto, mapeando para `SkeletonProfileHumanoid`
-- [ ] Import dos clipes Mixamo com o mesmo `BoneMap`
-- [ ] Extrair para `AnimationLibrary` por personagem
-- [ ] Verificar dedos, ombros e quadril — os pontos que costumam quebrar
+- [x] Reusar o rig KayKit compartilhado de 23 ossos para Knight, Rogue e clipes
+- [x] Copiar os clipes selecionados para `AnimationLibrary` por personagem
+- [x] Remover trilhas de posição do osso `root`; deslocamento continua no código
+- [ ] Configurar `BoneMap` para rigs futuros de outra fonte
 
 ### 5. `AnimationSet`
 
-- [ ] `animset_swordsman`, `animset_gunslinger`, `animset_berserker`,
-      `animset_overdrive`, `animset_grunt`, … (spec 12 §4)
-- [ ] Mapear todos os papéis, incluindo `AbilityAnimations` por `abilityId`
-- [ ] Nenhum nome de clipe hardcoded em `.cs`
+- [x] `animset_swordsman` e `animset_gunslinger` com `AbilityAnimations` por `abilityId`
+- [ ] `animset_berserker`, `animset_overdrive`, inimigos e outros futuros (spec 12 §4)
+- [x] Nenhum nome de clipe de asset hardcoded em `.cs`
 
 ### 6. `AnimationTree`
 
-- [ ] `AnimationNodeStateMachine` conforme spec 13 §6
-- [ ] `BlendSpace2D` de locomoção (Idle ↔ Walk ↔ Run)
-- [ ] OneShots para Attack, Ability, Hit, Dash
-- [ ] `Death` terminal
-- [ ] `xfade` de 0.08–0.15 s
-- [ ] **Root motion desligado** — deslocamento é do `MovementComponent`
-- [ ] `CharacterAnimator` traduzindo estado de gameplay em parâmetros do tree
+- [x] `AnimationNodeBlendTree` com `BlendSpace1D` de locomoção (Idle ↔ Walk ↔ Run)
+- [x] OneShots para ataques, habilidades, recarga, mobilidade, hit, transformação e morte
+- [x] `Death` terminal
+- [x] `xfade` de 0.1 s
+- [x] **Root motion desligado** — deslocamento é do `MovementComponent`
+- [x] `CharacterAnimator` traduzindo eventos do gameplay em parâmetros do tree
 
 ### 7. Sincronização de combate
 
-- [ ] Ajustar `HitWindowStart/End` de cada `MeleeComboStep` às animações reais
+- [x] Ajustar janelas dos combos de espada aos quadros de impacto dos clipes KayKit
 - [ ] Ajustar `CastTime` das habilidades ao wind-up das animações
 - [ ] Ajustar windups dos inimigos
 - [ ] **Não** mover as janelas para tracks de animação (spec 13 §6)

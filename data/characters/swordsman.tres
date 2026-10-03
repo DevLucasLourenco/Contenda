@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=13 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_swordsman.tres" id="2_mov"]
@@ -11,7 +11,8 @@
 [ext_resource type="Resource" path="res://data/abilities/heavy_lunge.tres" id="9_lunge"]
 [ext_resource type="Resource" path="res://data/characters/shared/stats_swordsman.tres" id="10_stats"]
 [ext_resource type="Resource" path="res://data/transformations/berserker.tres" id="11_form"]
-[ext_resource type="PackedScene" path="res://scenes/characters/previews/SwordsmanPreview.tscn" id="12_model"]
+[ext_resource type="PackedScene" path="res://assets/characters/swordsman/model.glb" id="12_model"]
+[ext_resource type="Resource" path="res://data/characters/animset_swordsman.tres" id="13_anim"]
 
 [resource]
 script = ExtResource("1_def")
@@ -20,6 +21,8 @@ DisplayName = "Swordsman"
 Bio = "Espadachim de alto dano. Entra no meio da horda para vencer."
 ThemeColor = Color(0.95, 0.38, 0.22, 1)
 ModelScene = ExtResource("12_model")
+AnimationSet = ExtResource("13_anim")
+WeaponBoneName = &"handslot.r"
 RatingDamage = 4
 RatingRange = 2
 RatingSpeed = 3

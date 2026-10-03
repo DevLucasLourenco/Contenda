@@ -65,6 +65,9 @@ public sealed class CharacterContext
     /// <summary>Formas temporárias que alteram os componentes deste personagem.</summary>
     public TransformationComponent? Transformations { get; internal set; }
 
+    /// <summary>Apresentação baseada em eventos do próprio personagem.</summary>
+    public CharacterAnimator? Animator { get; internal set; }
+
     /// <summary>Pathing até um ponto do mundo. Nulo para quem não persegue ninguém (o jogador, os manequins).</summary>
     public NavigationMotor? NavigationMotor { get; internal set; }
 

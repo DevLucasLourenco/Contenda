@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CharacterAnimationSet" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterAnimationSet.cs" id="1_set"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/CombatMelee.glb" id="2_melee"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/CombatRanged.glb" id="3_ranged"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/General.glb" id="4_general"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/MovementAdvanced.glb" id="5_advanced"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/MovementBasic.glb" id="6_basic"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/Simulation.glb" id="7_simulation"]
+[ext_resource type="PackedScene" path="res://assets/animations/kaykit/Special.glb" id="8_special"]
+[ext_resource type="Script" path="res://src/Characters/Base/AbilityAnimationBinding.cs" id="9_binding"]
+
+[sub_resource type="Resource" id="Ability_quick_step"]
+script = ExtResource("9_binding")
+AbilityId = &"gunslinger.quick_step_shot"
+Animation = &"Dodge_Forward"
+
+[sub_resource type="Resource" id="Ability_explosive_shot"]
+script = ExtResource("9_binding")
+AbilityId = &"gunslinger.explosive_shot"
+Animation = &"Ranged_2H_Shoot"
+
+[sub_resource type="Resource" id="Ability_fan_the_hammer"]
+script = ExtResource("9_binding")
+AbilityId = &"gunslinger.fan_the_hammer"
+Animation = &"Ranged_1H_Shooting"
+
+[sub_resource type="Resource" id="Ability_deadeye"]
+script = ExtResource("9_binding")
+AbilityId = &"gunslinger.deadeye"
+Animation = &"Ranged_1H_Aiming"
+
+[resource]
+script = ExtResource("1_set")
+AnimationBanks = [ExtResource("2_melee"), ExtResource("3_ranged"), ExtResource("4_general"), ExtResource("5_advanced"), ExtResource("6_basic"), ExtResource("7_simulation"), ExtResource("8_special")]
+Idle = &"Idle_A"
+Walk = &"Walking_A"
+Run = &"Running_A"
+Shoot = &"Ranged_1H_Shoot"
+Reload = &"Ranged_1H_Reload"
+ArmCannonShoot = &"Ranged_2H_Shoot"
+Jump = &"Jump_Full_Short"
+Fall = &"Jump_Idle"
+Land = &"Jump_Land"
+Dash = &"Dodge_Forward"
+Dive = &"Melee_1H_Attack_Jump_Chop"
+Hit = &"Hit_A"
+Death = &"Death_A"
+Transform = &"EXPERIMENTAL_Medium_Transform"
+AbilityAnimations = [SubResource("Ability_quick_step"), SubResource("Ability_explosive_shot"), SubResource("Ability_fan_the_hammer"), SubResource("Ability_deadeye")]

@@ -53,6 +53,7 @@ public sealed class HitscanWeapon : IWeapon
         _targetGroup = targetGroup;
         _verticalReach = verticalReach;
         _estado = new RevolverState(arma.MagazineSize, arma.ReloadTime, arma.InfiniteAmmo);
+        _estado.ReloadStarted += RepassarRecarga;
         _sourceTag = arma.Id.ToString();
     }
 
@@ -71,6 +72,8 @@ public sealed class HitscanWeapon : IWeapon
 
     public event Action<int>? AttackStarted;
     public event Action<Node3D>? HitLanded;
+    public event Action? ReloadStarted;
+    public event Action? DiveStarted { add { } remove { } }
 
     public void RequestBasicAttack() => TentarDisparo();
 
@@ -96,6 +99,8 @@ public sealed class HitscanWeapon : IWeapon
     {
         _estado.ResetForSpawn();
     }
+
+    private void RepassarRecarga() => ReloadStarted?.Invoke();
 
     /// <remarks>
     /// Sem mira válida (cursor além do horizonte, ou o primeiro quadro antes

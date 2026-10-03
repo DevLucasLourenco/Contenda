@@ -1,0 +1,49 @@
+[gd_scene load_steps=7 format=3]
+
+[sub_resource type="StandardMaterial3D" id="steel"]
+albedo_color = Color(0.64, 0.78, 0.84, 1)
+metallic = 0.78
+roughness = 0.25
+
+[sub_resource type="StandardMaterial3D" id="wood"]
+albedo_color = Color(0.28, 0.11, 0.05, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="frame"]
+material = SubResource("steel")
+size = Vector3(0.14, 0.16, 0.3)
+
+[sub_resource type="CylinderMesh" id="barrel"]
+material = SubResource("steel")
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.28
+
+[sub_resource type="CylinderMesh" id="grip"]
+material = SubResource("wood")
+top_radius = 0.065
+bottom_radius = 0.09
+height = 0.2
+
+[sub_resource type="CylinderMesh" id="chamber"]
+material = SubResource("steel")
+top_radius = 0.072
+bottom_radius = 0.072
+height = 0.1
+
+[node name="RevolverVisual" type="Node3D"]
+
+[node name="Frame" type="MeshInstance3D" parent="."]
+mesh = SubResource("frame")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.015, -0.25)
+mesh = SubResource("barrel")
+
+[node name="Chamber" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, -0.035)
+mesh = SubResource("chamber")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.16, 0.055)
+mesh = SubResource("grip")

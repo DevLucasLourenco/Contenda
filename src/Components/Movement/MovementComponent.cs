@@ -1,3 +1,4 @@
+using System;
 using Contenda.Camera;
 using Contenda.Characters.Base;
 using Contenda.Components.Combat;
@@ -54,6 +55,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     private int _pulosNoArRestantes;
     private float _dashCooldownRestante;
     private bool _dashUsadoNoAr;
+    private bool _falling;
     private int _extraAirJumps;
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
@@ -133,6 +135,11 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     /// <summary>Quanto falta para o dash recarregar, em segundos. Para o probe/depuração.</summary>
     public float DashCooldownRemaining => _dashCooldownRestante;
 
+    public event Action? JumpStarted;
+    public event Action? FallStarted;
+    public event Action? Landed;
+    public event Action? DashStarted;
+
     public void Bind(CharacterContext contexto) => _contexto = contexto;
 
     /// <summary>
@@ -182,6 +189,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         _pulosNoArRestantes = Settings.MaxAirJumps + _extraAirJumps;
         _dashCooldownRestante = 0f;
         _dashUsadoNoAr = false;
+        _falling = false;
         ExternalGravityScale = 1f;
         IsGrounded = true;
 
@@ -213,7 +221,14 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var yaw = CameraReference?.YawDegrees ?? 45f;
         var travas = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
         var noChao = corpo.IsOnFloor();
+        var estavaApoiado = IsGrounded;
         IsGrounded = noChao;
+
+        if (noChao && !estavaApoiado)
+        {
+            _falling = false;
+            Landed?.Invoke();
+        }
 
         // Apoiado: recarrega os pulos extras no ar (zero no estado base) e
         // libera um dash novo no ar -- as duas coisas são "por pulo", não "por
@@ -276,6 +291,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
             // também comeria uma fração do impulso, silenciosamente.
             velocidade.Y = MovementMath.JumpVelocity(Settings.Gravity, Settings.JumpHeight);
             _pulo.Consume();
+            _falling = false;
+            JumpStarted?.Invoke();
         }
         else
         {
@@ -288,6 +305,12 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         corpo.Velocity = velocidade;
         corpo.MoveAndSlide();
         Velocity = corpo.Velocity;
+
+        if (!corpo.IsOnFloor() && corpo.Velocity.Y < 0f && !_falling)
+        {
+            _falling = true;
+            FallStarted?.Invoke();
+        }
 
         // Relida, não a `travas` capturada no topo: um dash que começa NESTE
         // quadro aplica a própria trava de rotação dentro de AtualizarDash,
@@ -354,6 +377,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
 
             _dash.Start(direcaoDoDash, Settings.DashDistance, Settings.DashDuration);
             _dashCooldownRestante = Settings.DashCooldown;
+            DashStarted?.Invoke();
 
             if (realmenteNoAr)
                 _dashUsadoNoAr = true;

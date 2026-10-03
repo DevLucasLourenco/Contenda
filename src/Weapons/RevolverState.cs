@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace Contenda.Weapons;
@@ -42,6 +43,8 @@ public sealed class RevolverState
     /// <summary>Se um tiro agora seria aceito.</summary>
     public bool CanFire => !IsReloading && _cooldownRestante <= 0f && (_infiniteAmmo || Rounds > 0);
 
+    public event Action? ReloadStarted;
+
     /// <summary>Envelhece a cadência e a recarga pelo quadro.</summary>
     public void Advance(float delta)
     {
@@ -76,7 +79,10 @@ public sealed class RevolverState
         _cooldownRestante = intervalo;
 
         if (!_infiniteAmmo && Rounds <= 0)
+        {
             _reloadRestante = _reloadTime;
+            ReloadStarted?.Invoke();
+        }
 
         return true;
     }

@@ -210,6 +210,8 @@ public sealed partial class CharacterSelectMenu : Control
         var modelScene = definition.ModelScene ?? throw new InvalidOperationException($"{definition.Id}: ModelScene ausente.");
         var model = modelScene.Instantiate<Node3D>();
         stage.AddChild(model);
+        CharacterPresentation.BuildAnimationTree(model, definition.AnimationSet);
+        CharacterPresentation.MountWeapon(model, definition.Weapon, definition.WeaponBoneName);
         _models.Add(model);
 
         var camera = new Camera3D { Current = true };

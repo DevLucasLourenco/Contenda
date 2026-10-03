@@ -27,22 +27,26 @@ Uso: SDK de build do projeto C#.
 
 ---
 
-## Assets
+## Assets incorporados
 
-Nenhum ainda. Os modelos, animações, áudio e fontes entram no **M8** — ver
-[docs/plans/m8-arte-animacao-e-audio.md](docs/plans/m8-arte-animacao-e-audio.md).
+| Fonte | Autor | Licença | Obtido em | Uso |
+|---|---|---|---|---|
+| [KayKit Adventurers Character Pack 2.0](https://kaylousberg.itch.io/kaykit-adventurers) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Knight do Swordsman e Rogue da Gunslinger |
+| [KayKit Character Animations 1.1](https://kaylousberg.itch.io/kaykit-character-animations) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Animações dos dois personagens jogáveis |
 
-As fontes já escolhidas e verificadas, para registro antecipado da intenção:
+Os arquivos originais e as licenças também estão descritos nos `SOURCE.md` de
+cada pasta. As armas atuais são cenas de primitivas do Godot e não incluem
+modelos de terceiros.
 
-| Fonte | Licença prevista | Uso previsto |
+## Fontes planejadas, ainda não incorporadas
+
+| Fonte | Licença prevista | Uso planejado |
 |---|---|---|
-| Quaternius — Ultimate Animated Character Pack | CC0 | Gunslinger e inimigos |
-| Quaternius — Animated Guns Pack | CC0 | revólver |
-| KayKit — Adventurers | CC0 | Swordsman e espada |
-| Mixamo (Adobe) | uso permitido em jogos pessoais e comerciais | animações retargetadas |
+| Quaternius — Ultimate Animated Character Pack | CC0 | possíveis modelos de inimigos |
+| Quaternius — Animated Guns Pack | CC0 | possível substituição do revólver procedural |
+| Mixamo (Adobe) | uso permitido em projetos pessoais e comerciais | alternativa futura de animações |
 
-Estas linhas só valem como registro **depois** que o asset entrar no
-repositório, com a data de download preenchida.
+Essas fontes não estão representadas por assets no repositório.
 
 ---
 

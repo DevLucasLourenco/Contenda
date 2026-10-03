@@ -23,23 +23,26 @@ licença, data do download. Sem esse arquivo, o PR não passa.
 
 ## 2. Fontes escolhidas para o MVP
 
-### Quaternius — CC0
+### KayKit — CC0 (integrado no ticket 34)
 
 | Pack | Uso |
 |---|---|
-| **Ultimate Animated Character Pack** (50+ personagens animados) | base do Gunslinger e de todos os inimigos |
+| **Adventurers Character Pack 2.0** | Knight do Swordsman e Rogue sem capuz da Gunslinger |
+| **Character Animations 1.1** | bancos de movimento, combate, dano, morte e transformação para os dois rigs |
+
+Os sete bancos importados e as licenças estão registrados em
+`assets/animations/kaykit/SOURCE.md`; cada modelo tem seu próprio `SOURCE.md`.
+
+### Quaternius — CC0 (opção futura)
+
+| Pack | Uso |
+|---|---|
+| **Ultimate Animated Character Pack** (50+ personagens animados) | possível opção para inimigos |
 | **RPG Character Pack** (rigged/animated, FBX/OBJ/Blend/glTF) | variações de inimigo |
-| **Animated Guns Pack** (revolver, pistol, shotgun, sniper, P90) | **revólver do Gunslinger** |
+| **Animated Guns Pack** (revolver, pistol, shotgun, sniper, P90) | possível modelo futuro de arma |
 
-### KayKit — CC0
-
-| Pack | Uso |
-|---|---|
-| **KayKit Adventurers** (5 personagens rigged/animados, espadas, escudos, machados, arco, besta; GLTF + FBX; compatibilidade declarada com Godot) | **Swordsman + espada** |
-
-### Mixamo — Adobe
-
-Animações complementares, retargetadas para os esqueletos acima.
+Mixamo e RPG Character Pack permanecem alternativas para conteúdo futuro; não
+há arquivos deles incorporados hoje.
 
 ### Opções pagas — avaliadas, adiadas
 
@@ -57,17 +60,12 @@ gameplay estar bom.
 ```
 assets/
 ├── characters/
-│   ├── swordsman/   model.glb · textures/ · SOURCE.md   (KayKit, CC0)
-│   ├── gunslinger/  model.glb · textures/ · SOURCE.md   (Quaternius, CC0)
-│   └── enemies/     grunt/ runner/ shooter/ brute/ warlord/
-├── weapons/
-│   ├── sword/       sword.glb · SOURCE.md                (KayKit, CC0)
-│   └── revolver/    revolver.glb · SOURCE.md             (Quaternius, CC0)
-├── animations/
-│   ├── mixamo/      *.glb (biblioteca, não usada direto)
-│   └── SOURCE.md
-├── vfx/  materials/  audio/  fonts/  ui/
-└── arena/  modular/ props/ SOURCE.md
+│   ├── swordsman/   model.glb · SOURCE.md (Knight, KayKit CC0)
+│   └── gunslinger/  model.glb · SOURCE.md (Rogue, KayKit CC0)
+└── animations/
+    └── kaykit/     bancos *.glb · SOURCE.md (KayKit CC0)
+
+scenes/weapons/      cenas procedurais para espada, revólver e braço-canhão
 ```
 
 ## 4. Pipeline de import
@@ -96,7 +94,7 @@ Corrigir no Blender, não com `scale` no nó — escala em nó quebra física e
 |---|---|
 | Root type | `Node3D` |
 | Skeleton | preservar, `Import as Skeleton Bones` ligado |
-| Animation → Import | ligado; `Trimming` ligado |
+| Animation → Import | ligado; `Trimming` desligado nos bancos KayKit para preservar o tempo original dos clipes |
 | Animation → Loop mode | `Linear` em Idle/Walk/Run; `None` em ataques |
 | Meshes → Generate LODs | ligado |
 | Meshes → Create Shadow Meshes | ligado |
@@ -104,9 +102,15 @@ Corrigir no Blender, não com `scale` no nó — escala em nó quebra física e
 
 Os `.import` gerados **são commitados**.
 
-### 4.4 Retarget de animações Mixamo
+### 4.4 Rig compartilhado KayKit
 
-Godot 4 tem `BoneMap` + perfil `SkeletonProfileHumanoid`:
+Os modelos Knight e Rogue e os bancos de animação KayKit compartilham os mesmos
+nomes de 23 ossos; os clipes são copiados para uma `AnimationLibrary` por
+personagem e suas trilhas apontam ao `Skeleton3D` importado. Nenhum retarget
+manual ou renomeação de osso é necessário.
+
+Para rigs futuros de outra fonte, Godot 4 tem `BoneMap` + perfil
+`SkeletonProfileHumanoid`:
 
 1. Importar o personagem, criar um `BoneMap` mapeando o esqueleto → perfil
    humanoide.
@@ -141,18 +145,17 @@ renomear osso à mão no Godot.
 
 ## 6. `AnimationTree`
 
-`AnimationNodeStateMachine` na raiz:
+Para os dois personagens jogáveis, o `AnimationTree` usa um `AnimationNodeBlendTree`:
 
 ```
-Locomotion (BlendSpace2D: Idle ↔ Walk ↔ Run)
-   ├─▶ Attack      (OneShot, sai ao terminar)
-   ├─▶ Ability     (OneShot, clipe vindo do AnimationSet)
-   ├─▶ Hit         (OneShot, prioridade sobre Attack)
-   ├─▶ Dash
-   └─▶ Death       (estado terminal)
+Locomotion (BlendSpace1D: Idle ↔ Walk ↔ Run)
+  → Attack → Ability → Reload → Jump → Fall → Land → Dash → Dive
+  → Hit → Transform → Death
 ```
 
-- Transições com `xfade` de 0.08–0.15 s.
+- Os OneShots fazem transição com `xfade` de 0.1 s.
+- A velocidade horizontal normalizada dirige o `BlendSpace1D`.
+- Os eventos de jogo escolhem o clipe e disparam o OneShot correspondente.
 - Janelas de hit **não** vêm de call-method track na animação — vêm de
   `MeleeComboStep.HitWindowStart/End` em código. Motivo: trocar o modelo troca
   as animações, e tracks embutidos se perderiam junto.

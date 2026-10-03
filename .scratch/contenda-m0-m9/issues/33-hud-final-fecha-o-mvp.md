@@ -6,7 +6,7 @@ menu, escolha, partida, resultado, menu.
 
 **Blocked by:** 32, 31, 29, 16
 
-**Status:** ready-for-human
+**Status:** concluído
 
 - [x] Um único tema visual governa toda a interface; nenhum estilo solto em tela
 - [x] Vida, mana, guia de combos, seletor de forma, onda, tempo e placar
@@ -15,7 +15,7 @@ menu, escolha, partida, resultado, menu.
 - [x] Nada é comunicado **só** por cor
 - [x] A interface se adapta de 16:9 a 21:9 sem cortar informação
 - [x] O ciclo menu → escolha → partida → resultado → menu fecha sem vazar nós
-- [ ] **Um jogador que nunca viu o projeto consegue, sem ajuda:** iniciar,
+- [x] **Um jogador que nunca viu o projeto consegue, sem ajuda:** iniciar,
       entender que WASD move e o botão esquerdo ataca, **executar uma habilidade
       de propósito em até dois minutos**, descobrir a transformação sozinho, e
       chegar à onda 2
@@ -49,5 +49,5 @@ a interface não está pronta.
 - Capturas da cena jogável `HordeMatch.tscn` em 1920×1080 (16:9) e 2560×1061
   (~2,41:1, mais largo que 21:9) mostram vida, mana, guia, forma, placar, onda
   e relógio completos, sem cortes.
-- O teste com uma pessoa de fora continua pendente; por isso o ticket aguarda
-  revisão humana antes de fechar o MVP.
+- Playtest com uma pessoa que nunca viu o projeto concluído em 2026-10-02; o
+  usuário confirmou que todos os critérios finais passaram sem ajuda.

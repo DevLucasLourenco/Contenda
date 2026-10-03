@@ -72,6 +72,10 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     /// <summary>Avisa que um golpe conectou.</summary>
     public event Action<Node3D>? HitLanded;
 
+    public event Action? ReloadStarted;
+    public event Action? DiveStarted;
+    public event Action<WeaponDefinition>? EquippedWeaponChanged;
+
     public void Bind(CharacterContext contexto) => _contexto = contexto;
 
     public void Configure(CharacterDefinition definicao)
@@ -103,6 +107,7 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
 
         _arma = instancia;
         LigarEventos();
+        EquippedWeaponChanged?.Invoke(weapon);
     }
 
     /// <summary>Pede um ataque básico. Chamado pelo contêiner ao apertar M1.</summary>
@@ -152,15 +157,21 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     {
         _arma.AttackStarted += RepassarInicio;
         _arma.HitLanded += RepassarAcerto;
+        _arma.ReloadStarted += RepassarRecarga;
+        _arma.DiveStarted += RepassarMergulho;
     }
 
     private void DesligarEventos()
     {
         _arma.AttackStarted -= RepassarInicio;
         _arma.HitLanded -= RepassarAcerto;
+        _arma.ReloadStarted -= RepassarRecarga;
+        _arma.DiveStarted -= RepassarMergulho;
     }
 
     private void RepassarInicio(int passo) => AttackStarted?.Invoke(passo);
 
     private void RepassarAcerto(Node3D alvo) => HitLanded?.Invoke(alvo);
+    private void RepassarRecarga() => ReloadStarted?.Invoke();
+    private void RepassarMergulho() => DiveStarted?.Invoke();
 }

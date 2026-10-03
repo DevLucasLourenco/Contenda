@@ -27,7 +27,8 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
     public int SelectedIndex => _state.SelectedIndex;
     public TransformationDefinition? Active => _state.IsActive ? Forms[_state.ActiveIndex - 1] : null;
     public float ActiveDuration => _state.ActiveDuration;
-    public bool CannonVisible => _cannonVisual?.Visible == true;
+    public bool CannonVisible => Active?.ShowCannonVisual == true
+        && _context?.Combat?.EquippedWeapon.ModelScene is not null;
 
     public event Action<int>? SelectionChanged;
     public event Action<TransformationDefinition>? Activated;
@@ -37,8 +38,8 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
     {
         _bodyMesh = GetNodeOrNull<MeshInstance3D>(BodyMeshPath);
         _cannonVisual = GetNodeOrNull<Node3D>(CannonVisualPath);
-        if (_bodyMesh is null || _cannonVisual is null)
-            throw new InvalidOperationException("TransformationComponent: Corpo e CannonForma precisam existir na cena.");
+        if (_bodyMesh is null)
+            throw new InvalidOperationException("TransformationComponent: Corpo precisa existir na cena.");
 
         _originalOverride = _bodyMesh.MaterialOverride;
         _formMaterial = new StandardMaterial3D { Roughness = 0.6f };
@@ -204,7 +205,7 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
         if (_bodyMesh is not null)
             _bodyMesh.MaterialOverride = material;
         if (_cannonVisual is not null)
-            _cannonVisual.Visible = forma.ShowCannonVisual;
+            _cannonVisual.Visible = false;
     }
 
     private void AoMorrer(Contenda.Components.Health.DamageInfo _) => Revert(RevertReason.Death);

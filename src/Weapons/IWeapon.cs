@@ -52,4 +52,10 @@ public interface IWeapon
 
     /// <summary>Avisa que um golpe conectou.</summary>
     event Action<Node3D>? HitLanded;
+
+    /// <summary>Avisa que a arma hitscan iniciou a animação de recarga.</summary>
+    event Action? ReloadStarted;
+
+    /// <summary>Avisa que o corpo a corpo iniciou a estocada de queda.</summary>
+    event Action? DiveStarted;
 }

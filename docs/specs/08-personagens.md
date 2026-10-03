@@ -93,7 +93,7 @@ tela antes que a mana acabe.
 
 ## 3. Gunslinger — arquétipo 02
 
-Mulher loira com revólver. Dano médio, alcance alto, mobilidade alta.
+Mulher ruiva com revólver. Dano médio, alcance alto, mobilidade alta.
 
 ```
 HP        ███████      100
@@ -173,13 +173,14 @@ Ver [spec 13](13-assets-animacao-e-licencas.md) para licenças e pipeline.
 
 | Personagem | Modelo do MVP | Origem | Licença |
 |---|---|---|---|
-| Swordsman | KayKit Adventurers (Knight/Barbarian) | kaylousberg.itch.io | **CC0** |
-| Gunslinger | Quaternius — Ultimate Animated Character Pack (feminina) | quaternius.com | **CC0** |
-| Espada | KayKit Adventurers (sword) | — | **CC0** |
-| Revólver | Quaternius — Animated Guns Pack | quaternius.com | **CC0** |
+| Swordsman | KayKit Adventurers (Knight) | kaylousberg.itch.io | **CC0 1.0** |
+| Gunslinger | KayKit Adventurers (Rogue, sem capuz) | kaylousberg.itch.io | **CC0 1.0** |
+| Espada | Cena procedural `scenes/weapons/SwordVisual.tscn` | malhas primitivas do Godot | — |
+| Revólver e braço-canhão | Cenas procedurais `scenes/weapons/*Visual.tscn` | malhas primitivas do Godot | — |
 
-Animações complementares via **Mixamo** (Adobe permite uso em jogos pessoais e
-comerciais), retargetadas no Godot 4.
+As animações dos dois personagens vêm do **KayKit Character Animations 1.1**
+(CC0 1.0) e compartilham o rig KayKit de 23 ossos. Veja os `SOURCE.md` em
+`assets/characters/` e `assets/animations/kaykit/` para URLs e data de obtenção.
 
 **Alternativas pagas avaliadas e adiadas:** *Female Gunner 002* (US$ 22,50) e
 *Female Gunner 001* (US$ 30) da Neko Ninja Labs correspondem bem à descrição
