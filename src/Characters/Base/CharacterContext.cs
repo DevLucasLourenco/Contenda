@@ -74,6 +74,9 @@ public sealed class CharacterContext
     /// <summary>Telegrafia visual de golpe. Nulo para quem não avisa antes de bater (o jogador).</summary>
     public AttackTelegraphComponent? AttackTelegraph { get; internal set; }
 
+    /// <summary>Marca visual que diferencia elites e chefes.</summary>
+    public EliteMarkerComponent? EliteMarker { get; internal set; }
+
     /// <summary>
     /// Produz a intenção deste inimigo a partir de percepção e estado. Nulo
     /// para quem não é IA (o jogador).

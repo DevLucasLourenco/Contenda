@@ -350,7 +350,7 @@ public sealed partial class EnemyRosterProbe : Node
 
         var definicaoInimigo = inimigo.Context?.EnemyBrain?.Definition;
         var esperaCoroa = definicaoInimigo is { IsElite: true } or { IsBoss: true };
-        var coroa = inimigo.CurrentModel!.FindChild("EliteSilhouette", true, false) as Node3D;
+        var coroa = inimigo.Context?.EliteMarker?.Silhouette;
         Verificar((coroa?.Visible ?? false) == esperaCoroa,
             $"{idEsperado}: coroa geométrica deveria {(esperaCoroa ? "estar visível" : "estar ausente")}.");
         Verificar(!esperaCoroa || coroa?.GetChildCount() == 3,

@@ -16,25 +16,58 @@ namespace Contenda.Arena;
 /// </remarks>
 public sealed partial class CityArtDirector : Node3D
 {
+    private readonly record struct ModelPlacement(
+        string AssetPath, string NodeName, Vector3 Scale, Vector3 Position, float Yaw = 0f);
+
     private const string Commercial = "res://assets/city/kenney/commercial/Models/";
     private const string Industrial = "res://assets/city/kenney/industrial/Models/";
     private const string Roads = "res://assets/city/kenney/roads/Models/";
     private const string Cars = "res://assets/city/kenney/cars/Models/";
 
+    [ExportGroup("Veículos e obstáculos")]
+    [Export] public Vector3 ContainerVisualScale { get; set; } = new(3.623f, 1.163f, 0.821f);
+    [Export] public Vector3 ContainerVisualPosition { get; set; } = new(0f, -0.75f, 0f);
+    [Export] public Vector3 VanVisualScale { get; set; } = new(1.5f, 1.1f, 1.1f);
+    [Export] public Vector3 VanVisualPosition { get; set; } = new(0f, -0.32f, 0f);
+    [Export] public float VanVisualYaw { get; set; } = Mathf.Pi / 2f;
+    [Export] public Vector3 DumpsterVisualScale { get; set; } = new(10.9f, 5.8f, 5.4f);
+    [Export] public Vector3 DumpsterVisualPosition { get; set; } = new(0f, -0.6f, 0f);
+
+    [ExportGroup("Canteiro")]
+    [Export] public Vector3 WarningSignScale { get; set; } = new(3f, 3f, 3f);
+    [Export] public Vector3 WarningSignPosition { get; set; } = new(13.8f, 0.015f, -14.8f);
+    [Export] public Vector3 ConeScale { get; set; } = new(10f, 10f, 10f);
+    [Export] public Vector3 FirstConePosition { get; set; } = new(13.2f, 0.015f, -14.2f);
+    [Export] public Vector3 SecondConePosition { get; set; } = new(14.1f, 0.015f, -14.2f);
+
+    [ExportGroup("Fachadas")]
+    [Export] public Vector3 NorthFacadeStart { get; set; } = new(-25.8f, -5f, 3.3f);
+    [Export] public Vector3 SouthFacadeStart { get; set; } = new(-25.8f, -5f, -3.3f);
+    [Export] public Vector3 WestFacadeStart { get; set; } = new(2.9f, -5f, -12f);
+    [Export] public Vector3 EastFacadeStart { get; set; } = new(-2.9f, -5f, -12f);
+    [Export] public float NorthSouthFacadeSpacing { get; set; } = 8.6f;
+    [Export] public float EastWestFacadeSpacing { get; set; } = 6f;
+    [Export] public Vector3 NorthSouthFacadeScale { get; set; } = new(9.2f, 5f, 8.2f);
+    [Export] public Vector3 NorthSouthLowDetailScale { get; set; } = new(17.2f, 3.25f, 15.2f);
+    [Export] public Vector3 EastWestFacadeScale { get; set; } = new(8.2f, 5f, 8.2f);
+    [Export] public Vector3 EastWestLowDetailScale { get; set; } = new(15.2f, 3.25f, 12f);
+
+    [ExportGroup("Carros estacionados")]
+    [Export] public Vector3 ParkedSedanPosition { get; set; } = new(-13f, 0f, -16f);
+    [Export] public Vector3 ParkedSuvPosition { get; set; } = new(13f, 0f, 15.2f);
+    [Export] public Vector3 ParkedCarScale { get; set; } = new(1.4f, 1.2f, 1.1f);
+
     /// <summary>Referências exportadas às peças do bloqueio visual que recebem os módulos da cidade.</summary>
     [Export] public Godot.Collections.Array<NodePath> SceneNodePaths { get; set; } = new()
     {
-        new("../NavigationRegion3D"),
-        new("../NavigationRegion3D/Conteiner"), new("../NavigationRegion3D/Onibus"),
-        new("../NavigationRegion3D/Cacamba"), new("../NavigationRegion3D/Andaime"),
-        new("../PredioNorte"), new("../PredioSul"), new("../PredioOeste"), new("../PredioLeste"),
-        new("../NavigationRegion3D/RuaNorteOeste"), new("../NavigationRegion3D/RuaNorteLeste"),
-        new("../NavigationRegion3D/RuaNorteNotch"), new("../NavigationRegion3D/RuaSulOeste"),
-        new("../NavigationRegion3D/RuaSulLeste"), new("../NavigationRegion3D/RuaSulNotch"),
-        new("../NavigationRegion3D/RuaOesteSul"), new("../NavigationRegion3D/RuaOesteNorte"),
-        new("../NavigationRegion3D/RuaOesteNotch"), new("../NavigationRegion3D/RuaLesteSul"),
-        new("../NavigationRegion3D/RuaLesteNorte"), new("../NavigationRegion3D/RuaLesteNotch"),
-        new("../NavigationRegion3D/CalcadaOeste"), new("../NavigationRegion3D/CalcadaLeste")
+        new("%NavigationRegion3D"),
+        new("%Conteiner"), new("%Onibus"), new("%Cacamba"), new("%Andaime"),
+        new("%PredioNorte"), new("%PredioSul"), new("%PredioOeste"), new("%PredioLeste"),
+        new("%RuaNorteOeste"), new("%RuaNorteLeste"), new("%RuaNorteNotch"),
+        new("%RuaSulOeste"), new("%RuaSulLeste"), new("%RuaSulNotch"),
+        new("%RuaOesteSul"), new("%RuaOesteNorte"), new("%RuaOesteNotch"),
+        new("%RuaLesteSul"), new("%RuaLesteNorte"), new("%RuaLesteNotch"),
+        new("%CalcadaOeste"), new("%CalcadaLeste")
     };
 
     private readonly Dictionary<string, Node> _sceneNodes = [];
@@ -49,12 +82,12 @@ public sealed partial class CityArtDirector : Node3D
                 GD.PushError($"{Name}: SceneNodePaths não resolveu '{path}'.");
         }
 
-        DecorateObstacle("Conteiner", Industrial + "shipping-container-a.glb",
-            new Vector3(3.623f, 1.163f, 0.821f), new Vector3(0f, -0.75f, 0f));
-        DecorateObstacle("Onibus", Cars + "van.glb",
-            new Vector3(1.5f, 1.1f, 1.1f), new Vector3(0f, -0.32f, 0f), Mathf.Pi / 2f);
-        DecorateObstacle("Cacamba", Roads + "dumpster.glb",
-            new Vector3(10.9f, 5.8f, 5.4f), new Vector3(0f, -0.6f, 0f));
+        DecorateObstacle("Conteiner", new ModelPlacement(Industrial + "shipping-container-a.glb", "Visual",
+            ContainerVisualScale, ContainerVisualPosition));
+        DecorateObstacle("Onibus", new ModelPlacement(Cars + "van.glb", "Visual",
+            VanVisualScale, VanVisualPosition, VanVisualYaw));
+        DecorateObstacle("Cacamba", new ModelPlacement(Roads + "dumpster.glb", "Visual",
+            DumpsterVisualScale, DumpsterVisualPosition));
 
         DecorateScaffold();
         DecorateConstructionSite();
@@ -64,7 +97,7 @@ public sealed partial class CityArtDirector : Node3D
         AddParkedCars();
     }
 
-    private void DecorateObstacle(string nodeName, string assetPath, Vector3 scale, Vector3 offset, float yaw = 0f)
+    private void DecorateObstacle(string nodeName, ModelPlacement visual)
     {
         var body = GetSceneNode<StaticBody3D>(nodeName);
         if (body is null)
@@ -74,7 +107,7 @@ public sealed partial class CityArtDirector : Node3D
         }
 
         HideBlockoutMesh(body);
-        AddModel(body, assetPath, "Visual", scale, offset, yaw);
+        AddModel(body, visual);
     }
 
     private void DecorateScaffold()
@@ -98,12 +131,12 @@ public sealed partial class CityArtDirector : Node3D
 
         // Sinalização e cones ficam nas bordas do canteiro, longe das linhas
         // de navegação e dos pontos de surgimento.
-        AddModel(navRegion, Roads + "road-sign-warning.glb", "SinalObra",
-            new Vector3(3f, 3f, 3f), new Vector3(13.8f, 0.015f, -14.8f));
-        AddModel(navRegion, Roads + "construction-cone.glb", "ConeObra1",
-            new Vector3(10f, 10f, 10f), new Vector3(13.2f, 0.015f, -14.2f));
-        AddModel(navRegion, Roads + "construction-cone.glb", "ConeObra2",
-            new Vector3(10f, 10f, 10f), new Vector3(14.1f, 0.015f, -14.2f));
+        AddModel(navRegion, new ModelPlacement(Roads + "road-sign-warning.glb", "SinalObra",
+            WarningSignScale, WarningSignPosition));
+        AddModel(navRegion, new ModelPlacement(Roads + "construction-cone.glb", "ConeObra1",
+            ConeScale, FirstConePosition));
+        AddModel(navRegion, new ModelPlacement(Roads + "construction-cone.glb", "ConeObra2",
+            ConeScale, SecondConePosition));
     }
 
     private void DecorateBuildingRows()
@@ -133,27 +166,26 @@ public sealed partial class CityArtDirector : Node3D
         // modulares. As construções ficam fora da área jogável e do navmesh.
         for (var i = 0; i < facades.Length; i++)
         {
-            var x = -25.8f + i * 8.6f;
-            var facadeScale = facades[i].Contains("low-detail", System.StringComparison.Ordinal)
-                ? new Vector3(17.2f, 3.25f, 15.2f)
-                : new Vector3(9.2f, 5f, 8.2f);
-            AddModel(north, facades[i], $"FacadeNorth{i}", facadeScale,
-                new Vector3(x, -5f, 3.3f), Mathf.Pi);
-            AddModel(south, facades[(i + 3) % facades.Length], $"FacadeSouth{i}", facadeScale,
-                new Vector3(x, -5f, -3.3f));
+            var northSouthScale = FacadeScale(facades[i], NorthSouthFacadeScale, NorthSouthLowDetailScale);
+            var northPosition = NorthFacadeStart + new Vector3(i * NorthSouthFacadeSpacing, 0f, 0f);
+            var southPosition = SouthFacadeStart + new Vector3(i * NorthSouthFacadeSpacing, 0f, 0f);
+            AddModel(north, new ModelPlacement(facades[i], $"FacadeNorth{i}", northSouthScale,
+                northPosition, Mathf.Pi));
+            var southFacade = facades[(i + 3) % facades.Length];
+            AddModel(south, new ModelPlacement(southFacade, $"FacadeSouth{i}",
+                FacadeScale(southFacade, NorthSouthFacadeScale, NorthSouthLowDetailScale), southPosition));
         }
 
         for (var i = 0; i < 5; i++)
         {
-            var z = -12f + i * 6f;
             var facadePath = facades[(i + 1) % facades.Length];
-            var facadeScale = facadePath.Contains("low-detail", System.StringComparison.Ordinal)
-                ? new Vector3(15.2f, 3.25f, 12f)
-                : new Vector3(8.2f, 5f, 8.2f);
-            AddModel(west, facadePath, $"FacadeWest{i}", facadeScale,
-                new Vector3(2.9f, -5f, z), -Mathf.Pi / 2f);
-            AddModel(east, facades[(i + 4) % facades.Length], $"FacadeEast{i}", facadeScale,
-                new Vector3(-2.9f, -5f, z), Mathf.Pi / 2f);
+            var eastFacade = facades[(i + 4) % facades.Length];
+            var westPosition = WestFacadeStart + new Vector3(0f, 0f, i * EastWestFacadeSpacing);
+            var eastPosition = EastFacadeStart + new Vector3(0f, 0f, i * EastWestFacadeSpacing);
+            AddModel(west, new ModelPlacement(facadePath, $"FacadeWest{i}",
+                FacadeScale(facadePath, EastWestFacadeScale, EastWestLowDetailScale), westPosition, -Mathf.Pi / 2f));
+            AddModel(east, new ModelPlacement(eastFacade, $"FacadeEast{i}",
+                FacadeScale(eastFacade, EastWestFacadeScale, EastWestLowDetailScale), eastPosition, Mathf.Pi / 2f));
         }
     }
 
@@ -167,7 +199,7 @@ public sealed partial class CityArtDirector : Node3D
             return;
         }
 
-        var meshInstance = FindMeshDescendant(prototype);
+        var meshInstance = GetMeshInstance(prototype);
         if (meshInstance?.Mesh is null)
         {
             prototype.Free();
@@ -276,7 +308,7 @@ public sealed partial class CityArtDirector : Node3D
             return null;
         }
 
-        var mesh = FindMeshDescendant(prototype)?.Mesh;
+        var mesh = GetMeshInstance(prototype)?.Mesh;
         prototype.Free();
         if (mesh is null)
             GD.PushError($"{Name}: malha '{meshName}' não encontrada em {assetPath}");
@@ -308,10 +340,8 @@ public sealed partial class CityArtDirector : Node3D
         if (region is null)
             return;
 
-        AddParkedCar(region, "ParkedSedan", Cars + "sedan.glb",
-            new Vector3(-13f, 0f, -16f), new Vector3(1.4f, 1.2f, 1.1f));
-        AddParkedCar(region, "ParkedSuv", Cars + "suv.glb",
-            new Vector3(13f, 0f, 15.2f), new Vector3(1.4f, 1.2f, 1.1f));
+        AddParkedCar(region, "ParkedSedan", Cars + "sedan.glb", ParkedSedanPosition, ParkedCarScale);
+        AddParkedCar(region, "ParkedSuv", Cars + "suv.glb", ParkedSuvPosition, ParkedCarScale);
     }
 
     private void AddParkedCar(Node3D region, string nodeName, string assetPath, Vector3 position, Vector3 scale)
@@ -331,26 +361,28 @@ public sealed partial class CityArtDirector : Node3D
         };
         car.AddChild(collider);
         region.AddChild(car);
-        AddModel(car, assetPath, "Visual", scale, new Vector3(0f, 0.36f, 0f));
+        AddModel(car, new ModelPlacement(assetPath, "Visual", scale, new Vector3(0f, 0.36f, 0f)));
     }
 
-    private void AddModel(Node3D parent, string assetPath, string nodeName, Vector3 scale,
-        Vector3 position, float yaw = 0f)
+    private void AddModel(Node3D parent, ModelPlacement placement)
     {
-        var packed = GD.Load<PackedScene>(assetPath);
+        var packed = GD.Load<PackedScene>(placement.AssetPath);
         if (packed is null)
         {
-            GD.PushError($"{Name}: asset urbano não carregou: {assetPath}");
+            GD.PushError($"{Name}: asset urbano não carregou: {placement.AssetPath}");
             return;
         }
 
         var model = packed.Instantiate<Node3D>();
-        model.Name = nodeName;
-        model.Position = position;
-        model.Rotation = new Vector3(0f, yaw, 0f);
-        model.Scale = scale;
+        model.Name = placement.NodeName;
+        model.Position = placement.Position;
+        model.Rotation = new Vector3(0f, placement.Yaw, 0f);
+        model.Scale = placement.Scale;
         parent.AddChild(model);
     }
+
+    private static Vector3 FacadeScale(string assetPath, Vector3 standardScale, Vector3 lowDetailScale) =>
+        assetPath.Contains("low-detail", System.StringComparison.Ordinal) ? lowDetailScale : standardScale;
 
     private static void BuildScaffold(Node3D scaffold)
     {
@@ -427,17 +459,13 @@ public sealed partial class CityArtDirector : Node3D
     private T? GetSceneNode<T>(string name) where T : Node =>
         _sceneNodes.TryGetValue(name, out var node) ? node as T : null;
 
-    private static MeshInstance3D? FindMeshDescendant(Node root)
+    private static MeshInstance3D? GetMeshInstance(Node root)
     {
-        if (root is MeshInstance3D mesh)
-            return mesh;
+        // Os GLBs modulares da Kenney importam uma malha como único filho direto.
+        // Não percorra a árvore: se o formato do asset mudar, falhe explicitamente.
+        if (root is MeshInstance3D rootMesh)
+            return rootMesh;
 
-        for (var index = 0; index < root.GetChildCount(); index++)
-        {
-            if (FindMeshDescendant(root.GetChild(index)) is { } found)
-                return found;
-        }
-
-        return null;
+        return root.GetChildCount() == 1 ? root.GetChild(0) as MeshInstance3D : null;
     }
 }

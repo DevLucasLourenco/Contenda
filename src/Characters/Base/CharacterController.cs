@@ -375,6 +375,9 @@ public sealed partial class CharacterController : CharacterBody3D
             case AttackTelegraphComponent tel:
                 Context!.AttackTelegraph = tel;
                 break;
+            case EliteMarkerComponent eliteMarker:
+                Context!.EliteMarker = eliteMarker;
+                break;
             case PlayerInputController e:
                 _entrada = e;
                 break;

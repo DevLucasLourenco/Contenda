@@ -259,6 +259,7 @@ shadow_enabled = true
 directional_shadow_max_distance = 80.0
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+unique_name_in_owner = true
 navigation_mesh = ExtResource("4_nav")
 
 ; ── PRAÇA (nível −1.0 m) ───────────────────────────────────────────────
@@ -499,6 +500,7 @@ shape = SubResource("Shape_degrau_lo")
 ; ── RUAS (nível 0.0 m) ─────────────────────────────────────────────────
 
 [node name="RuaNorteOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.25, -13.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteOeste"]
 mesh = SubResource("Mesh_arm_norte_o")
@@ -506,6 +508,7 @@ mesh = SubResource("Mesh_arm_norte_o")
 shape = SubResource("Shape_arm_norte_o")
 
 [node name="RuaNorteLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, -0.25, -13.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteLeste"]
 mesh = SubResource("Mesh_arm_norte_l")
@@ -513,6 +516,7 @@ mesh = SubResource("Mesh_arm_norte_l")
 shape = SubResource("Shape_arm_norte_l")
 
 [node name="RuaNorteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, -0.25, -16.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaNorteNotch"]
 mesh = SubResource("Mesh_arm_notch_norte")
@@ -520,6 +524,7 @@ mesh = SubResource("Mesh_arm_notch_norte")
 shape = SubResource("Shape_arm_notch_norte")
 
 [node name="RuaSulOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, -0.25, 12)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulOeste"]
 mesh = SubResource("Mesh_arm_side_sul")
@@ -527,6 +532,7 @@ mesh = SubResource("Mesh_arm_side_sul")
 shape = SubResource("Shape_arm_side_sul")
 
 [node name="RuaSulLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, -0.25, 12)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulLeste"]
 mesh = SubResource("Mesh_arm_side_sul")
@@ -534,6 +540,7 @@ mesh = SubResource("Mesh_arm_side_sul")
 shape = SubResource("Shape_arm_side_sul")
 
 [node name="RuaSulNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 15)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaSulNotch"]
 mesh = SubResource("Mesh_arm_notch_sul")
@@ -541,6 +548,7 @@ mesh = SubResource("Mesh_arm_notch_sul")
 shape = SubResource("Shape_arm_notch_sul")
 
 [node name="RuaOesteSul" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.25, -5.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteSul"]
 mesh = SubResource("Mesh_arm_side_lo")
@@ -548,6 +556,7 @@ mesh = SubResource("Mesh_arm_side_lo")
 shape = SubResource("Shape_arm_side_lo")
 
 [node name="RuaOesteNorte" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.25, 5.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteNorte"]
 mesh = SubResource("Mesh_arm_side_lo")
@@ -555,6 +564,7 @@ mesh = SubResource("Mesh_arm_side_lo")
 shape = SubResource("Shape_arm_side_lo")
 
 [node name="RuaOesteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, -0.25, 0)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaOesteNotch"]
 mesh = SubResource("Mesh_arm_notch_lo")
@@ -562,6 +572,7 @@ mesh = SubResource("Mesh_arm_notch_lo")
 shape = SubResource("Shape_arm_notch_lo")
 
 [node name="RuaLesteSul" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, -5.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteSul"]
 mesh = SubResource("Mesh_arm_side_lo")
@@ -569,6 +580,7 @@ mesh = SubResource("Mesh_arm_side_lo")
 shape = SubResource("Shape_arm_side_lo")
 
 [node name="RuaLesteNorte" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, 5.5)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteNorte"]
 mesh = SubResource("Mesh_arm_side_lo")
@@ -576,6 +588,7 @@ mesh = SubResource("Mesh_arm_side_lo")
 shape = SubResource("Shape_arm_side_lo")
 
 [node name="RuaLesteNotch" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -0.25, 0)
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/RuaLesteNotch"]
 mesh = SubResource("Mesh_arm_notch_lo")
@@ -585,6 +598,7 @@ shape = SubResource("Shape_arm_notch_lo")
 ; ── CALÇADAS (nível +0.2 m), flanqueando a praça a leste/oeste ─────────
 
 [node name="CalcadaOeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, -0.05, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/CalcadaOeste"]
@@ -594,6 +608,7 @@ mesh = SubResource("Mesh_calcada")
 shape = SubResource("Shape_calcada")
 
 [node name="CalcadaLeste" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, -0.05, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/CalcadaLeste"]
@@ -607,6 +622,7 @@ shape = SubResource("Shape_calcada")
 ; (que ocupa x ∈ [-7,-1]) -- ver a Implementação do ticket 21.
 
 [node name="Conteiner" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.75, -12)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Conteiner"]
@@ -616,6 +632,7 @@ mesh = SubResource("Mesh_conteiner")
 shape = SubResource("Shape_conteiner")
 
 [node name="Onibus" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.65, -12)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Onibus"]
@@ -625,6 +642,7 @@ mesh = SubResource("Mesh_onibus")
 shape = SubResource("Shape_onibus")
 
 [node name="Andaime" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.75, -11.5)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Andaime"]
@@ -643,6 +661,7 @@ mesh = SubResource("Mesh_saliencia")
 shape = SubResource("Shape_saliencia")
 
 [node name="Cacamba" type="StaticBody3D" parent="NavigationRegion3D"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.6, 12)
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Cacamba"]
@@ -695,6 +714,7 @@ bidirectional = true
 ; espaço da varanda/telhado sem enterrá-la dentro da massa sólida.
 
 [node name="PredioNorte" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -26)
 
 [node name="Mesh" type="MeshInstance3D" parent="PredioNorte"]
@@ -704,6 +724,7 @@ mesh = SubResource("Mesh_predio_ns")
 shape = SubResource("Shape_predio_ns")
 
 [node name="PredioSul" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 23)
 
 [node name="Mesh" type="MeshInstance3D" parent="PredioSul"]
@@ -713,6 +734,7 @@ mesh = SubResource("Mesh_predio_ns")
 shape = SubResource("Shape_predio_ns")
 
 [node name="PredioOeste" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 5, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="PredioOeste"]
@@ -722,6 +744,7 @@ mesh = SubResource("Mesh_predio_lo")
 shape = SubResource("Shape_predio_lo")
 
 [node name="PredioLeste" type="StaticBody3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 5, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="PredioLeste"]

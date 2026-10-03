@@ -29,6 +29,11 @@ public sealed partial class UrbanArenaProbe : Node
     [Export(PropertyHint.File, "*.tscn")]
     public string ScenePath { get; set; } = "res://scenes/arena/Arena.tscn";
 
+    [Export] public NodePath FadePath { get; set; } = new("Arena/CameraRig/CameraOcclusionFader");
+    [Export] public NodePath ContainerMeshPath { get; set; } = new("Arena/NavigationRegion3D/Conteiner/Visual/shipping-container-a");
+    [Export] public NodePath CameraPath { get; set; } = new("Arena/CameraRig/CombatCamera");
+    [Export] public NodePath PlayerPath { get; set; } = new("Arena/Jogador");
+
     private readonly List<string> _falhas = [];
     private Rid _mapa;
     private CameraOcclusionFader? _fade;
@@ -51,6 +56,7 @@ public sealed partial class UrbanArenaProbe : Node
         }
 
         var arena = packed.Instantiate<Node3D>();
+        arena.Name = "Arena";
         var segundoOclusor = new StaticBody3D
         {
             Name = "ProbeSecondOccluder",
@@ -71,6 +77,7 @@ public sealed partial class UrbanArenaProbe : Node
         });
         arena.AddChild(segundoOclusor);
         AddChild(arena);
+        CachearReferenciasDaCena();
     }
 
     public override void _PhysicsProcess(double delta)
@@ -157,13 +164,6 @@ public sealed partial class UrbanArenaProbe : Node
     /// </remarks>
     private void PrepararChecagemDeFade()
     {
-        _fade = ProcurarFade(GetTree().Root);
-        _malhaDoConteiner = GetTree().Root.FindChild("Conteiner", true, false) is Node conteiner
-            ? conteiner.GetNodeOrNull<Node3D>("Visual/shipping-container-a") as MeshInstance3D
-            : null;
-        _camera = GetTree().Root.FindChild("CombatCamera", true, false) as Node3D;
-        _jogador = GetTree().Root.FindChild("Jogador", true, false) as Node3D;
-
         if (_fade is null || _malhaDoConteiner is null || _camera is null || _jogador is null)
         {
             Verificar(false, "CameraOcclusionFader, a malha do Contêiner, a câmera ou o jogador não resolveram.");
@@ -200,18 +200,12 @@ public sealed partial class UrbanArenaProbe : Node
             $"o fader não deveria mover a câmera para desviar do oclusor (deslocamento {movimentoDaCamera:0.000} m).");
     }
 
-    private static CameraOcclusionFader? ProcurarFade(Node no)
+    private void CachearReferenciasDaCena()
     {
-        if (no is CameraOcclusionFader fader)
-            return fader;
-
-        foreach (var filho in no.GetChildren())
-        {
-            if (ProcurarFade(filho) is { } achado)
-                return achado;
-        }
-
-        return null;
+        _fade = GetNodeOrNull<CameraOcclusionFader>(FadePath);
+        _malhaDoConteiner = GetNodeOrNull<MeshInstance3D>(ContainerMeshPath);
+        _camera = GetNodeOrNull<Node3D>(CameraPath);
+        _jogador = GetNodeOrNull<Node3D>(PlayerPath);
     }
 
     private void Verificar(bool condicao, string mensagem)

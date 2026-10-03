@@ -34,6 +34,9 @@ public sealed partial class EliteMarkerComponent : Node, ICharacterComponent
     /// <summary>Se este inimigo é uma elite. Para o probe/depuração.</summary>
     public bool IsElite { get; private set; }
 
+    /// <summary>A silhueta geométrica opcional de elite ou chefe.</summary>
+    public Node3D? Silhouette => _silhuetaElite;
+
     public override void _Ready()
     {
         _placeholder = GetNodeOrNull<MeshInstance3D>(MeshPath);

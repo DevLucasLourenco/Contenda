@@ -31,6 +31,47 @@ namespace Contenda.Camera;
 /// </remarks>
 public sealed partial class CameraOcclusionFader : Node
 {
+    private readonly struct GeometryAccess
+    {
+        private readonly MeshInstance3D? _meshInstance;
+        private readonly MultiMeshInstance3D? _multiMeshInstance;
+
+        private GeometryAccess(MeshInstance3D meshInstance)
+        {
+            _meshInstance = meshInstance;
+            _multiMeshInstance = null;
+        }
+
+        private GeometryAccess(MultiMeshInstance3D multiMeshInstance)
+        {
+            _meshInstance = null;
+            _multiMeshInstance = multiMeshInstance;
+        }
+
+        public static GeometryAccess From(GeometryInstance3D instance) => instance switch
+        {
+            MeshInstance3D mesh => new GeometryAccess(mesh),
+            MultiMeshInstance3D multiMesh => new GeometryAccess(multiMesh),
+            _ => default
+        };
+
+        public Mesh? Mesh => _meshInstance?.Mesh ?? _multiMeshInstance?.Multimesh?.Mesh;
+        public bool IsMultiMesh => _multiMeshInstance is not null;
+        public int SurfaceKey(int surface) => IsMultiMesh ? -1 : surface;
+
+        public Material? GetOverride(int surface) => _meshInstance is not null
+            ? _meshInstance.GetSurfaceOverrideMaterial(surface)
+            : surface < 0 ? _multiMeshInstance?.MaterialOverride : null;
+
+        public void SetOverride(int surface, Material? material)
+        {
+            if (_meshInstance is not null)
+                _meshInstance.SetSurfaceOverrideMaterial(surface, material);
+            else if (_multiMeshInstance is not null && surface < 0)
+                _multiMeshInstance.MaterialOverride = material;
+        }
+    }
+
     /// <summary>A câmera de onde o raio parte.</summary>
     [Export] public NodePath CameraPath { get; set; } = new();
 
@@ -171,18 +212,19 @@ public sealed partial class CameraOcclusionFader : Node
 
         foreach (var instancia in instancias)
         {
-            var malha = MalhaDa(instancia);
+            var geometry = GeometryAccess.From(instancia);
+            var malha = geometry.Mesh;
             if (!instancia.Visible || malha is null)
                 continue;
 
             for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
             {
-                if (instancia is MultiMeshInstance3D && superficie > 0)
+                if (geometry.IsMultiMesh && superficie > 0)
                     break;
 
-                var chaveSuperficie = instancia is MultiMeshInstance3D ? -1 : superficie;
+                var chaveSuperficie = geometry.SurfaceKey(superficie);
                 var materialBase = instancia.MaterialOverride
-                    ?? ObterOverrideDeSuperficie(instancia, chaveSuperficie)
+                    ?? geometry.GetOverride(chaveSuperficie)
                     ?? malha.SurfaceGetMaterial(superficie);
                 if (materialBase is not BaseMaterial3D materialBase3D)
                     continue;
@@ -191,10 +233,10 @@ public sealed partial class CameraOcclusionFader : Node
                 if (!_materiaisDeFade.TryGetValue(key, out var materialFade))
                     continue;
 
-                var overrideAnterior = ObterOverrideDeSuperficie(instancia, chaveSuperficie);
+                var overrideAnterior = geometry.GetOverride(chaveSuperficie);
                 var corBase = materialFade.AlbedoColor;
                 materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
-                DefinirOverrideDeSuperficie(instancia, chaveSuperficie, materialFade);
+                geometry.SetOverride(chaveSuperficie, materialFade);
                 _overridesAnteriores.Add((instancia, chaveSuperficie, overrideAnterior));
             }
         }
@@ -205,7 +247,7 @@ public sealed partial class CameraOcclusionFader : Node
         foreach (var (instancia, superficie, overrideAnterior) in _overridesAnteriores)
         {
             if (GodotObject.IsInstanceValid(instancia))
-                DefinirOverrideDeSuperficie(instancia, superficie, overrideAnterior);
+                GeometryAccess.From(instancia).SetOverride(superficie, overrideAnterior);
         }
 
         _overridesAnteriores.Clear();
@@ -245,8 +287,9 @@ public sealed partial class CameraOcclusionFader : Node
             _geometriasPorOclusor.Add(oclusor, fotografadas);
             foreach (var instancia in fotografadas)
             {
-                if (MalhaDa(instancia) is { } malha)
-                    capacidade += instancia is MultiMeshInstance3D ? 1 : malha.GetSurfaceCount();
+                var geometry = GeometryAccess.From(instancia);
+                if (geometry.Mesh is { } malha)
+                    capacidade += geometry.IsMultiMesh ? 1 : malha.GetSurfaceCount();
             }
         }
 
@@ -255,18 +298,19 @@ public sealed partial class CameraOcclusionFader : Node
         foreach (var instancias in _geometriasPorOclusor.Values)
         foreach (var instancia in instancias)
         {
-            var malha = MalhaDa(instancia);
+            var geometry = GeometryAccess.From(instancia);
+            var malha = geometry.Mesh;
             if (malha is null)
                 continue;
 
             for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
             {
-                if (instancia is MultiMeshInstance3D && superficie > 0)
+                if (geometry.IsMultiMesh && superficie > 0)
                     break;
 
-                var chaveSuperficie = instancia is MultiMeshInstance3D ? -1 : superficie;
+                var chaveSuperficie = geometry.SurfaceKey(superficie);
                 var materialBase = instancia.MaterialOverride
-                    ?? ObterOverrideDeSuperficie(instancia, chaveSuperficie)
+                    ?? geometry.GetOverride(chaveSuperficie)
                     ?? malha.SurfaceGetMaterial(superficie);
                 if (materialBase is not BaseMaterial3D materialBase3D)
                     continue;
@@ -278,31 +322,4 @@ public sealed partial class CameraOcclusionFader : Node
         }
     }
 
-    private static Mesh? MalhaDa(GeometryInstance3D instancia) => instancia switch
-    {
-        MeshInstance3D malha => malha.Mesh,
-        MultiMeshInstance3D multimalha => multimalha.Multimesh?.Mesh,
-        _ => null
-    };
-
-    private static Material? ObterOverrideDeSuperficie(GeometryInstance3D instancia, int superficie) => instancia switch
-    {
-        MeshInstance3D malha => malha.GetSurfaceOverrideMaterial(superficie),
-        MultiMeshInstance3D multimalha when superficie < 0 => multimalha.MaterialOverride,
-        _ => null
-    };
-
-    private static void DefinirOverrideDeSuperficie(GeometryInstance3D instancia, int superficie, Material? material)
-    {
-        switch (instancia)
-        {
-            case MeshInstance3D malha:
-                malha.SetSurfaceOverrideMaterial(superficie, material);
-                break;
-            case MultiMeshInstance3D multimalha:
-                if (superficie < 0)
-                    multimalha.MaterialOverride = material;
-                break;
-        }
-    }
 }
