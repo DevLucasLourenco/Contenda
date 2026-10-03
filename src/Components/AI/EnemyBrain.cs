@@ -205,8 +205,7 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         }
 
         var corpo = _contexto!.Body;
-        var velocidadeReal = corpo.GetRealVelocity();
-        var velocidadeHorizontal = new Vector2(velocidadeReal.X, velocidadeReal.Z).Length();
+        var velocidadeHorizontal = ObterVelocidadeHorizontal(corpo);
         _relogioDeTravamento.Advance(
             delta,
             isChasing: _maquina.Estado == EnemyState.Chase,
@@ -279,12 +278,17 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             || _contexto is not { } contexto)
             return false;
 
-        var velocidadeReal = contexto.Body.GetRealVelocity();
-        var velocidadeHorizontal = new Vector2(velocidadeReal.X, velocidadeReal.Z).Length();
+        var velocidadeHorizontal = ObterVelocidadeHorizontal(contexto.Body);
         if (velocidadeHorizontal >= MinimumProgressSpeed)
             return false;
 
         return _relogioDeTravamento.TryMarkForRemoval(timeoutSeconds);
+    }
+
+    private static float ObterVelocidadeHorizontal(CharacterBody3D corpo)
+    {
+        var velocidadeReal = corpo.GetRealVelocity();
+        return new Vector2(velocidadeReal.X, velocidadeReal.Z).Length();
     }
 
     /// <summary>
