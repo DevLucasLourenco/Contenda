@@ -68,11 +68,20 @@ public sealed partial class RevolverProbe : Node
             return;
         }
 
-        _jogador.Context.Combat.HitLanded += _ => _acertos++;
-        _jogador.Context.Combat.AttackStarted += _ => _disparosBasicos++;
+        _jogador.Context.Combat.HitLanded += OnHitLanded;
+        _jogador.Context.Combat.AttackStarted += OnAttackStarted;
         _vidaAntes = _alvo.Context.Health.Current;
 
         GD.Print($"[revolver] jogador e alvo prontos; vida do alvo {_vidaAntes:0}");
+    }
+
+    public override void _ExitTree()
+    {
+        if (_jogador?.Context?.Combat is not { } combat)
+            return;
+
+        combat.HitLanded -= OnHitLanded;
+        combat.AttackStarted -= OnAttackStarted;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -233,6 +242,10 @@ public sealed partial class RevolverProbe : Node
             GlobalPosition = posicao,
         });
     }
+
+    private void OnHitLanded(Node3D _) => _acertos++;
+
+    private void OnAttackStarted(int _) => _disparosBasicos++;
 
     private void Verificar(bool condicao, string mensagem)
     {

@@ -357,9 +357,13 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
             return;
 
         _playerAimActive = mirando;
+        var aimClip = new StringName();
+        if (mirando && _animationSet is { } animationSet)
+            aimClip = animationSet.Alert;
+
         Play(
             AnimationLayer.Alert,
-            mirando ? _animationSet!.Alert : new StringName(),
+            aimClip,
             mirando ? AnimationNodeOneShot.OneShotRequest.Fire : AnimationNodeOneShot.OneShotRequest.Abort);
     }
 
