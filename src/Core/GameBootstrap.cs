@@ -18,6 +18,9 @@ namespace Contenda.Core;
 /// </remarks>
 public sealed partial class GameBootstrap : Node
 {
+    private const string BenchmarkArgument = "--bench=40enemies";
+    private const string BenchmarkScenePath = "res://scenes/debug/PerformanceBench.tscn";
+
     /// <summary>Caminho do HUD, carregado uma vez no boot.</summary>
     [Export(PropertyHint.File, "*.tscn")]
     public string HudScenePath { get; set; } = "res://scenes/ui/hud/Hud.tscn";
@@ -74,7 +77,44 @@ public sealed partial class GameBootstrap : Node
         AdicionarNaRaiz(LoadingScenePath, "a tela de carregamento");
         AdicionarNaRaiz(PauseScenePath, "o menu de pause");
 
+        if (BenchmarkSolicitado())
+            CallDeferred(nameof(IniciarBenchmark));
+
         GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
+    }
+
+    private static bool BenchmarkSolicitado()
+    {
+        var argumentos = OS.GetCmdlineUserArgs();
+        foreach (var argumento in argumentos)
+        {
+            if (argumento == BenchmarkArgument)
+            {
+                GD.Print("[boot] cenário de benchmark solicitado por argumento de usuário");
+                return true;
+            }
+        }
+
+        foreach (var argumento in OS.GetCmdlineArgs())
+        {
+            if (argumento == BenchmarkArgument)
+            {
+                GD.Print("[boot] cenário de benchmark solicitado por argumento de linha de comando");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void IniciarBenchmark()
+    {
+        var erro = GetTree().ChangeSceneToFile(BenchmarkScenePath);
+        if (erro != Error.Ok)
+        {
+            GD.PushError($"Não consegui abrir o cenário de benchmark: {erro}.");
+            GetTree().Quit(1);
+        }
     }
 
     private void AdicionarNaRaiz(string caminho, string descricao)

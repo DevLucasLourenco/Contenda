@@ -27,17 +27,19 @@ public sealed partial class MenuProbe : Node
 {
     private const string MenuPath = "res://scenes/ui/menus/MainMenu.tscn";
     private const int CiclosDeNavegacao = 20;
-    private const int VoltasMenuPartidaMenu = 4;
+    private const int VoltasMenuPartidaMenu = 25;
 
     private bool _ehPiloto;
     private readonly List<string> _falhas = [];
     private readonly List<SceneLoadProgressEvent> _andamento = [];
     private bool _telaDeCarregamentoApareceu;
+    private int _transicoesDeCenaConfirmadas;
 
     public override void _Ready()
     {
         if (_ehPiloto)
         {
+            GetTree().SceneChanged += AoMudarCena;
             ServiceLocator.Events.SceneLoadProgress += AoAndarOCarregamento;
             _ = RodarComSeguranca();
             return;
@@ -52,8 +54,13 @@ public sealed partial class MenuProbe : Node
     public override void _ExitTree()
     {
         if (_ehPiloto)
+        {
+            GetTree().SceneChanged -= AoMudarCena;
             ServiceLocator.Events.SceneLoadProgress -= AoAndarOCarregamento;
+        }
     }
+
+    private void AoMudarCena() => _transicoesDeCenaConfirmadas++;
 
     private void IrParaOMenu() => GetTree().ChangeSceneToFile(MenuPath);
 
@@ -264,9 +271,17 @@ public sealed partial class MenuProbe : Node
             nosDepoisDoCiclo.Add(NosNaArvore());
         }
 
-        // A primeira volta cria estoque (pool de inimigos); as seguintes não podem crescer.
-        Verificar(nosDepoisDoCiclo[^1] == nosDepoisDoCiclo[^2] && nosDepoisDoCiclo[^2] == nosDepoisDoCiclo[^3],
-            $"menu -> partida -> menu não deveria acumular nós entre voltas; {string.Join(" -> ", nosDepoisDoCiclo)}");
+        Verificar(_transicoesDeCenaConfirmadas >= 50,
+            $"a sonda deveria confirmar ao menos 50 trocas de cena; contou {_transicoesDeCenaConfirmadas}");
+
+        // A primeira volta pode carregar nós compartilhados que ainda não
+        // existiam no menu; depois disso, nenhuma volta deve deixar lixo na árvore.
+        var contagemEstavel = nosDepoisDoCiclo[1];
+        for (var indice = 2; indice < nosDepoisDoCiclo.Count; indice++)
+        {
+            Verificar(nosDepoisDoCiclo[indice] == contagemEstavel,
+                $"a volta {indice + 1} mudou a árvore de nós: esperado {contagemEstavel}, ficou {nosDepoisDoCiclo[indice]}");
+        }
     }
 
     /// <summary>O pause de verdade: Esc congela, o HUD fica, configurações abrem e fecham, "sair" volta ao menu despausado.</summary>
@@ -474,7 +489,7 @@ public sealed partial class MenuProbe : Node
             return;
         }
 
-        GD.Print("[menu] todas as verificações passaram");
+        GD.Print($"[menu] todas as verificações passaram; transições de cena={_transicoesDeCenaConfirmadas}");
         GetTree().Quit();
     }
 }

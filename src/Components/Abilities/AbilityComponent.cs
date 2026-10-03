@@ -38,6 +38,7 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     [Export(PropertyHint.Range, "0.2,3,0.05")] public float SequenceTimeout { get; set; } = 1.20f;
 
     private readonly AbilityCooldownTracker _recargas = new();
+    private readonly Dictionary<StringName, string> _chavesDeRecarga = [];
 
     private CommandBuffer _buffer = new();
     private AbilityComboResolver<AbilityDefinition>? _resolver;
@@ -106,9 +107,11 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     public void Configure(CharacterDefinition definicao)
     {
         _habilidades = definicao.Abilities ?? [];
+        _chavesDeRecarga.Clear();
         // O áudio confirma a execução no quadro de física; prepare as vozes ao configurar o personagem.
         foreach (var habilidade in _habilidades)
         {
+            _chavesDeRecarga[habilidade.Id] = habilidade.Id.ToString();
             if (habilidade.CastSfx is { } sound)
                 ServiceLocator.Audio.PrepareStream3D(sound);
         }
@@ -178,10 +181,10 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     // --- execução ----------------------------------------------------------
 
     /// <summary>Quanto falta para esta habilidade recarregar, em segundos.</summary>
-    public float CooldownRemaining(StringName abilityId) => _recargas.RemainingAt(abilityId.ToString(), _relogio);
+    public float CooldownRemaining(StringName abilityId) => _recargas.RemainingAt(ChaveDeRecarga(abilityId), _relogio);
 
     /// <summary>Se esta habilidade já pode ser executada de novo.</summary>
-    public bool IsReady(StringName abilityId) => _recargas.IsReady(abilityId.ToString(), _relogio);
+    public bool IsReady(StringName abilityId) => _recargas.IsReady(ChaveDeRecarga(abilityId), _relogio);
 
     /// <summary>
     /// Tenta executar uma habilidade específica, validando os gates na ordem da spec 05 §2.
@@ -206,7 +209,7 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
         var resultado = AbilityGateEvaluator.Evaluate(
             alreadyCasting: _executando is not null,
             blockedByLock: (travas & ActionLock.Abilities) != 0,
-            onCooldown: !_recargas.IsReady(ability.Id.ToString(), _relogio));
+            onCooldown: !_recargas.IsReady(ChaveDeRecarga(ability.Id), _relogio));
 
         if (resultado != AbilityAttemptResult.Success)
             return Rejeitar(ability, resultado);
@@ -271,7 +274,7 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
         // Recarga começa no INÍCIO da execução, não no fim -- spec 05 §4. Uma
         // execução cancelada a meio caminho não devolve a recarga: ver
         // FinalizarExecucao.
-        _recargas.Start(ability.Id.ToString(), ability.Cooldown, _relogio);
+        _recargas.Start(ChaveDeRecarga(ability.Id), ability.Cooldown, _relogio);
         CooldownStarted?.Invoke(ability.Id, ability.Cooldown);
 
         _contexto.Combat?.ApplyLock(SelfLockSource, ability.LocksDuringCast, ability.CastTime + ability.RecoveryTime);
@@ -331,5 +334,15 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     {
         CancelCurrent();
         _buffer.Clear();
+    }
+
+    private string ChaveDeRecarga(StringName abilityId)
+    {
+        if (_chavesDeRecarga.TryGetValue(abilityId, out var key))
+            return key;
+
+        key = abilityId.ToString();
+        _chavesDeRecarga.Add(abilityId, key);
+        return key;
     }
 }

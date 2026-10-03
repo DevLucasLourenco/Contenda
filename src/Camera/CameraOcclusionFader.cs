@@ -89,7 +89,7 @@ public sealed partial class CameraOcclusionFader : Node
 
     private Camera3D? _camera;
     private Node3D? _alvo;
-    private PhysicsRayQueryParameters3D? _rayQuery;
+    private RayCast3D? _raycast;
     private readonly List<Node> _oclusoresAtuais = [];
     private readonly List<Node> _oclusoresOcultos = [];
     private readonly List<(GeometryInstance3D Instance, int Surface, Material? OriginalOverride)> _overridesAnteriores = [];
@@ -102,20 +102,20 @@ public sealed partial class CameraOcclusionFader : Node
     {
         _camera = GetNodeOrNull<Camera3D>(CameraPath);
         _alvo = GetNodeOrNull<Node3D>(TargetPath);
-        _rayQuery = PhysicsRayQueryParameters3D.Create(Vector3.Zero, Vector3.Zero, OcclusionMask);
+        _raycast = new RayCast3D
+        {
+            Name = "OcclusionRay",
+            Enabled = false,
+            CollisionMask = OcclusionMask,
+            CollideWithAreas = false,
+            CollideWithBodies = true,
+        };
+        AddChild(_raycast);
 
         IndexarGeometrias(GetTree().Root, null);
         PrepararMateriaisDeFade();
         _oclusoresAtuais.Capacity = _geometriasPorOclusor.Count;
         _oclusoresOcultos.Capacity = _geometriasPorOclusor.Count;
-
-        if (_rayQuery is not null)
-        {
-            var excluidos = _rayQuery.Exclude;
-            excluidos.Resize(_limiteDeOclusoresNoRaio);
-            excluidos.Clear();
-            _rayQuery.Exclude = excluidos;
-        }
 
         if (_camera is null)
         {
@@ -128,7 +128,6 @@ public sealed partial class CameraOcclusionFader : Node
     {
         if (_camera is null || _alvo is null)
             return;
-
 
         EncontrarOclusores(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
         if (MesmoConjuntoDeOclusores())
@@ -143,46 +142,33 @@ public sealed partial class CameraOcclusionFader : Node
         }
     }
 
-    /// <remarks>
-    /// Fronteira com a engine: <c>Godot.Collections.Dictionary</c> só aqui,
-    /// mesma disciplina de <c>Perception.LinhaDeVisaoLivre</c>.
-    /// </remarks>
+    /// <remarks>O raio e a lista de exceções são reutilizados entre quadros.</remarks>
     private void EncontrarOclusores(Vector3 origem, Vector3 alvo)
     {
         _oclusoresAtuais.Clear();
-        if (_rayQuery is null)
+        if (_raycast is null)
             return;
 
-        var espaco = _camera!.GetViewport().World3D.DirectSpaceState;
-        _rayQuery.From = origem;
-        _rayQuery.To = alvo;
-
-        // A coleção é parte da API de entrada exigida pela engine para excluir
-        // colisores já atingidos. Reutilizamos o buffer do próprio query em vez
-        // de criar uma Godot.Collections.Array a cada quadro.
-        var excluidos = _rayQuery.Exclude;
-        excluidos.Clear();
-        _rayQuery.Exclude = excluidos;
+        _raycast.GlobalPosition = origem;
+        _raycast.TargetPosition = _raycast.ToLocal(alvo);
+        _raycast.CollisionMask = OcclusionMask;
+        _raycast.ClearExceptions();
         for (var quantidadeDeTestes = 0; quantidadeDeTestes < _limiteDeOclusoresNoRaio; quantidadeDeTestes++)
         {
-            var resultado = espaco.IntersectRay(_rayQuery);
-            if (resultado.Count == 0)
+            _raycast.ForceRaycastUpdate();
+            if (!_raycast.IsColliding())
                 return;
 
             // O raio acerta o corpo de colisão, não a malha. A cidade pode ter
             // vários corpos com modelos entre a câmera e o jogador; coletamos
             // todos para que nenhum deles continue opaco.
-            var collider = resultado["collider"].As<CollisionObject3D>();
+            var collider = _raycast.GetCollider() as CollisionObject3D;
             if (collider is null)
                 return;
 
             if (_geometriasPorOclusor.ContainsKey(collider))
                 _oclusoresAtuais.Add(collider);
-            var rid = collider.GetRid();
-            if (excluidos.Contains(rid))
-                return;
-            excluidos.Add(rid);
-            _rayQuery.Exclude = excluidos;
+            _raycast.AddExceptionRid(collider.GetRid());
         }
     }
 
@@ -321,5 +307,4 @@ public sealed partial class CameraOcclusionFader : Node
             }
         }
     }
-
 }

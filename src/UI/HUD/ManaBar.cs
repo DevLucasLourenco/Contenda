@@ -20,6 +20,10 @@ namespace Contenda.UI.HUD;
 /// </remarks>
 public sealed partial class ManaBar : Control
 {
+    private static readonly StringName ManaColor = new("mana");
+    private static readonly StringName ManaLowColor = new("mana_low");
+    private static readonly StringName HudPalette = new("HudPalette");
+
     /// <summary>O preenchimento, que encolhe pela esquerda.</summary>
     [Export] public NodePath FillPath { get; set; } = new();
 
@@ -104,7 +108,7 @@ public sealed partial class ManaBar : Control
         var formaAtiva = _formas?.Active;
         if (formaAtiva is null)
         {
-            _preenchimento.SelfModulate = GetThemeColor("mana", "HudPalette");
+            _preenchimento.SelfModulate = GetThemeColor(ManaColor, HudPalette);
             return;
         }
 
@@ -112,7 +116,7 @@ public sealed partial class ManaBar : Control
         if (_mana.Percent < 0.15f)
         {
             var pulso = 0.25f + (Mathf.Sin(_tempo * 8f) + 1f) * 0.375f;
-            cor = cor.Lerp(GetThemeColor("mana_low", "HudPalette"), pulso);
+            cor = cor.Lerp(GetThemeColor(ManaLowColor, HudPalette), pulso);
         }
 
         _preenchimento.SelfModulate = cor;

@@ -30,7 +30,8 @@ executáveis para Windows, Linux e macOS. **Build 0.1.**
 
 ### 2. Performance
 
-- [ ] `--bench=40enemies` com p50/p99 de frame time
+- [x] `--bench=40enemies` com p50/p99 de frame time
+      (harness repetível e relatório CSV; execução headless de 60 s no ticket 38)
 - [ ] Comparar com o orçamento da [spec 15](../specs/15-qualidade-testes-e-performance.md) §3
 - [ ] Profiler: render, física, IA, animação, gameplay, UI
 - [ ] Eliminar alocação por frame no hot path
@@ -38,11 +39,16 @@ executáveis para Windows, Linux e macOS. **Build 0.1.**
 - [ ] Testar em hardware mais fraco que a máquina de referência
 - [ ] Verificar VRAM ≤ 1.5 GB
 
+**Validação parcial em 2026-10-03:** o benchmark de 40 inimigos só foi medido
+headless, portanto a comparação com o orçamento gráfico da spec 15 segue
+pendente. Os tempos, alocações restantes e validações manuais estão registrados
+no [ticket 38](../../.scratch/contenda-m0-m9/issues/38-desempenho-e-estabilidade.md).
+
 ### 3. Estabilidade
 
 - [ ] Sessão de 30 minutos sem crash nem vazamento
-- [ ] Reciclagem de 500 inimigos sem degradação
-- [ ] 50 transições de cena sem vazar nó
+- [x] Reciclagem de 500 inimigos sem degradação (500 ciclos reais de `Acquire/Release` aprovados)
+- [x] 50 transições de cena sem vazar nó (79 transições confirmadas; contagem de nós estável)
 - [ ] Alt-tab, mudança de resolução e troca de monitor durante o jogo
 - [ ] Todos os casos de borda das configurações
 - [ ] Rodar com `settings.cfg` e `profile.cfg` corrompidos

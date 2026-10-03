@@ -93,6 +93,12 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
     /// </summary>
     internal EnemyPool? Pool { get; set; }
 
+    public override void _Ready()
+    {
+        _percepcao = new Perception(GetNodeOrNull<RayCast3D>("VisionRay")
+            ?? throw new InvalidOperationException($"{Name}: VisionRay não resolveu para RayCast3D."));
+    }
+
     public void Bind(CharacterContext contexto)
     {
         if (_contexto?.Health is not null)
@@ -109,7 +115,6 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
             _contexto.Health.Died += AoMorrer;
         }
 
-        _percepcao ??= new Perception(this);
     }
 
     /// <remarks>

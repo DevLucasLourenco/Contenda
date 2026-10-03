@@ -9,6 +9,9 @@ namespace Contenda.UI.HUD;
 /// <summary>Mostra seleção, forma ativa e dreno no HUD.</summary>
 public sealed partial class TransformationSelector : Control
 {
+    private static readonly StringName ActiveFrameVariation = new("ActiveFormFrame");
+    private static readonly StringName DefaultFrameVariation = new("HUDFrame");
+
     [Export] public NodePath LabelPath { get; set; } = new("Texto");
 
     [Export] public NodePath FramePath { get; set; } = new("Painel");
@@ -144,13 +147,13 @@ public sealed partial class TransformationSelector : Control
 
         if (_forms?.Active is { } active)
         {
-            _frame.ThemeTypeVariation = "ActiveFormFrame";
+            _frame.ThemeTypeVariation = ActiveFrameVariation;
             var brilho = 0.72f + (Mathf.Sin(_tempoPulso * 8f) + 1f) * 0.14f;
             _frame.SelfModulate = active.ThemeColor with { A = brilho };
         }
         else
         {
-            _frame.ThemeTypeVariation = "HUDFrame";
+            _frame.ThemeTypeVariation = DefaultFrameVariation;
             _frame.SelfModulate = Colors.White;
         }
     }

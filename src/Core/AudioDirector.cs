@@ -113,6 +113,7 @@ public sealed partial class AudioDirector : Node
     private readonly Dictionary<StringName, VoicePool3D> _spatialPools = new();
     private readonly Dictionary<StringName, VoicePool2D> _uiPools = new();
     private readonly Dictionary<AudioStream, VoicePool3D> _streamPools = new();
+    private readonly Dictionary<AudioStream, string> _resourcePaths = new();
     private readonly AudioStreamPlayer[] _musicPlayers = new AudioStreamPlayer[2];
     private AudioStreamPlayer? _ambiencePlayer;
     private int _activeMusic = -1;
@@ -172,6 +173,29 @@ public sealed partial class AudioDirector : Node
         ServiceLocator.Events.EnemyKilled -= AoAbaterInimigo;
         ServiceLocator.Events.MatchEnded -= AoTerminarPartida;
         ServiceLocator.Events.WaveAnnounced -= AoAnunciarOnda;
+
+        foreach (var pool in _spatialPools.Values)
+            pool.StopAll();
+        foreach (var pool in _uiPools.Values)
+            pool.StopAll();
+        foreach (var pool in _streamPools.Values)
+            pool.StopAll();
+        foreach (var player in _musicPlayers)
+        {
+            player.Stop();
+            player.Stream = null;
+        }
+
+        if (_ambiencePlayer is not null)
+        {
+            _ambiencePlayer.Stop();
+            _ambiencePlayer.Stream = null;
+        }
+
+        _spatialPools.Clear();
+        _uiPools.Clear();
+        _streamPools.Clear();
+        _resourcePaths.Clear();
     }
 
     /// <summary>Toca um cue posicional. Se as três vozes ocuparem, descarta a nova reprodução.</summary>
@@ -332,6 +356,12 @@ public sealed partial class AudioDirector : Node
 
     private VoicePool3D CriarPool3D(AudioStream[] streams, string bus)
     {
+        foreach (var stream in streams)
+        {
+            if (!_resourcePaths.ContainsKey(stream))
+                _resourcePaths.Add(stream, stream.ResourcePath);
+        }
+
         var players = new AudioStreamPlayer3D[VoicesPerCue];
         for (var i = 0; i < players.Length; i++)
         {
@@ -405,15 +435,14 @@ public sealed partial class AudioDirector : Node
 
     private int PlayingInstancesOf(AudioStream stream)
     {
-        var resourcePath = stream.ResourcePath;
-        if (string.IsNullOrEmpty(resourcePath))
+        if (!_resourcePaths.TryGetValue(stream, out var resourcePath) || string.IsNullOrEmpty(resourcePath))
             return 0;
 
         var count = 0;
         foreach (var pool in _spatialPools.Values)
-            count += pool.CountPlaying(resourcePath);
+            count += pool.CountPlaying(resourcePath, _resourcePaths);
         foreach (var pool in _streamPools.Values)
-            count += pool.CountPlaying(resourcePath);
+            count += pool.CountPlaying(resourcePath, _resourcePaths);
         return count;
     }
 
@@ -427,6 +456,15 @@ public sealed partial class AudioDirector : Node
 
     private sealed class VoicePool3D(AudioStream[] streams, AudioStreamPlayer3D[] players)
     {
+        public void StopAll()
+        {
+            foreach (var player in players)
+            {
+                player.Stop();
+                player.Stream = null;
+            }
+        }
+
         public int PlayingCount
         {
             get
@@ -442,12 +480,15 @@ public sealed partial class AudioDirector : Node
             }
         }
 
-        public int CountPlaying(string resourcePath)
+        public int CountPlaying(string resourcePath, Dictionary<AudioStream, string> resourcePaths)
         {
             var count = 0;
             foreach (var player in players)
             {
-                if (player.Playing && player.Stream?.ResourcePath == resourcePath)
+                if (player.Playing
+                    && player.Stream is { } stream
+                    && resourcePaths.TryGetValue(stream, out var streamPath)
+                    && string.Equals(streamPath, resourcePath, StringComparison.Ordinal))
                     count++;
             }
 
@@ -489,6 +530,15 @@ public sealed partial class AudioDirector : Node
 
     private sealed class VoicePool2D(AudioStream[] streams, AudioStreamPlayer[] players)
     {
+        public void StopAll()
+        {
+            foreach (var player in players)
+            {
+                player.Stop();
+                player.Stream = null;
+            }
+        }
+
         public bool Play(RandomNumberGenerator random)
         {
             foreach (var player in players)

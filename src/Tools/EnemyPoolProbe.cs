@@ -35,7 +35,7 @@ public sealed partial class EnemyPoolProbe : Node
     [Export(PropertyHint.File, "*.tres")]
     public string GruntDefinitionPath { get; set; } = "res://data/enemies/grunt.tres";
 
-    private const int CiclosDeStress = 100;
+    private const int CiclosDeStress = 500;
 
     /// <summary>
     /// Um canto do chão de 60×60 m da arena (ver <c>Shape_chao</c> em
@@ -59,11 +59,15 @@ public sealed partial class EnemyPoolProbe : Node
     private EnemyDefinition? _definicao;
 
     private CharacterController? _grunt;
+    private CharacterController? _instanciaDeStress;
+    private readonly List<CharacterController> _inimigosDaRajada = [];
     private int _ativosAntesDoTeste;
     private int _cicloAtual;
+    private int _quadrosDoCiclo;
+    private int _nosAntesDosCiclos;
     private bool _sujandoNesteCiclo;
 
-    private enum Fase { CicloNatural, ReaquisicaoLimpa, CemCiclos, RajadaDeOnda }
+    private enum Fase { CicloNatural, ReaquisicaoLimpa, ReciclagemDeStress, RajadaDeOnda }
     private Fase _fase = Fase.CicloNatural;
     private int _quadroDaFase;
 
@@ -112,7 +116,7 @@ public sealed partial class EnemyPoolProbe : Node
         {
             case Fase.CicloNatural: TickCicloNatural(); break;
             case Fase.ReaquisicaoLimpa: TickReaquisicaoLimpa(); break;
-            case Fase.CemCiclos: TickCemCiclos(); break;
+            case Fase.ReciclagemDeStress: TickReciclagemDeStress(); break;
             case Fase.RajadaDeOnda: TickRajadaDeOnda(); break;
             default: break;
         }
@@ -196,27 +200,58 @@ public sealed partial class EnemyPoolProbe : Node
 
         VerificarInstanciaLimpa(_grunt!, "reaquisição");
 
-        AvancarFase(Fase.CemCiclos);
+        _pool!.Release(_grunt!);
+        _grunt = null;
+        Verificar(_pool.ActiveCount == _ativosAntesDoTeste,
+            "a preparação do stress deveria devolver o grunt ao pool antes dos 500 ciclos.");
+
+        AvancarFase(Fase.ReciclagemDeStress);
     }
 
-    private void TickCemCiclos()
+    private void TickReciclagemDeStress()
     {
-        // Não passa pelo pool nem espera DeathDuration a cada ciclo (seriam
-        // ~7200 quadros para 100 ciclos, e o ciclo de morte/pool de verdade já
-        // foi provado uma vez em TickCicloNatural): chama `ResetForSpawn`
-        // direto na MESMA instância, cem vezes seguidas -- exatamente o
-        // "reciclar o mesmo inimigo cem vezes" do ticket, e o MESMO método
-        // que `EnemyPool.Acquire` chama por dentro.
+        // Mede reciclagem real pelo pool, sem esperar a animação de morte: cada
+        // repetição suja o estado, devolve o nó e o readquire como faria uma
+        // onda. A cena já cobre a janela natural de morte em TickCicloNatural.
         if (_quadroDaFase == 1)
         {
-            _grunt = _pool!.Acquire(_definicao!, Longe + new Vector3(-2f, 0f, 0f));
             _cicloAtual = 0;
+            _quadrosDoCiclo = 0;
+            _nosAntesDosCiclos = (int)Performance.GetMonitor(Performance.Monitor.ObjectNodeCount);
+            _sujandoNesteCiclo = false;
+        }
+
+        if (_grunt is null)
+        {
+            var adquirido = _pool!.Acquire(_definicao!, Longe);
+            if (adquirido is null)
+            {
+                Verificar(false, $"ciclo {_cicloAtual + 1}: Acquire deveria reutilizar uma instância do pool.");
+                Concluir();
+                return;
+            }
+
+            _grunt = adquirido;
+            _quadrosDoCiclo = 0;
             _sujandoNesteCiclo = false;
             return;
         }
 
-        // Alguns quadros para assentar no chão antes do primeiro ciclo de sujeira.
-        if (_quadroDaFase < 8)
+        _quadrosDoCiclo++;
+        if (_quadrosDoCiclo == 8)
+        {
+            Verificar(_pool!.ActiveCount == _ativosAntesDoTeste + 1,
+                $"ciclo {_cicloAtual + 1}: Acquire deveria marcar exatamente um inimigo ativo.");
+            VerificarInstanciaLimpa(_grunt, $"ciclo {_cicloAtual + 1}/{CiclosDeStress}");
+            if (_instanciaDeStress is null)
+                _instanciaDeStress = _grunt;
+            else
+                Verificar(ReferenceEquals(_instanciaDeStress, _grunt),
+                    $"ciclo {_cicloAtual + 1}: o pool deveria reutilizar a mesma instância, sem criar nós novos.");
+            return;
+        }
+
+        if (_quadrosDoCiclo < 8)
             return;
 
         if (!_sujandoNesteCiclo)
@@ -234,17 +269,20 @@ public sealed partial class EnemyPoolProbe : Node
         Verificar(_grunt!.Context!.Health!.Percent < 0.999f,
             $"ciclo {_cicloAtual + 1}: o dano de sujar deveria ter aplicado de verdade antes do reset.");
 
-        _grunt.ResetForSpawn();
-        _grunt.GlobalPosition = Longe + new Vector3(-2f, 0f, 0f);
-        _grunt.Velocity = Vector3.Zero;
-
-        VerificarInstanciaLimpa(_grunt, $"ciclo {_cicloAtual + 1}/{CiclosDeStress}");
+        _pool!.Release(_grunt);
+        _grunt = null;
+        Verificar(_pool.ActiveCount == _ativosAntesDoTeste,
+            $"ciclo {_cicloAtual + 1}: Release deveria devolver o pool à contagem inicial.");
 
         _cicloAtual++;
-        _sujandoNesteCiclo = false;
 
         if (_cicloAtual >= CiclosDeStress)
+        {
+            var nosDepoisDosCiclos = (int)Performance.GetMonitor(Performance.Monitor.ObjectNodeCount);
+            Verificar(nosDepoisDosCiclos == _nosAntesDosCiclos,
+                $"500 reciclagens não deveriam acumular nós; antes {_nosAntesDosCiclos}, depois {nosDepoisDosCiclos}.");
             AvancarFase(Fase.RajadaDeOnda);
+        }
     }
 
     private void TickRajadaDeOnda()
@@ -264,8 +302,11 @@ public sealed partial class EnemyPoolProbe : Node
             for (var i = 0; i < tamanhoDaRajada; i++)
             {
                 var posicao = Longe + new Vector3(i * 1.5f, 0f, 20f);
-                if (_pool.Acquire(_definicao!, posicao) is not null)
+                if (_pool.Acquire(_definicao!, posicao) is { } inimigo)
+                {
                     adquiridos++;
+                    _inimigosDaRajada.Add(inimigo);
+                }
             }
 
             // Aqui não há como medir frame time de verdade (isto é um probe,
@@ -274,6 +315,17 @@ public sealed partial class EnemyPoolProbe : Node
             // que existe PARA evitar o engasgo em primeiro lugar.
             Verificar(adquiridos == tamanhoDaRajada,
                 $"a rajada deveria adquirir os {tamanhoDaRajada} grunts restantes do estoque; só {adquiridos} vieram sem erro.");
+            Verificar(_pool.ActiveCount == _pool.GruntPoolSize,
+                $"a rajada deveria ativar todo o estoque de {_pool.GruntPoolSize}; ativos: {_pool.ActiveCount}.");
+
+            // A verificação prova que o estoque inteiro está ativo ao mesmo
+            // tempo; devolvê-los antes do encerramento deixa a própria sonda
+            // sem estado temporário e evita confundir isso com vazamento.
+            foreach (var inimigo in _inimigosDaRajada)
+                _pool.Release(inimigo);
+            _inimigosDaRajada.Clear();
+            Verificar(_pool.ActiveCount == _ativosAntesDoTeste,
+                "a limpeza da sonda deveria devolver o pool à contagem inicial.");
             return;
         }
 
@@ -328,7 +380,7 @@ public sealed partial class EnemyPoolProbe : Node
             return;
         }
 
-        GD.Print($"[pool-inimigo] todas as verificações passaram ({CiclosDeStress} ciclos de reciclagem)");
+        GD.Print($"[pool-inimigo] todas as verificações passaram ({CiclosDeStress} ciclos reais de Acquire/Release)");
         GetTree().Quit();
     }
 }

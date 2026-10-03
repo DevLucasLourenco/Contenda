@@ -121,6 +121,12 @@ IntervaloDeLodSegundos = 0.2
 RaioDeSeparacao = 1.2
 PesoDeSeparacao = 0.35
 
+[node name="VisionRay" type="RayCast3D" parent="EnemyBrain"]
+enabled = false
+collision_mask = 1
+collide_with_areas = false
+collide_with_bodies = true
+
 [node name="EliteMarkerComponent" type="Node" parent="."]
 script = ExtResource("14_elite")
 MeshPath = NodePath("../Corpo")

@@ -53,6 +53,8 @@ public sealed partial class HealthBar : Control
     private Label? _valor;
     private HealthComponent? _vida;
     private DamageLayerState? _estado;
+    private int _vidaExibida = int.MinValue;
+    private int _vidaMaximaExibida = int.MinValue;
 
     public override void _Ready()
     {
@@ -85,6 +87,8 @@ public sealed partial class HealthBar : Control
     {
         _vida = null;
         _estado = null;
+        _vidaExibida = int.MinValue;
+        _vidaMaximaExibida = int.MinValue;
     }
 
     public override void _PhysicsProcess(double delta)
@@ -110,7 +114,16 @@ public sealed partial class HealthBar : Control
         _camadaDeDano.Size = new Vector2(BarWidth * _estado.DamageLayer, BarHeight);
 
         if (_valor is not null)
-            _valor.Text = $"{_vida.Current:0}/{_vida.Max:0}";
+        {
+            var vidaAtual = Mathf.RoundToInt(_vida.Current);
+            var vidaMaxima = Mathf.RoundToInt(_vida.Max);
+            if (vidaAtual != _vidaExibida || vidaMaxima != _vidaMaximaExibida)
+            {
+                _valor.Text = $"{vidaAtual}/{vidaMaxima}";
+                _vidaExibida = vidaAtual;
+                _vidaMaximaExibida = vidaMaxima;
+            }
+        }
     }
 
     /// <summary>Fração do preenchimento principal agora. Para o probe/depuração.</summary>
