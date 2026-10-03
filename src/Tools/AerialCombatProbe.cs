@@ -391,6 +391,13 @@ public sealed partial class AerialCombatProbe : Node
 
             Verificar(_alvo!.Context!.Health!.Current < _alvo.Context.Health.Max,
                 "o pouso da estocada deveria ter causado dano em área no manequim próximo");
+            var animationTree = _jogador.Context.Animator?.Tree;
+            Verificar(animationTree is not null
+                && animationTree.Get(new StringName("parameters/Land/active")).AsBool(),
+                "a animação de aterrissagem deveria estar ativa quando o mergulho causa dano");
+            Verificar(animationTree is not null
+                && !animationTree.Get(new StringName("parameters/Dive/active")).AsBool(),
+                "a animação do mergulho deveria terminar antes do dano de aterrissagem");
             Verificar(
                 (combate.ActiveLocks & (ActionLock.Movement | ActionLock.Rotation))
                 == (ActionLock.Movement | ActionLock.Rotation),

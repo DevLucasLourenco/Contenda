@@ -130,9 +130,9 @@ public static class CharacterPresentation
         AddOneShot(tree, "Reload", set.Reload, ref previous);
         AddOneShot(tree, "Jump", set.Jump, ref previous);
         AddOneShot(tree, "Fall", set.Fall, ref previous);
+        AddOneShot(tree, "Dive", set.Dive, ref previous);
         AddOneShot(tree, "Land", set.Land, ref previous);
         AddOneShot(tree, "Dash", set.Dash, ref previous);
-        AddOneShot(tree, "Dive", set.Dive, ref previous);
         AddOneShot(tree, "Hit", set.Hit, ref previous);
         AddOneShot(tree, "Transform", set.Transform, ref previous);
         AddOneShot(tree, "Death", set.Death, ref previous);

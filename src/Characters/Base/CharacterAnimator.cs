@@ -51,6 +51,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private BoneAttachment3D? _weaponSocket;
     private readonly Dictionary<StringName, StringName> _animationPaths = [];
     private bool _falling;
+    private bool _diving;
     private bool _dead;
     private bool _reloadPending;
     private float _deathRemaining;
@@ -103,6 +104,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _dead = false;
         _reloadPending = false;
         _falling = false;
+        _diving = false;
         _deathRemaining = 0f;
         _attackRemaining = 0f;
 
@@ -166,6 +168,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _dead = false;
         _reloadPending = false;
         _falling = false;
+        _diving = false;
         _deathRemaining = 0f;
         _attackRemaining = 0f;
         if (_tree is not null)
@@ -178,6 +181,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
             Play(AnimationLayer.Fall, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Land, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Dash, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
+            Play(AnimationLayer.Dive, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Dive, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Transform, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Death, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
@@ -264,23 +268,37 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         {
             Play(AnimationLayer.Fall, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Land, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
+            Play(AnimationLayer.Dive, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Jump, _animationSet.Jump);
         }
         _falling = false;
+        _diving = false;
     }
 
     private void OnFall() { if (_animationSet is not null) Play(AnimationLayer.Fall, _animationSet.Fall); _falling = true; }
     private void OnLand()
     {
+        if (_diving)
+            Play(AnimationLayer.Dive, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
+
         if (_animationSet is not null && _falling)
         {
             Play(AnimationLayer.Fall, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Land, _animationSet.Land);
         }
+
         _falling = false;
+        _diving = false;
     }
     private void OnDash() { if (_animationSet is not null) Play(AnimationLayer.Dash, _animationSet.Dash); }
-    private void OnDive() { if (_animationSet is not null) Play(AnimationLayer.Dive, _animationSet.Dive); }
+    private void OnDive()
+    {
+        if (_animationSet is null)
+            return;
+
+        _diving = true;
+        Play(AnimationLayer.Dive, _animationSet.Dive);
+    }
     private void OnDamaged(DamageInfo _) { if (!_dead && _animationSet is not null) Play(AnimationLayer.Hit, _animationSet.Hit); }
     private void OnTransform(TransformationDefinition _) { if (_animationSet is not null) Play(AnimationLayer.Transform, _animationSet.Transform); }
     private void OnRevert(TransformationDefinition _, RevertReason __) { if (_animationSet is not null) Play(AnimationLayer.Transform, _animationSet.Transform); }
@@ -290,6 +308,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     {
         _dead = true;
         _reloadPending = false;
+        _diving = false;
         if (_animationSet is null)
             return;
 

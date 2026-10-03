@@ -51,12 +51,19 @@ public sealed class RevolverStateTests
     {
         var tambor = Criar(capacidade: 1);
         var recargas = 0;
-        tambor.ReloadStarted += () => recargas++;
+        void ContarRecarga() => recargas++;
+        tambor.ReloadStarted += ContarRecarga;
 
-        Assert.True(tambor.TryFire(Interval));
-        Assert.False(tambor.TryFire(Interval));
-
-        Assert.Equal(1, recargas);
+        try
+        {
+            Assert.True(tambor.TryFire(Interval));
+            Assert.False(tambor.TryFire(Interval));
+            Assert.Equal(1, recargas);
+        }
+        finally
+        {
+            tambor.ReloadStarted -= ContarRecarga;
+        }
     }
 
     [Fact]
