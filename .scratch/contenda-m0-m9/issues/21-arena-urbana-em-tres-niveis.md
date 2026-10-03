@@ -6,7 +6,7 @@ telhado. A altura passa a ser jogável, e não cenário.
 
 **Blocked by:** 17, 04
 
-**Status:** ready-for-agent
+**Status:** concluído
 
 - [x] Praça rebaixada ao centro, com rampas nos quatro lados — **rampas, não
       degraus**, para que inimigo não trave em quina

@@ -33,6 +33,7 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
 
     private CharacterContext? _contexto;
     private MeshInstance3D? _malha;
+    private MeshInstance3D? _placeholder;
     private StandardMaterial3D? _materialAviso;
 
     /// <summary>Se o aviso está aceso agora. Para o probe/depuração.</summary>
@@ -40,8 +41,9 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
 
     public override void _Ready()
     {
-        _malha = GetNodeOrNull<MeshInstance3D>(MeshPath);
-        if (_malha is null)
+        _placeholder = GetNodeOrNull<MeshInstance3D>(MeshPath);
+        _malha = _placeholder;
+        if (_placeholder is null)
             GD.PushError($"{Name}: MeshPath não resolveu.");
     }
 
@@ -59,6 +61,7 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
 
     public void Configure(CharacterDefinition definicao)
     {
+        _malha = _contexto?.Owner.CurrentBodyMesh ?? _placeholder;
     }
 
     /// <summary>Acende o aviso. Chamado ao entrar no windup do golpe.</summary>

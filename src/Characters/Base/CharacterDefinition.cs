@@ -36,6 +36,9 @@ public sealed partial class CharacterDefinition : Resource
     /// <summary>Modelo 3D usado na seleção e na arena.</summary>
     [Export] public PackedScene? ModelScene { get; set; }
 
+    [Export] public float ModelScale { get; set; } = 1f;
+    [Export] public NodePath ModelSkeletonPath { get; set; } = new();
+    [Export] public NodePath ModelBodyMeshPath { get; set; } = new();
     [Export] public CharacterAnimationSet? AnimationSet { get; set; }
     [Export] public StringName WeaponBoneName { get; set; } = new("handslot.r");
 

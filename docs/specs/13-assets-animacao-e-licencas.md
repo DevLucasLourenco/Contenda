@@ -23,15 +23,17 @@ licença, data do download. Sem esse arquivo, o PR não passa.
 
 ## 2. Fontes escolhidas para o MVP
 
-### KayKit — CC0 (integrado no ticket 34)
+### KayKit — CC0 (integrado nos tickets 34 e 35)
 
 | Pack | Uso |
 |---|---|
 | **Adventurers Character Pack 2.0** | Knight do Swordsman e Rogue sem capuz da Gunslinger |
-| **Character Animations 1.1** | bancos de movimento, combate, dano, morte e transformação para os dois rigs |
+| **Adventurers Character Pack 2.0 — inimigos** | Mage, Rogue com capuz, Ranger, Barbarian e Knight |
+| **Character Animations 1.1** | bancos de movimento, combate, dano, morte e transformação nos rigs compatíveis |
 
 Os sete bancos importados e as licenças estão registrados em
-`assets/animations/kaykit/SOURCE.md`; cada modelo tem seu próprio `SOURCE.md`.
+`assets/animations/kaykit/SOURCE.md`; os personagens jogáveis e o roster de
+inimigos têm registros em suas pastas `SOURCE.md`.
 
 ### Quaternius — CC0 (opção futura)
 
@@ -62,6 +64,8 @@ assets/
 ├── characters/
 │   ├── swordsman/   model.glb · SOURCE.md (Knight, KayKit CC0)
 │   └── gunslinger/  model.glb · SOURCE.md (Rogue, KayKit CC0)
+├── enemies/kaykit/  cinco modelos e texturas · SOURCE.md (KayKit CC0)
+├── city/kenney/    ruas, fachadas, estruturas e veículos · SOURCE.md por pack (Kenney CC0)
 └── animations/
     └── kaykit/     bancos *.glb · SOURCE.md (KayKit CC0)
 

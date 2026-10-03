@@ -4,20 +4,15 @@ using Godot;
 namespace Contenda.Components.AI;
 
 /// <summary>
-/// Tinge a malha do corpo se o inimigo é uma elite, para se distinguir de
-/// longe além do tamanho da própria barra de vida.
+/// Marca elites com três espigões geométricos sobre a cabeça e um realce
+/// material. A silhueta continua identificável sem depender da cor.
 /// </summary>
 /// <remarks>
-/// Sem modelo/textura de verdade ainda (ADR-010): o placeholder de hoje é um
-/// tingimento emissivo permanente na cápsula, via
-/// <c>MeshInstance3D.MaterialOverride</c> -- mesma técnica de
-/// <c>DamageFlashComponent</c>/<c>AttackTelegraphComponent</c>. A diferença é
-/// que este é PERMANENTE, não um pulso: por isso publica o próprio material
-/// em <see cref="CharacterContext.BodyBaseMaterial"/>, para que os outros
-/// dois "desliguem" restaurando a ele em vez de a <c>null</c> -- sem isto, o
-/// primeiro flash de dano ou windup de ataque apagaria o tingimento de uma
-/// elite para sempre. Ver ticket 26, spec 09 §5 e §7 (elite dourado, spec
-/// 11 §4).
+/// O acabamento emissivo permanente complementa a forma da coroa, sem ser o
+/// único indicador. O material base do corpo é duplicado para preservar a
+/// textura do modelo. <see cref="CharacterContext.BodyBaseMaterial"/> permite
+/// que os efeitos temporários de dano e ataque restaurem o acabamento da
+/// elite ao terminar.
 ///
 /// Lê <see cref="EnemyDefinition"/> via <c>CharacterContext.EnemyBrain</c>,
 /// não por <c>[Export]</c> próprio: a definição de comportamento é do
@@ -32,15 +27,18 @@ public sealed partial class EliteMarkerComponent : Node, ICharacterComponent
 
     private CharacterContext? _contexto;
     private MeshInstance3D? _malha;
+    private MeshInstance3D? _placeholder;
     private StandardMaterial3D? _materialElite;
+    private Node3D? _silhuetaElite;
 
     /// <summary>Se este inimigo é uma elite. Para o probe/depuração.</summary>
     public bool IsElite { get; private set; }
 
     public override void _Ready()
     {
-        _malha = GetNodeOrNull<MeshInstance3D>(MeshPath);
-        if (_malha is null)
+        _placeholder = GetNodeOrNull<MeshInstance3D>(MeshPath);
+        _malha = _placeholder;
+        if (_placeholder is null)
             GD.PushError($"{Name}: MeshPath não resolveu.");
     }
 
@@ -52,7 +50,11 @@ public sealed partial class EliteMarkerComponent : Node, ICharacterComponent
     /// <c>EnemyBrain.Configure</c>: a primeira passada não garante ordem
     /// entre nós irmãos.
     /// </remarks>
-    public void Configure(CharacterDefinition definicao) => AplicarOuLimpar();
+    public void Configure(CharacterDefinition definicao)
+    {
+        SincronizarMalhaEInsignia();
+        AplicarOuLimpar();
+    }
 
     /// <summary>
     /// Devolve ao estado de recém-criado. Contrato do pool, no M5 (ticket 25).
@@ -66,12 +68,46 @@ public sealed partial class EliteMarkerComponent : Node, ICharacterComponent
     /// <c>MaterialOverride</c> nenhum, então ele já estaria certo, mas é mais
     /// barato e mais claro reafirmar do que confiar nisso.
     /// </remarks>
-    public void ResetForSpawn() => AplicarOuLimpar();
+    public void ResetForSpawn()
+    {
+        SincronizarMalhaEInsignia();
+        AplicarOuLimpar();
+    }
+
+    private void SincronizarMalhaEInsignia()
+    {
+        var modelo = _contexto?.Owner.CurrentModel;
+        _malha = _contexto?.Owner.CurrentBodyMesh ?? _placeholder;
+
+        var def = _contexto?.EnemyBrain?.Definition;
+        if (modelo is null || !(def?.IsElite ?? false) && !(def?.IsBoss ?? false))
+            return;
+
+        if (_silhuetaElite is not null && GodotObject.IsInstanceValid(_silhuetaElite))
+            return;
+
+        var material = new StandardMaterial3D { AlbedoColor = new Color(0.88f, 0.72f, 0.32f), Metallic = 0.55f, Roughness = 0.35f };
+        var coroa = new Node3D { Name = "EliteSilhouette" };
+        var mesh = new CylinderMesh { TopRadius = 0.015f, BottomRadius = 0.13f, Height = 0.42f, RadialSegments = 5 };
+        for (var index = 0; index < 3; index++)
+        {
+            var chifre = new MeshInstance3D { Mesh = mesh, MaterialOverride = material };
+            chifre.Position = new Vector3((index - 1) * 0.28f, 1.82f + (index == 1 ? 0.14f : 0f), 0f);
+            chifre.RotationDegrees = new Vector3(0f, 0f, (index - 1) * -16f);
+            coroa.AddChild(chifre);
+        }
+
+        modelo.AddChild(coroa);
+        _silhuetaElite = coroa;
+    }
 
     private void AplicarOuLimpar()
     {
         var def = _contexto?.EnemyBrain?.Definition;
         IsElite = def?.IsElite ?? false;
+
+        if (_silhuetaElite is not null && GodotObject.IsInstanceValid(_silhuetaElite))
+            _silhuetaElite.Visible = IsElite || (def?.IsBoss ?? false);
 
         if (_malha is null || _contexto is null)
             return;
@@ -86,13 +122,17 @@ public sealed partial class EliteMarkerComponent : Node, ICharacterComponent
         // `!`: `IsElite` só fica `true` quando `def?.IsElite` já é `true`
         // (linha acima), e isso exige `def` não nulo -- o ramo `!IsElite`
         // logo acima já capturou o caso `def is null`.
-        _materialElite ??= new StandardMaterial3D
+        if (_materialElite is null)
         {
-            AlbedoColor = def!.EliteTint,
-            EmissionEnabled = true,
-            Emission = def.EliteTint,
-            EmissionEnergyMultiplier = 0.8f,
-        };
+            var materialElite = _malha.GetActiveMaterial(0) is StandardMaterial3D materialBase
+                ? materialBase.Duplicate() as StandardMaterial3D ?? new StandardMaterial3D()
+                : new StandardMaterial3D();
+            materialElite.AlbedoColor = def!.EliteTint;
+            materialElite.EmissionEnabled = true;
+            materialElite.Emission = def.EliteTint;
+            materialElite.EmissionEnergyMultiplier = 0.8f;
+            _materialElite = materialElite;
+        }
 
         _contexto.BodyBaseMaterial = _materialElite;
         _malha.MaterialOverride = _materialElite;

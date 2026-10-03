@@ -1,14 +1,20 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_grunt.tres" id="2_mov"]
 [ext_resource type="Resource" path="res://data/characters/shared/health_grunt.tres" id="3_hp"]
 [ext_resource type="Resource" path="res://data/weapons/claws.tres" id="4_arma"]
+[ext_resource type="PackedScene" path="res://assets/enemies/kaykit/enemy_mage.glb" id="5_model"]
+[ext_resource type="Resource" path="res://data/characters/animset_swordsman.tres" id="6_anim"]
 
 [resource]
 script = ExtResource("1_def")
 Id = &"grunt"
 DisplayName = "Grunt"
+ModelScene = ExtResource("5_model")
+ModelSkeletonPath = NodePath("Rig_Medium/Skeleton3D")
+ModelBodyMeshPath = NodePath("Rig_Medium/Skeleton3D/Mage_Body")
+AnimationSet = ExtResource("6_anim")
 Health = ExtResource("3_hp")
 Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")

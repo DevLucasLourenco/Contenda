@@ -1,14 +1,21 @@
-[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterDefinition.cs" id="1_def"]
 [ext_resource type="Resource" path="res://data/characters/shared/movement_runner.tres" id="2_mov"]
 [ext_resource type="Resource" path="res://data/characters/shared/health_runner.tres" id="3_hp"]
 [ext_resource type="Resource" path="res://data/weapons/claws_runner.tres" id="4_arma"]
+[ext_resource type="PackedScene" path="res://assets/enemies/kaykit/enemy_rogue_hooded.glb" id="5_model"]
+[ext_resource type="Resource" path="res://data/characters/animset_swordsman.tres" id="6_anim"]
 
 [resource]
 script = ExtResource("1_def")
 Id = &"runner"
 DisplayName = "Runner"
+ModelScene = ExtResource("5_model")
+ModelScale = 0.9
+ModelSkeletonPath = NodePath("Rig_Medium/Skeleton3D")
+ModelBodyMeshPath = NodePath("Rig_Medium/Skeleton3D/RogueHooded_Body")
+AnimationSet = ExtResource("6_anim")
 Health = ExtResource("3_hp")
 Weapon = ExtResource("4_arma")
 Movement = ExtResource("2_mov")

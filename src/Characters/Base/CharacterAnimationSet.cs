@@ -8,9 +8,11 @@ namespace Contenda.Characters.Base;
 public sealed partial class CharacterAnimationSet : Resource
 {
     [Export] public PackedScene[] AnimationBanks { get; set; } = [];
+    [Export] public NodePath AnimationPlayerPath { get; set; } = new("AnimationPlayer");
     [Export] public StringName Idle { get; set; } = new("Idle_A");
     [Export] public StringName Walk { get; set; } = new("Walking_A");
     [Export] public StringName Run { get; set; } = new("Running_A");
+    [Export] public StringName Alert { get; set; } = new();
     [Export] public StringName[] MeleeAttacks { get; set; } = [];
     [Export] public StringName[] AerialAttacks { get; set; } = [];
     [Export] public StringName Shoot { get; set; } = new("Ranged_1H_Shoot");
@@ -29,7 +31,7 @@ public sealed partial class CharacterAnimationSet : Resource
     public IEnumerable<StringName> EnumerateReferencedClips()
     {
         var seen = new HashSet<StringName>();
-        Add(Idle); Add(Walk); Add(Run); Add(Shoot); Add(Reload); Add(ArmCannonShoot);
+        Add(Idle); Add(Walk); Add(Run); Add(Alert); Add(Shoot); Add(Reload); Add(ArmCannonShoot);
         Add(Jump); Add(Fall); Add(Land); Add(Dash); Add(Dive); Add(Hit); Add(Death); Add(Transform);
         foreach (var clip in MeleeAttacks) Add(clip);
         foreach (var clip in AerialAttacks) Add(clip);

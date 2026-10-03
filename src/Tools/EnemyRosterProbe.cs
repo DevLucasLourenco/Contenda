@@ -139,11 +139,21 @@ public sealed partial class EnemyRosterProbe : Node
             return;
         }
 
+        VerificarApresentacao(_a, "runner");
+        VerificarApresentacao(_b, "grunt");
+
         _picoA = Mathf.Max(_picoA, VelocidadeHorizontal(_a));
         _picoB = Mathf.Max(_picoB, VelocidadeHorizontal(_b));
 
         if (_quadroDaFase < 150)
+        {
+            if (_quadroDaFase == 10)
+            {
+                VerificarAlertaVisual(_a, "runner");
+                VerificarAlertaVisual(_b, "grunt");
+            }
             return;
+        }
 
         Verificar(_picoA > _picoB + 1.0f,
             $"o runner deveria correr bem mais que o grunt; pico do runner {_picoA:0.0} m/s, do grunt {_picoB:0.0} m/s");
@@ -170,12 +180,17 @@ public sealed partial class EnemyRosterProbe : Node
             return;
         }
 
+        if (_quadroDaFase == 10 && _a is not null)
+            VerificarAlertaVisual(_a, "shooter");
+
         if (_a is null)
         {
             Verificar(false, "Acquire devolveu null para o shooter.");
             Avancar(Fase.Concluido);
             return;
         }
+
+        VerificarApresentacao(_a, "shooter");
 
         if (_distanciaNoPrimeiroDano < 0f && vida.Current < _vidaAntes)
             _distanciaNoPrimeiroDano = _a.GlobalPosition.DistanceTo(_jogador.GlobalPosition);
@@ -208,12 +223,17 @@ public sealed partial class EnemyRosterProbe : Node
             return;
         }
 
+        if (_quadroDaFase == 10 && _a is not null)
+            VerificarAlertaVisual(_a, "brute");
+
         if (_a is null)
         {
             Verificar(false, "Acquire devolveu null para o brute.");
             Avancar(Fase.Concluido);
             return;
         }
+
+        VerificarApresentacao(_a, "brute");
 
         var perdido = _vidaAntes - vida.Current;
         if (perdido > 0f)
@@ -252,12 +272,17 @@ public sealed partial class EnemyRosterProbe : Node
             return;
         }
 
+        if (_quadroDaFase == 10 && _a is not null)
+            VerificarAlertaVisual(_a, "warlord");
+
         if (_a is null)
         {
             Verificar(false, "Acquire devolveu null para o warlord.");
             Avancar(Fase.Concluido);
             return;
         }
+
+        VerificarApresentacao(_a, "warlord");
 
         if (ReferenceEquals(ServiceLocator.Session.BossBody, _a))
             _chefeSeAnunciou = true;
@@ -276,6 +301,73 @@ public sealed partial class EnemyRosterProbe : Node
 
     private static float VelocidadeHorizontal(CharacterController c)
         => new Vector2(c.Velocity.X, c.Velocity.Z).Length();
+
+    private void VerificarApresentacao(CharacterController? inimigo, string idEsperado)
+    {
+        if (inimigo?.Definition is not { } definicao
+            || inimigo.CurrentModel is null
+            || inimigo.CurrentSkeleton is null
+            || inimigo.CurrentBodyMesh is null
+            || inimigo.Context?.Animator is not { Tree: { Active: true }, AnimationPlayer: { } player }
+            || definicao.AnimationSet is not { } animationSet)
+        {
+            Verificar(false, $"{idEsperado}: modelo, rig ou AnimationTree não foram montados.");
+            return;
+        }
+
+        Verificar(definicao.Id.ToString() == idEsperado, $"esperava definição visual {idEsperado}, recebeu {definicao.Id}.");
+        var modeloEsperado = idEsperado switch
+        {
+            "grunt" => "enemy_mage.glb",
+            "runner" => "enemy_rogue_hooded.glb",
+            "shooter" => "enemy_ranger.glb",
+            "brute" => "enemy_barbarian.glb",
+            "warlord" => "enemy_knight.glb",
+            _ => string.Empty
+        };
+        Verificar(definicao.ModelScene?.ResourcePath.EndsWith(modeloEsperado, StringComparison.Ordinal) == true,
+            $"{idEsperado}: ModelScene não aponta para a silhueta KayKit esperada ({modeloEsperado}).");
+        Verificar(player.HasAnimation($"motion/{animationSet.Idle}"),
+            $"{idEsperado}: animação de repouso não foi carregada no AnimationPlayer.");
+        Verificar(player.HasAnimation($"motion/{animationSet.Walk}"),
+            $"{idEsperado}: animação de caminhada não foi carregada no AnimationPlayer.");
+        Verificar(player.HasAnimation($"motion/{animationSet.Run}"),
+            $"{idEsperado}: animação de corrida não foi carregada no AnimationPlayer.");
+        Verificar(!animationSet.Alert.IsEmpty && player.HasAnimation($"motion/{animationSet.Alert}"),
+            $"{idEsperado}: animação de alerta não foi carregada no AnimationPlayer.");
+        Verificar(player.HasAnimation($"motion/{animationSet.Hit}"),
+            $"{idEsperado}: animação de dano não foi carregada no AnimationPlayer.");
+        Verificar(player.HasAnimation($"motion/{animationSet.Death}"),
+            $"{idEsperado}: animação de morte não foi carregada no AnimationPlayer.");
+        var ataqueEsperado = animationSet.MeleeAttacks.Length > 0
+            ? animationSet.MeleeAttacks[0]
+            : animationSet.Shoot;
+        Verificar(!ataqueEsperado.IsEmpty && player.HasAnimation($"motion/{ataqueEsperado}"),
+            $"{idEsperado}: animação de ataque não foi carregada no AnimationPlayer.");
+        foreach (var attack in animationSet.MeleeAttacks)
+            Verificar(player.HasAnimation($"motion/{attack}"),
+                $"{idEsperado}: variação de ataque {attack} não foi carregada no AnimationPlayer.");
+
+        var definicaoInimigo = inimigo.Context?.EnemyBrain?.Definition;
+        var esperaCoroa = definicaoInimigo is { IsElite: true } or { IsBoss: true };
+        var coroa = inimigo.CurrentModel!.FindChild("EliteSilhouette", true, false) as Node3D;
+        Verificar((coroa?.Visible ?? false) == esperaCoroa,
+            $"{idEsperado}: coroa geométrica deveria {(esperaCoroa ? "estar visível" : "estar ausente")}.");
+        Verificar(!esperaCoroa || coroa?.GetChildCount() == 3,
+            $"{idEsperado}: elite/chefe precisa de três espigões para leitura sem cor.");
+    }
+
+    private void VerificarAlertaVisual(CharacterController? inimigo, string idEsperado)
+    {
+        var animator = inimigo?.Context?.Animator;
+        var estado = inimigo?.Context?.EnemyBrain?.Estado;
+        var emAlerta = estado == EnemyState.Alert;
+        var active = animator?.Tree?.Get("parameters/Alert/active").AsBool() == true;
+        var currentAnimation = animator?.AnimationPlayer?.CurrentAnimation.ToString() ?? "";
+        var alertaTocando = active || currentAnimation == $"motion/{inimigo?.Definition?.AnimationSet?.Alert}";
+        Verificar(emAlerta && alertaTocando,
+            $"{idEsperado}: ao detectar o jogador, a animação de alerta deveria tocar junto ao estado Alert (estado={estado}, ativo={active}, clipe={currentAnimation}).");
+    }
 
     private static void Posicionar(CharacterController quem, Vector3 posicao)
     {

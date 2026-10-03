@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Contenda.Components.Abilities;
+using Contenda.Components.AI;
 using Contenda.Components.Health;
 using Contenda.Components.Transformations;
 using Contenda.Weapons;
@@ -13,6 +14,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private enum AnimationLayer
     {
         Attack,
+        Alert,
         Ability,
         Reload,
         Jump,
@@ -31,6 +33,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     private static readonly (StringName MotionNode, StringName RequestPath)[] OneShotPaths =
     [
         (new("AttackMotion"), new("parameters/Attack/request")),
+        (new("AlertMotion"), new("parameters/Alert/request")),
         (new("AbilityMotion"), new("parameters/Ability/request")),
         (new("ReloadMotion"), new("parameters/Reload/request")),
         (new("JumpMotion"), new("parameters/Jump/request")),
@@ -44,6 +47,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
     ];
 
     private CharacterContext? _context;
+    private EnemyBrain? _enemyBrain;
     private CharacterAnimationSet? _animationSet;
     private AnimationTree? _tree;
     private AnimationNodeBlendTree? _root;
@@ -97,6 +101,12 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
 
     public void Configure(CharacterDefinition definition)
     {
+        if (_enemyBrain is not null)
+            _enemyBrain.StateChanged -= OnEnemyStateChanged;
+        _enemyBrain = _context?.EnemyBrain;
+        if (_enemyBrain is not null)
+            _enemyBrain.StateChanged += OnEnemyStateChanged;
+
         var previousSocket = _weaponSocket;
         _animationSet = definition.AnimationSet;
         _tree = null;
@@ -128,7 +138,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         _tree = presentation?.Tree;
         _root = _tree?.TreeRoot as AnimationNodeBlendTree;
         _animationPlayer = presentation?.Player;
-        _weaponSocket = CharacterPresentation.MountWeapon(model, definition.Weapon, definition.WeaponBoneName, previousSocket);
+        _weaponSocket = CharacterPresentation.MountWeapon(
+            _context.Owner.CurrentSkeleton, definition.Weapon, definition.WeaponBoneName, previousSocket);
     }
 
     public void RefreshWeaponVisual()
@@ -136,7 +147,8 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         if (_context?.Owner.CurrentModel is not { } model || _context.Owner.Definition is not { } definition)
             return;
 
-        _weaponSocket = CharacterPresentation.MountWeapon(model, _context.Combat?.EquippedWeapon, definition.WeaponBoneName, _weaponSocket);
+        _weaponSocket = CharacterPresentation.MountWeapon(
+            _context.Owner.CurrentSkeleton, _context.Combat?.EquippedWeapon, definition.WeaponBoneName, _weaponSocket);
     }
 
     public void Tick(float delta)
@@ -177,6 +189,7 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         {
             _tree.Active = true;
             Play(AnimationLayer.Attack, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
+            Play(AnimationLayer.Alert, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Ability, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Reload, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
             Play(AnimationLayer.Jump, new StringName(), AnimationNodeOneShot.OneShotRequest.Abort);
@@ -223,6 +236,12 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
             transformations.Activated -= OnTransform;
             transformations.Reverted -= OnRevert;
         }
+
+        if (_enemyBrain is not null)
+        {
+            _enemyBrain.StateChanged -= OnEnemyStateChanged;
+            _enemyBrain = null;
+        }
     }
 
     private void OnAttack(int step)
@@ -247,6 +266,12 @@ public sealed partial class CharacterAnimator : Node, ICharacterComponent
         var rangedClip = isCannon ? _animationSet.ArmCannonShoot : _animationSet.Shoot;
         Play(AnimationLayer.Attack, rangedClip);
         _attackRemaining = AnimationLength(rangedClip);
+    }
+
+    private void OnEnemyStateChanged(EnemyState _, EnemyState current)
+    {
+        if (!_dead && current == EnemyState.Alert && _animationSet is { Alert.IsEmpty: false } set)
+            Play(AnimationLayer.Alert, set.Alert);
     }
 
     private void OnAbility(AbilityDefinition ability)

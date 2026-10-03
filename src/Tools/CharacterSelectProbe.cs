@@ -121,8 +121,8 @@ public sealed partial class CharacterSelectProbe : Node
             if (player?.Definition?.Id.ToString() != "gunslinger"
                 || player.Context?.Abilities?.Abilities.Count != 4
                 || player.CurrentModel is null
-                || CharacterPresentation.FindSkeleton(player.CurrentModel) is null
-                || CharacterPresentation.FindBodyMesh(player.CurrentModel) is null
+                || player.CurrentSkeleton is null
+                || player.CurrentBodyMesh is null
                 || !HasAnimationPresentation(player))
             {
                 GD.PushError("[selecao] FALHOU: a arena não montou o Gunslinger escolhido.");

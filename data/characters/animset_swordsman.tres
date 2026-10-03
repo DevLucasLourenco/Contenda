@@ -36,6 +36,7 @@ AnimationBanks = [ExtResource("2_melee"), ExtResource("3_ranged"), ExtResource("
 Idle = &"Idle_A"
 Walk = &"Walking_A"
 Run = &"Running_A"
+Alert = &"Melee_Block"
 MeleeAttacks = [&"Melee_1H_Attack_Slice_Diagonal", &"Melee_1H_Attack_Slice_Horizontal", &"Melee_1H_Attack_Chop"]
 AerialAttacks = [&"Melee_1H_Attack_Slice_Diagonal", &"Melee_1H_Attack_Slice_Horizontal", &"Melee_1H_Attack_Chop"]
 Shoot = &"Ranged_1H_Shoot"

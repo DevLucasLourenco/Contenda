@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Contenda.Core;
 using Godot;
 
@@ -17,11 +19,10 @@ namespace Contenda.Camera;
 /// triângulos nem shader próprio -- exatamente o efeito pedido, sem escrever
 /// um shader para isto.
 ///
-/// Um raio só, não uma forma larga: mesmo idiomatismo de
-/// <c>Perception.LinhaDeVisaoLivre</c> (raycast único contra
-/// <see cref="PhysicsLayers.World"/>), aceitável aqui pelo mesmo motivo --
-/// um raio por quadro, para UMA câmera, é uma fração do custo de todo
-/// `EnemyBrain.Poll` já fazendo o mesmo contra cada inimigo.
+/// Um raio fino, não uma forma larga: repetimos a consulta excluindo cada
+/// corpo encontrado para revelar os outros no mesmo segmento. Continua sendo
+/// uma câmera e poucos corpos por quadro, abaixo do custo dos raycasts de
+/// percepção feitos por cada inimigo.
 ///
 /// Roda em <c>_PhysicsProcess</c>, não em <c>_Process</c>: mesma disciplina
 /// de <c>HealthBar</c>/<c>HudController</c> -- <c>_Process</c> não roda de
@@ -47,13 +48,33 @@ public sealed partial class CameraOcclusionFader : Node
 
     private Camera3D? _camera;
     private Node3D? _alvo;
-    private MeshInstance3D? _escondida;
-    private StandardMaterial3D? _materialDeFade;
+    private PhysicsRayQueryParameters3D? _rayQuery;
+    private readonly List<Node> _oclusoresAtuais = [];
+    private readonly List<Node> _oclusoresOcultos = [];
+    private readonly List<(GeometryInstance3D Instance, int Surface, Material? OriginalOverride)> _overridesAnteriores = [];
+    private readonly Dictionary<(GeometryInstance3D Instance, int Surface), BaseMaterial3D> _materiaisDeFade = [];
+    private readonly Dictionary<Node, GeometryInstance3D[]> _geometriasPorOclusor = [];
+    private readonly Dictionary<Node, List<GeometryInstance3D>> _geometriasEmConstrucao = [];
+    private int _limiteDeOclusoresNoRaio;
 
     public override void _Ready()
     {
         _camera = GetNodeOrNull<Camera3D>(CameraPath);
         _alvo = GetNodeOrNull<Node3D>(TargetPath);
+        _rayQuery = PhysicsRayQueryParameters3D.Create(Vector3.Zero, Vector3.Zero, OcclusionMask);
+
+        IndexarGeometrias(GetTree().Root, null);
+        PrepararMateriaisDeFade();
+        _oclusoresAtuais.Capacity = _geometriasPorOclusor.Count;
+        _oclusoresOcultos.Capacity = _geometriasPorOclusor.Count;
+
+        if (_rayQuery is not null)
+        {
+            var excluidos = _rayQuery.Exclude;
+            excluidos.Resize(_limiteDeOclusoresNoRaio);
+            excluidos.Clear();
+            _rayQuery.Exclude = excluidos;
+        }
 
         if (_camera is null)
         {
@@ -67,62 +88,221 @@ public sealed partial class CameraOcclusionFader : Node
         if (_camera is null || _alvo is null)
             return;
 
-        var atual = MalhaOcultando(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
-        if (atual == _escondida)
+
+        EncontrarOclusores(_camera.GlobalPosition, _alvo.GlobalPosition + TargetOffset);
+        if (MesmoConjuntoDeOclusores())
             return;
 
         Restaurar();
-        _escondida = atual;
-        Esconder(_escondida);
+        for (var i = 0; i < _oclusoresAtuais.Count; i++)
+        {
+            var oclusor = _oclusoresAtuais[i];
+            Esconder(oclusor);
+            _oclusoresOcultos.Add(oclusor);
+        }
     }
 
     /// <remarks>
     /// Fronteira com a engine: <c>Godot.Collections.Dictionary</c> só aqui,
     /// mesma disciplina de <c>Perception.LinhaDeVisaoLivre</c>.
     /// </remarks>
-    private MeshInstance3D? MalhaOcultando(Vector3 origem, Vector3 alvo)
+    private void EncontrarOclusores(Vector3 origem, Vector3 alvo)
     {
+        _oclusoresAtuais.Clear();
+        if (_rayQuery is null)
+            return;
+
         var espaco = _camera!.GetViewport().World3D.DirectSpaceState;
-        var parametros = PhysicsRayQueryParameters3D.Create(origem, alvo, OcclusionMask);
+        _rayQuery.From = origem;
+        _rayQuery.To = alvo;
 
-        var resultado = espaco.IntersectRay(parametros);
-        if (resultado.Count == 0)
-            return null;
+        // A coleção é parte da API de entrada exigida pela engine para excluir
+        // colisores já atingidos. Reutilizamos o buffer do próprio query em vez
+        // de criar uma Godot.Collections.Array a cada quadro.
+        var excluidos = _rayQuery.Exclude;
+        excluidos.Clear();
+        _rayQuery.Exclude = excluidos;
+        for (var quantidadeDeTestes = 0; quantidadeDeTestes < _limiteDeOclusoresNoRaio; quantidadeDeTestes++)
+        {
+            var resultado = espaco.IntersectRay(_rayQuery);
+            if (resultado.Count == 0)
+                return;
 
-        // O raio acerta o `StaticBody3D` (a colisão), não a malha em si --
-        // "Mesh" é o nome do filho visual em toda a geometria da arena
-        // (Arena.tscn), o mesmo padrão que já vale para "Col". Não existe um
-        // `CharacterContext` equivalente para cenário solto: a exceção de
-        // caminho literal das convenções §2 vale aqui pela mesma razão que já
-        // vale para `NavigationMotor.AgentPath` -- fronteira com um nó nativo,
-        // sem outro jeito de alcançá-lo.
-        var colisor = resultado["collider"].As<Node>();
-        return colisor?.GetNodeOrNull<MeshInstance3D>("Mesh");
+            // O raio acerta o corpo de colisão, não a malha. A cidade pode ter
+            // vários corpos com modelos entre a câmera e o jogador; coletamos
+            // todos para que nenhum deles continue opaco.
+            var collider = resultado["collider"].As<CollisionObject3D>();
+            if (collider is null)
+                return;
+
+            if (_geometriasPorOclusor.ContainsKey(collider))
+                _oclusoresAtuais.Add(collider);
+            var rid = collider.GetRid();
+            if (excluidos.Contains(rid))
+                return;
+            excluidos.Add(rid);
+            _rayQuery.Exclude = excluidos;
+        }
+    }
+
+    private bool MesmoConjuntoDeOclusores()
+    {
+        if (_oclusoresAtuais.Count != _oclusoresOcultos.Count)
+            return false;
+
+        for (var i = 0; i < _oclusoresAtuais.Count; i++)
+        {
+            if (_oclusoresAtuais[i] != _oclusoresOcultos[i])
+                return false;
+        }
+
+        return true;
     }
 
     /// <remarks>
-    /// Reaproveita a cor albedo do material ATUAL da malha, só reduzindo o
-    /// alfa -- sem isto, todo objeto escondido ficaria com a MESMA cor
-    /// genérica, e prédio/ônibus/andaime perderiam a própria identidade
-    /// visual bem no instante em que mais precisam dela (parcialmente
-    /// visíveis, não sumidos de vez).
+    /// Usa uma cópia do material original por superfície, preservando textura
+    /// e albedo. Os materiais são preparados no <c>_Ready</c>, fora do caminho
+    /// por quadro, e cada malha mantém o override anterior para restauração.
     /// </remarks>
-    private void Esconder(MeshInstance3D? malha)
+    private void Esconder(Node oclusor)
     {
-        if (malha is null)
+        if (!_geometriasPorOclusor.TryGetValue(oclusor, out var instancias))
             return;
 
-        var corBase = (malha.GetActiveMaterial(0) as BaseMaterial3D)?.AlbedoColor ?? new Color(0.6f, 0.6f, 0.6f);
+        foreach (var instancia in instancias)
+        {
+            var malha = MalhaDa(instancia);
+            if (!instancia.Visible || malha is null)
+                continue;
 
-        _materialDeFade ??= new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash };
-        _materialDeFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+            for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
+            {
+                if (instancia is MultiMeshInstance3D && superficie > 0)
+                    break;
 
-        malha.MaterialOverride = _materialDeFade;
+                var chaveSuperficie = instancia is MultiMeshInstance3D ? -1 : superficie;
+                var materialBase = instancia.MaterialOverride
+                    ?? ObterOverrideDeSuperficie(instancia, chaveSuperficie)
+                    ?? malha.SurfaceGetMaterial(superficie);
+                if (materialBase is not BaseMaterial3D materialBase3D)
+                    continue;
+
+                var key = (instancia, chaveSuperficie);
+                if (!_materiaisDeFade.TryGetValue(key, out var materialFade))
+                    continue;
+
+                var overrideAnterior = ObterOverrideDeSuperficie(instancia, chaveSuperficie);
+                var corBase = materialFade.AlbedoColor;
+                materialFade.AlbedoColor = new Color(corBase.R, corBase.G, corBase.B, FadedAlpha);
+                DefinirOverrideDeSuperficie(instancia, chaveSuperficie, materialFade);
+                _overridesAnteriores.Add((instancia, chaveSuperficie, overrideAnterior));
+            }
+        }
     }
 
     private void Restaurar()
     {
-        if (_escondida is not null)
-            _escondida.MaterialOverride = null;
+        foreach (var (instancia, superficie, overrideAnterior) in _overridesAnteriores)
+        {
+            if (GodotObject.IsInstanceValid(instancia))
+                DefinirOverrideDeSuperficie(instancia, superficie, overrideAnterior);
+        }
+
+        _overridesAnteriores.Clear();
+        _oclusoresOcultos.Clear();
+    }
+
+    private void IndexarGeometrias(Node raiz, CollisionObject3D? oclusorAtual)
+    {
+        if (raiz is CollisionObject3D corpo && (corpo.CollisionLayer & OcclusionMask) != 0)
+        {
+            oclusorAtual = corpo;
+            // Também contamos colisões sem malha: elas precisam ser excluídas
+            // para que o raio continue até um objeto visível mais atrás.
+            _limiteDeOclusoresNoRaio++;
+        }
+
+        if (oclusorAtual is not null && raiz is GeometryInstance3D instancia)
+        {
+            if (!_geometriasEmConstrucao.TryGetValue(oclusorAtual, out var encontradas))
+                _geometriasEmConstrucao.Add(oclusorAtual, encontradas = []);
+
+            encontradas.Add(instancia);
+        }
+
+        // GetChildren é uma coleção Godot; convertê-la aqui no _Ready mantém
+        // Godot.Collections fora do caminho por quadro do fade.
+        foreach (var filho in raiz.GetChildren().ToArray())
+            IndexarGeometrias(filho, oclusorAtual);
+    }
+
+    private void PrepararMateriaisDeFade()
+    {
+        var capacidade = 0;
+        foreach (var (oclusor, instancias) in _geometriasEmConstrucao)
+        {
+            var fotografadas = instancias.ToArray();
+            _geometriasPorOclusor.Add(oclusor, fotografadas);
+            foreach (var instancia in fotografadas)
+            {
+                if (MalhaDa(instancia) is { } malha)
+                    capacidade += instancia is MultiMeshInstance3D ? 1 : malha.GetSurfaceCount();
+            }
+        }
+
+        _geometriasEmConstrucao.Clear();
+        _overridesAnteriores.Capacity = capacidade;
+        foreach (var instancias in _geometriasPorOclusor.Values)
+        foreach (var instancia in instancias)
+        {
+            var malha = MalhaDa(instancia);
+            if (malha is null)
+                continue;
+
+            for (var superficie = 0; superficie < malha.GetSurfaceCount(); superficie++)
+            {
+                if (instancia is MultiMeshInstance3D && superficie > 0)
+                    break;
+
+                var chaveSuperficie = instancia is MultiMeshInstance3D ? -1 : superficie;
+                var materialBase = instancia.MaterialOverride
+                    ?? ObterOverrideDeSuperficie(instancia, chaveSuperficie)
+                    ?? malha.SurfaceGetMaterial(superficie);
+                if (materialBase is not BaseMaterial3D materialBase3D)
+                    continue;
+
+                var materialFade = (BaseMaterial3D)materialBase3D.Duplicate();
+                materialFade.Transparency = BaseMaterial3D.TransparencyEnum.AlphaHash;
+                _materiaisDeFade.Add((instancia, chaveSuperficie), materialFade);
+            }
+        }
+    }
+
+    private static Mesh? MalhaDa(GeometryInstance3D instancia) => instancia switch
+    {
+        MeshInstance3D malha => malha.Mesh,
+        MultiMeshInstance3D multimalha => multimalha.Multimesh?.Mesh,
+        _ => null
+    };
+
+    private static Material? ObterOverrideDeSuperficie(GeometryInstance3D instancia, int superficie) => instancia switch
+    {
+        MeshInstance3D malha => malha.GetSurfaceOverrideMaterial(superficie),
+        MultiMeshInstance3D multimalha when superficie < 0 => multimalha.MaterialOverride,
+        _ => null
+    };
+
+    private static void DefinirOverrideDeSuperficie(GeometryInstance3D instancia, int superficie, Material? material)
+    {
+        switch (instancia)
+        {
+            case MeshInstance3D malha:
+                malha.SetSurfaceOverrideMaterial(superficie, material);
+                break;
+            case MultiMeshInstance3D multimalha:
+                if (superficie < 0)
+                    multimalha.MaterialOverride = material;
+                break;
+        }
     }
 }

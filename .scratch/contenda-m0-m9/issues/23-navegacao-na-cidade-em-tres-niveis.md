@@ -6,7 +6,7 @@ chegando espalhados, não empilhados uns dentro dos outros.
 
 **Blocked by:** 22, 21
 
-**Status:** ready-for-agent
+**Status:** concluído (com medição de desempenho em máquina de referência pendente)
 
 - [x] Inimigos contornam obstáculos em vez de encostar e ficar raspando na parede
 - [x] Descem e sobem as rampas da praça sem travar em quina
@@ -16,7 +16,7 @@ chegando espalhados, não empilhados uns dentro dos outros.
       tenta de novo
 - [x] O recálculo de rota é distribuído no tempo, não todos no mesmo quadro
 - [x] Inimigo distante pensa menos vezes por segundo que inimigo próximo
-- [x] Quarenta inimigos ativos mantêm 60 quadros por segundo
+- [ ] Quarenta inimigos ativos mantêm 60 quadros por segundo (medição gráfica em máquina de referência pendente)
 
 ## Comments
 

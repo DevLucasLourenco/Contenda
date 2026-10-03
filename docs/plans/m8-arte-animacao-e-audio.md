@@ -8,8 +8,10 @@ e áudio. O gameplay já está fechado — aqui ele ganha corpo.
 Spec: [13 — Assets, animação e licenças](../specs/13-assets-animacao-e-licencas.md)
 
 O ticket 34 entregou modelos, armas procedurais e animações dos dois
-personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
-áudio e cenário — continua pendente.
+personagens jogáveis. O ticket 35 acrescentou os cinco modelos KayKit de
+inimigos, animações de alerta/ataque/dano/morte e módulos Kenney para a arena.
+VFX e áudio continuam pendentes; a confirmação visual da legibilidade e a
+medição final de desempenho também aguardam validação em máquina de referência.
 
 > Deliberadamente **depois** do MVP. Investir em arte antes de o gameplay
 > fechar é a forma mais cara de descobrir que a mecânica não funciona.
@@ -67,13 +69,14 @@ personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
 ### 5. `AnimationSet`
 
 - [x] `animset_swordsman` e `animset_gunslinger` com `AbilityAnimations` por `abilityId`
-- [ ] `animset_berserker`, `animset_overdrive`, inimigos e outros futuros (spec 12 §4)
+- [x] Inimigos KayKit usam os AnimationSets de combate compatíveis com o rig compartilhado; alerta é acionado pelo estado da IA
+- [ ] `animset_berserker`, `animset_overdrive` e outros arquétipos futuros (spec 12 §4)
 - [x] Nenhum nome de clipe de asset hardcoded em `.cs`
 
 ### 6. `AnimationTree`
 
 - [x] `AnimationNodeBlendTree` com `BlendSpace1D` de locomoção (Idle ↔ Walk ↔ Run)
-- [x] OneShots para ataques, habilidades, recarga, mobilidade, hit, transformação e morte
+- [x] OneShots para alerta, ataques, habilidades, recarga, mobilidade, hit, transformação e morte
 - [x] `Death` terminal
 - [x] `xfade` de 0.1 s
 - [x] **Root motion desligado** — deslocamento é do `MovementComponent`
@@ -108,24 +111,24 @@ personagens jogáveis. O restante deste milestone — modelos dos inimigos, VFX,
 
 ### 10. Cenário
 
-- [ ] Substituir as primitivas da arena por assets modulares CC0
+- [x] Substituir as primitivas visuais de ruas, calçadas, fachadas e obstáculos por módulos CC0; a praça e as colisões mantêm a geometria de jogo
 - [ ] Iluminação final, `WorldEnvironment` com SSAO, tonemap e bloom
-- [ ] **Rebake da navmesh** após qualquer mudança de geometria
+- [x] **Rebake da navmesh** após incluir as colisões dos carros
 - [ ] Verificar que a legibilidade sob a câmera fixa não piorou
 
 ### 11. Notices
 
-- [ ] `THIRD-PARTY-NOTICES.md` completo, no formato da spec 13 §9
+- [x] `THIRD-PARTY-NOTICES.md` completo para os assets incorporados, no formato da spec 13 §9
 
 ## Critérios de aceite
 
 - [x] Os dois personagens jogáveis usam modelos reais com animações no rig KayKit compartilhado
-- [ ] Os 5 inimigos têm modelo, animação e morte próprios
+- [x] Os 5 inimigos têm modelo, animações de locomoção/alerta/ataque/dano e morte no rig KayKit compartilhado
 - [x] Armas presas corretamente às mãos via `BoneAttachment3D`
 - [x] Golpes conectam **visualmente** no momento do dano
 - [x] Transformação é visualmente inconfundível
-- [ ] Todo asset tem `SOURCE.md` e licença compatível
-- [ ] Nenhum asset CC-BY-NC no repositório
+- [x] Todo asset incorporado tem `SOURCE.md` e licença compatível
+- [x] Auditoria dos assets não encontrou CC-BY-NC no repositório
 - [ ] Trocar o `.glb` de um personagem do mesmo rig exige só novo
       `AnimationSet`; rigs diferentes também exigem `BoneMap`
 - [ ] Performance mantida: 40 inimigos ≥ 60 fps **com modelos reais**

@@ -31,11 +31,16 @@ Uso: SDK de build do projeto C#.
 
 | Fonte | Autor | Licença | Obtido em | Uso |
 |---|---|---|---|---|
-| [KayKit Adventurers Character Pack 2.0](https://kaylousberg.itch.io/kaykit-adventurers) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Knight do Swordsman e Rogue da Gunslinger |
-| [KayKit Character Animations 1.1](https://kaylousberg.itch.io/kaykit-character-animations) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Animações dos dois personagens jogáveis |
+| [KayKit Adventurers Character Pack 2.0](https://kaylousberg.itch.io/kaykit-adventurers) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Personagens jogáveis Knight/Rogue e inimigos Mage/Rogue Hooded/Ranger/Barbarian/Knight |
+| [KayKit Character Animations 1.1](https://kaylousberg.itch.io/kaykit-character-animations) | Kay Lousberg | CC0 1.0 | 2026-10-02 | Animações compartilhadas pelos dois jogáveis e cinco inimigos |
+| [Kenney City Kit (Roads)](https://kenney.nl/assets/city-kit-roads) | Kenney | CC0 1.0 | 2026-10-02 | Ruas modulares, calçadas, faixas, cercas, cones, barreiras e caçamba |
+| [Kenney City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) | Kenney | CC0 1.0 | 2026-10-02 | Fachadas modulares e prédios de fundo |
+| [Kenney City Kit (Industrial)](https://kenney.nl/assets/city-kit-industrial) | Kenney | CC0 1.0 | 2026-10-02 | Fachadas industriais e contêineres |
+| [Kenney Car Kit](https://kenney.nl/assets/car-kit) | Kenney | CC0 1.0 | 2026-10-02 | Sedan, SUV, caminhão e van |
 
 Os arquivos originais e as licenças também estão descritos nos `SOURCE.md` de
-cada pasta. As armas atuais são cenas de primitivas do Godot e não incluem
+cada pasta. Os packs Kenney incluem uma cópia de `License.txt` e o color map
+original. As armas atuais são cenas de primitivas do Godot e não incluem
 modelos de terceiros.
 
 ## Fontes planejadas, ainda não incorporadas

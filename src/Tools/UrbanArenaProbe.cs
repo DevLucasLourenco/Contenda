@@ -33,8 +33,10 @@ public sealed partial class UrbanArenaProbe : Node
     private Rid _mapa;
     private CameraOcclusionFader? _fade;
     private MeshInstance3D? _malhaDoConteiner;
+    private MeshInstance3D? _malhaSegundoOclusor;
     private Node3D? _camera;
     private Node3D? _jogador;
+    private Vector3 _posicaoDaCameraAntesDoFade;
 
     private int _quadro;
 
@@ -48,7 +50,27 @@ public sealed partial class UrbanArenaProbe : Node
             return;
         }
 
-        AddChild(packed.Instantiate());
+        var arena = packed.Instantiate<Node3D>();
+        var segundoOclusor = new StaticBody3D
+        {
+            Name = "ProbeSecondOccluder",
+            Position = new Vector3(-11f, 0.75f, -7f),
+            CollisionLayer = Contenda.Core.PhysicsLayers.World,
+            CollisionMask = 0
+        };
+        _malhaSegundoOclusor = new MeshInstance3D
+        {
+            Name = "ProbeSecondOccluderVisual",
+            Mesh = new BoxMesh { Size = new Vector3(1.2f, 1.5f, 1.2f) },
+            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.8f, 0.2f, 0.2f) }
+        };
+        segundoOclusor.AddChild(_malhaSegundoOclusor);
+        segundoOclusor.AddChild(new CollisionShape3D
+        {
+            Shape = new BoxShape3D { Size = new Vector3(1.2f, 1.5f, 1.2f) }
+        });
+        arena.AddChild(segundoOclusor);
+        AddChild(arena);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -137,7 +159,7 @@ public sealed partial class UrbanArenaProbe : Node
     {
         _fade = ProcurarFade(GetTree().Root);
         _malhaDoConteiner = GetTree().Root.FindChild("Conteiner", true, false) is Node conteiner
-            ? conteiner.GetNodeOrNull<MeshInstance3D>("Mesh")
+            ? conteiner.GetNodeOrNull<Node3D>("Visual/shipping-container-a") as MeshInstance3D
             : null;
         _camera = GetTree().Root.FindChild("CombatCamera", true, false) as Node3D;
         _jogador = GetTree().Root.FindChild("Jogador", true, false) as Node3D;
@@ -151,8 +173,17 @@ public sealed partial class UrbanArenaProbe : Node
         // Contêiner em (-11, 0.75, -12), 5×1,5×2,5 -- um raio reto em
         // x=-11, y=0,75 (seu próprio centro), de z=-20 a z=0 atravessa
         // seu meio de ponta a ponta (z ∈ [-13.25, -10.75]).
-        _camera.GlobalPosition = new Vector3(-11f, 0.75f, -20f);
+        // Começa antes do contêiner, mas além da fachada norte: raycasts
+        // iniciados dentro de um StaticBody não retornam esse próprio corpo.
+        // Pausamos o rig e a aplicação do offset local da câmera para que o
+        // enquadramento normal não seja confundido com movimento do fader.
+        _camera.GetParent()?.SetProcess(false);
+        _camera.GetParent()?.SetPhysicsProcess(false);
+        _camera.SetProcess(false);
+        _camera.SetPhysicsProcess(false);
+        _camera.GlobalPosition = new Vector3(-11f, 0.75f, -18f);
         _jogador.GlobalPosition = new Vector3(-11f, -0.25f, 0f); // + TargetOffset (0,1,0) do fader = (-11, 0.75, 0)
+        _posicaoDaCameraAntesDoFade = _camera.GlobalPosition;
     }
 
     private void VerificarFadeDeOclusao()
@@ -160,8 +191,13 @@ public sealed partial class UrbanArenaProbe : Node
         if (_malhaDoConteiner is null)
             return; // já reportado como falha em PrepararChecagemDeFade
 
-        Verificar(_malhaDoConteiner.MaterialOverride is not null,
+        Verificar(_malhaDoConteiner.GetSurfaceOverrideMaterial(0) is not null,
             "o contêiner está no caminho câmera→jogador; deveria estar com fade aplicado.");
+        Verificar(_malhaSegundoOclusor?.GetSurfaceOverrideMaterial(0) is not null,
+            "o segundo objeto também está no caminho câmera→jogador; ambos deveriam receber fade.");
+        var movimentoDaCamera = _camera?.GlobalPosition.DistanceTo(_posicaoDaCameraAntesDoFade) ?? float.PositiveInfinity;
+        Verificar(movimentoDaCamera < 0.001f,
+            $"o fader não deveria mover a câmera para desviar do oclusor (deslocamento {movimentoDaCamera:0.000} m).");
     }
 
     private static CameraOcclusionFader? ProcurarFade(Node no)

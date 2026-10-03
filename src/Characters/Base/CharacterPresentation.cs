@@ -13,23 +13,7 @@ public static class CharacterPresentation
     private static readonly StringName AnimationLibraryName = new("motion");
     private static readonly StringName AnimationPlayerName = new("CharacterAnimationPlayer");
     private static readonly StringName AnimationTreeName = new("CharacterAnimationTree");
-
-    public static MeshInstance3D? FindBodyMesh(Node root) => FindMesh(root, "_Body");
-
-    public static Skeleton3D? FindSkeleton(Node root)
-    {
-        if (root is Skeleton3D skeleton)
-            return skeleton;
-
-        foreach (var child in root.GetChildren())
-        {
-            var found = FindSkeleton(child);
-            if (found is not null)
-                return found;
-        }
-
-        return null;
-    }
+    private static readonly Dictionary<ulong, AnimationLibrary> AnimationLibraries = [];
 
     public static AnimationPresentation? BuildAnimationTree(Node3D model, CharacterAnimationSet? set)
     {
@@ -37,6 +21,28 @@ public static class CharacterPresentation
             return null;
 
         var player = new AnimationPlayer { Name = AnimationPlayerName, RootNode = new NodePath("..") };
+        var library = GetOrBuildAnimationLibrary(set);
+        player.AddAnimationLibrary(AnimationLibraryName, library);
+        model.AddChild(player);
+
+        var root = BuildTreeRoot(set);
+        var tree = new AnimationTree
+        {
+            Name = AnimationTreeName,
+            TreeRoot = root,
+            AnimPlayer = new NodePath("../CharacterAnimationPlayer"),
+            Active = true,
+        };
+        model.AddChild(tree);
+        return new AnimationPresentation(tree, player);
+    }
+
+    private static AnimationLibrary GetOrBuildAnimationLibrary(CharacterAnimationSet set)
+    {
+        var setId = set.GetInstanceId();
+        if (AnimationLibraries.TryGetValue(setId, out var cached))
+            return cached;
+
         var library = new AnimationLibrary();
         var pendingClips = new HashSet<StringName>(set.EnumerateReferencedClips());
         var pendingSnapshot = new List<StringName>();
@@ -46,8 +52,7 @@ public static class CharacterPresentation
                 break;
 
             var bank = bankScene.Instantiate();
-            model.AddChild(bank);
-            var bankPlayer = FindAnimationPlayer(bank);
+            var bankPlayer = bank.GetNodeOrNull<AnimationPlayer>(set.AnimationPlayerPath);
             if (bankPlayer is not null)
             {
                 pendingSnapshot.Clear();
@@ -68,42 +73,29 @@ public static class CharacterPresentation
                 }
             }
 
-            model.RemoveChild(bank);
             bank.Free();
         }
 
         if (pendingClips.Count > 0)
             throw new InvalidOperationException($"AnimationSet: bancos sem os clipes: {string.Join(", ", pendingClips)}.");
 
-        player.AddAnimationLibrary(AnimationLibraryName, library);
-        model.AddChild(player);
-
-        var root = BuildTreeRoot(set);
-        var tree = new AnimationTree
-        {
-            Name = AnimationTreeName,
-            TreeRoot = root,
-            AnimPlayer = new NodePath("../CharacterAnimationPlayer"),
-            Active = true,
-        };
-        model.AddChild(tree);
-        return new AnimationPresentation(tree, player);
+        AnimationLibraries.Add(setId, library);
+        return library;
     }
 
     public static BoneAttachment3D? MountWeapon(
-        Node3D model,
+        Skeleton3D? skeleton,
         WeaponDefinition? weapon,
         StringName boneName,
         BoneAttachment3D? previousSocket = null)
     {
-        var skeleton = FindSkeleton(model);
         RemoveSocket(previousSocket);
         if (skeleton is null || weapon?.ModelScene is not { } weaponScene)
             return null;
 
         var boneIndex = skeleton.FindBone(boneName);
         if (boneIndex < 0)
-            throw new InvalidOperationException($"{model.Name}: o rig não contém o osso de arma '{boneName}'.");
+            throw new InvalidOperationException($"{skeleton.Name}: o rig não contém o osso de arma '{boneName}'.");
 
         var socket = new BoneAttachment3D { Name = "WeaponSocket", BoneName = boneName };
         skeleton.AddChild(socket);
@@ -125,6 +117,7 @@ public static class CharacterPresentation
         tree.AddNode("Locomotion", locomotion, Vector2.Zero);
 
         var previous = new StringName("Locomotion");
+        AddOneShot(tree, "Alert", set.Alert, ref previous);
         AddOneShot(tree, "Attack", set.MeleeAttacks.Length > 0 ? set.MeleeAttacks[0] : set.Shoot, ref previous);
         AddOneShot(tree, "Ability", FirstAbilityClip(set), ref previous);
         AddOneShot(tree, "Reload", set.Reload, ref previous);
@@ -169,36 +162,6 @@ public static class CharacterPresentation
             parent.RemoveChild(socket);
             socket.Free();
         }
-    }
-
-    private static AnimationPlayer? FindAnimationPlayer(Node root)
-    {
-        if (root is AnimationPlayer player)
-            return player;
-
-        foreach (var child in root.GetChildren())
-        {
-            var found = FindAnimationPlayer(child);
-            if (found is not null)
-                return found;
-        }
-
-        return null;
-    }
-
-    private static MeshInstance3D? FindMesh(Node root, string suffix)
-    {
-        if (root is MeshInstance3D mesh && mesh.Name.ToString().EndsWith(suffix, StringComparison.Ordinal))
-            return mesh;
-
-        foreach (var child in root.GetChildren())
-        {
-            var found = FindMesh(child, suffix);
-            if (found is not null)
-                return found;
-        }
-
-        return null;
     }
 
     private static bool IsLocomotionClip(CharacterAnimationSet set, StringName clip) =>

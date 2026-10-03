@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://src/Characters/Base/CharacterController.cs" id="1_ctrl"]
 [ext_resource type="Script" path="res://src/Components/Stats/StatsComponent.cs" id="2_stats"]
@@ -14,6 +14,7 @@
 [ext_resource type="Resource" path="res://data/camera/combat_camera.tres" id="12_cam"]
 [ext_resource type="Resource" path="res://data/enemies/grunt.tres" id="13_ia"]
 [ext_resource type="Script" path="res://src/Components/AI/EliteMarkerComponent.cs" id="14_elite"]
+[ext_resource type="Script" path="res://src/Characters/Base/CharacterAnimator.cs" id="15_animator"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_corpo"]
 radius = 0.4
@@ -57,8 +58,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("Shape_corpo")
 
 [node name="Corpo" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("Mesh_corpo")
+
+[node name="Model" type="Node3D" parent="."]
+unique_name_in_owner = true
 
 [node name="StatsComponent" type="Node" parent="."]
 script = ExtResource("2_stats")
@@ -149,3 +154,6 @@ font_size = 48
 outline_size = 8
 pixel_size = 0.0045
 text = "Elite"
+
+[node name="CharacterAnimator" type="Node" parent="."]
+script = ExtResource("15_animator")

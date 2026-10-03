@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Contenda.Camera;
 using Contenda.Characters.Base;
@@ -77,6 +78,9 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
 
     /// <summary>Em qual fase da percepção/combate este inimigo está. Para o probe/depuração.</summary>
     public EnemyState Estado => _maquina.Estado;
+
+    /// <summary>Notifica a apresentação quando a IA entra em uma fase visível, como o alerta.</summary>
+    public event Action<EnemyState, EnemyState>? StateChanged;
 
     /// <summary>
     /// Quem devolve este inimigo ao estoque ao fim da morte. Nulo até o
@@ -335,6 +339,8 @@ public sealed partial class EnemyBrain : Node, ICharacterComponent
         {
             _contexto?.AttackTelegraph?.DesligarAviso();
         }
+
+        StateChanged?.Invoke(anterior, novo);
     }
 
     private IntentFrame MontarIntencao(CharacterBody3D corpo, CharacterController alvo, bool pedirAtaqueAgora, float delta)

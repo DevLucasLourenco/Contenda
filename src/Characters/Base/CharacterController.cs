@@ -54,11 +54,15 @@ public sealed partial class CharacterController : CharacterBody3D
     private CharacterAnimator? _animator;
     private Node3D? _model;
     private Node3D? _modelRoot;
+    private Skeleton3D? _modelSkeleton;
+    private MeshInstance3D? _modelBodyMesh;
     private MeshInstance3D? _placeholderBody;
     private MeshInstance3D? _placeholderFacing;
 
     /// <summary>Modelo da definição atual, para inspeção de cena.</summary>
     public Node3D? CurrentModel => _model;
+    public Skeleton3D? CurrentSkeleton => _modelSkeleton;
+    public MeshInstance3D? CurrentBodyMesh => _modelBodyMesh;
 
     /// <summary>O que os componentes enxergam uns dos outros.</summary>
     public CharacterContext? Context { get; private set; }
@@ -162,6 +166,8 @@ public sealed partial class CharacterController : CharacterBody3D
             _model.GetParent()?.RemoveChild(_model);
             _model.QueueFree();
             _model = null;
+            _modelSkeleton = null;
+            _modelBodyMesh = null;
         }
 
         if (definition.ModelScene is not { } modelScene)
@@ -179,14 +185,16 @@ public sealed partial class CharacterController : CharacterBody3D
         var root = _modelRoot
             ?? throw new InvalidOperationException($"{Name}: ModelRootPath não resolveu.");
         _model = modelScene.Instantiate<Node3D>();
+        _model.Scale = Vector3.One * definition.ModelScale;
         root.AddChild(_model);
-        // A malha é de uma instância criada agora; ainda não existia em _Ready.
-        var body = CharacterPresentation.FindBodyMesh(_model)
-            ?? throw new InvalidOperationException($"{Name}: ModelScene precisa conter uma malha cujo nome termina em '_Body'.");
+        _modelSkeleton = _model.GetNodeOrNull<Skeleton3D>(definition.ModelSkeletonPath)
+            ?? throw new InvalidOperationException($"{Name}: ModelSkeletonPath não resolveu em ModelScene.");
+        _modelBodyMesh = _model.GetNodeOrNull<MeshInstance3D>(definition.ModelBodyMeshPath)
+            ?? throw new InvalidOperationException($"{Name}: ModelBodyMeshPath não resolveu em ModelScene.");
         if (_placeholderBody is not null) _placeholderBody.Visible = false;
         if (_placeholderFacing is not null) _placeholderFacing.Visible = false;
-        _transformations?.UseBodyMesh(body);
-        _flash?.UseMesh(body);
+        _transformations?.UseBodyMesh(_modelBodyMesh);
+        _flash?.UseMesh(_modelBodyMesh);
     }
 
     /// <summary>
@@ -277,6 +285,10 @@ public sealed partial class CharacterController : CharacterBody3D
         //    golpes simultâneos de disparar morte duas vezes. Delta CRU:
         //    é aqui que o relógio do próprio hitstop anda (ver HealthComponent).
         _vida?.ResolveQueue((float)delta);
+
+        // A árvore do Godot avalia as animações sozinha, mas os parâmetros de
+        // locomoção e o temporizador de morte são mantidos pelo apresentador.
+        _animator?.Tick((float)delta);
     }
 
     /// <summary>

@@ -111,9 +111,10 @@ Construção em duas etapas: **bloqueio com primitivas** no M1 (formas e alturas
 corretas, sem arte), e substituição por assets modulares CC0 no M8. O bloqueio já
 tem que ser divertido de percorrer — se não for, arte não conserta.
 
-Fontes previstas (CC0), a confirmar no M8: Kenney *City Kit* e *Modular
-Buildings*, Quaternius *Ultimate Modular Ruins*. Sujeitas à mesma regra de
-licença da [spec 13](13-assets-animacao-e-licencas.md).
+Fontes integradas no ticket 35: Kenney *City Kit (Roads)*, *City Kit
+(Commercial)*, *City Kit (Industrial)* e *Car Kit*, todos CC0. Os modelos e
+licenças acompanham `assets/city/kenney/` e `THIRD-PARTY-NOTICES.md`. A regra
+de licença da [spec 13](13-assets-animacao-e-licencas.md) continua valendo.
 
 ## 8. Critérios de aceite
 
@@ -122,7 +123,21 @@ licença da [spec 13](13-assets-animacao-e-licencas.md).
 - [ ] O telhado só é alcançável com pulo duplo ou pela rota longa
 - [ ] Nenhuma geometria acima de 4 m dentro da área jogável
 - [ ] Nada no quadrante nordeste bloqueia a visão do jogador
-- [ ] Objetos entre câmera e jogador desaparecem por fade; a câmera nunca se move
+- [x] Objetos entre câmera e jogador desaparecem por fade; a câmera nunca se move
 - [ ] Inimigos sobem na caçamba pelas ligações de navegação, sem travar em quina
 - [ ] A praça funciona como funil: lutar nela é mais perigoso e mais lucrativo
 - [ ] 40 inimigos na cidade mantêm ≥ 60 fps
+
+## Estado do ticket 35
+
+A substituição visual das ruas, calçadas, fachadas e obstáculos está
+implementada, com colisões de jogo preservadas; o andaime usa estrutura
+procedural sobre a colisão original. `UrbanArenaProbe` verifica oito rotas de
+navmesh, telhado fora da navmesh, fade simultâneo de dois objetos alinhados e
+que o fader não move a câmera. `EnemyRosterProbe` verifica modelos e clipes de
+locomoção, alerta, ataque, dano e morte para os cinco inimigos, incluindo a
+reprodução do alerta quando a IA entra nesse estado.
+
+Ainda falta confirmar visualmente, sob a câmera fixa, a leitura dos três níveis
+e silhuetas e medir 60 FPS com 40 inimigos em uma máquina de referência. O
+probe headless valida a simulação e os recursos, não a taxa de quadros renderizada.
