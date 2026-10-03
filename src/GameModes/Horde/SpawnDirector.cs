@@ -123,7 +123,11 @@ public sealed partial class SpawnDirector : Node
     private void Materializar(EnemyDefinition definicao, Vector3 posicao)
     {
         var inimigo = _pool?.Acquire(definicao, posicao);
-        inimigo?.Context?.Health?.GrantInvulnerability(SpawnProtectionSeconds);
+        if (inimigo is null)
+            return;
+
+        inimigo.Context?.Health?.GrantInvulnerability(SpawnProtectionSeconds);
+        ServiceLocator.Events.RaiseEnemySpawned(new EnemySpawnedPresentationEvent(posicao, definicao.IsBoss));
     }
 
     /// <remarks>

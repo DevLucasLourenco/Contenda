@@ -1,4 +1,5 @@
 using Godot;
+using Contenda.Vfx;
 
 namespace Contenda.Core;
 
@@ -21,11 +22,13 @@ public static class ServiceLocator
     private static GameSession? _session;
     private static SceneRouter? _router;
     private static AudioDirector? _audio;
+    private static CombatVfxDirector? _vfx;
 
     public static GameEvents Events => _events ?? throw NotReady(nameof(GameEvents));
     public static GameSession Session => _session ?? throw NotReady(nameof(GameSession));
     public static SceneRouter Router => _router ?? throw NotReady(nameof(SceneRouter));
     public static AudioDirector Audio => _audio ?? throw NotReady(nameof(AudioDirector));
+    public static CombatVfxDirector Vfx => _vfx ?? throw NotReady(nameof(CombatVfxDirector));
 
     /// <summary>
     /// Chamado por cada autoload no próprio <c>_Ready</c>. Nós não procuramos os
@@ -39,6 +42,7 @@ public static class ServiceLocator
             case GameSession s: _session = s; break;
             case SceneRouter r: _router = r; break;
             case AudioDirector a: _audio = a; break;
+            case CombatVfxDirector v: _vfx = v; break;
             default:
                 GD.PushWarning($"ServiceLocator não conhece {service.GetType().Name}");
                 break;
@@ -52,6 +56,7 @@ public static class ServiceLocator
         _session = null;
         _router = null;
         _audio = null;
+        _vfx = null;
     }
 
     private static System.InvalidOperationException NotReady(string name) =>

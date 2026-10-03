@@ -95,9 +95,21 @@ public sealed partial class ResultsScreen : CanvasLayer
 
         _painel.Visible = false;
 
-        _tentarDeNovo.Pressed += AoTentarDeNovo;
-        _trocarPersonagem.Pressed += () => Ir(CharacterSelectScenePath);
-        _menuPrincipal.Pressed += () => Ir(MainMenuScenePath);
+        _tentarDeNovo.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiConfirm);
+            AoTentarDeNovo();
+        };
+        _trocarPersonagem.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiClick);
+            Ir(CharacterSelectScenePath);
+        };
+        _menuPrincipal.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiBack);
+            Ir(MainMenuScenePath);
+        };
 
         // Visível e desabilitado até a tela de destino existir.
         if (!ResourceLoader.Exists(CharacterSelectScenePath))

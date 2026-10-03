@@ -104,6 +104,7 @@ public sealed partial class CharacterSelectMenu : Control
         if (SelectedDefinition is not { } selected)
             throw new InvalidOperationException("Nenhum personagem selecionado.");
 
+        ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiConfirm);
         ServiceLocator.Session.SelectedCharacter = selected;
         ServiceLocator.Router.GoToAsync(ArenaScenePath);
     }
@@ -300,5 +301,9 @@ public sealed partial class CharacterSelectMenu : Control
         return text.ToString();
     }
 
-    private void Back() => ServiceLocator.Router.GoToAsync(MainMenuScenePath);
+    private void Back()
+    {
+        ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiBack);
+        ServiceLocator.Router.GoToAsync(MainMenuScenePath);
+    }
 }

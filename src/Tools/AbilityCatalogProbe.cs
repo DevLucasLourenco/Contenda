@@ -91,11 +91,27 @@ public sealed partial class AbilityCatalogProbe : Node
     /// </remarks>
     private void MontarTestes()
     {
+        var estilos = new HashSet<AbilityVfxStyle>();
         foreach (var habilidade in _espadachim!.Context!.Abilities!.Abilities)
+        {
+            ValidarApresentacao(habilidade, estilos);
             _testes.Add((habilidade, _espadachim, ToArray(habilidade.Sequence)));
+        }
 
         foreach (var habilidade in _pistoleira!.Context!.Abilities!.Abilities)
+        {
+            ValidarApresentacao(habilidade, estilos);
             _testes.Add((habilidade, _pistoleira, ToArray(habilidade.Sequence)));
+        }
+    }
+
+    private void ValidarApresentacao(AbilityDefinition habilidade, HashSet<AbilityVfxStyle> estilos)
+    {
+        if (habilidade.CastSfx is null)
+            _falhas.Add($"{habilidade.Id}: CastSfx não configurado.");
+
+        if (!estilos.Add(habilidade.CastVfxStyle))
+            _falhas.Add($"{habilidade.Id}: CastVfxStyle repetido ({habilidade.CastVfxStyle}).");
     }
 
     private static CommandDirection[] ToArray(Godot.Collections.Array<CommandDirection> sequencia)

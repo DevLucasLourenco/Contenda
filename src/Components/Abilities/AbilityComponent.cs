@@ -106,6 +106,13 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
     public void Configure(CharacterDefinition definicao)
     {
         _habilidades = definicao.Abilities ?? [];
+        // O áudio confirma a execução no quadro de física; prepare as vozes ao configurar o personagem.
+        foreach (var habilidade in _habilidades)
+        {
+            if (habilidade.CastSfx is { } sound)
+                ServiceLocator.Audio.PrepareStream3D(sound);
+        }
+
         _resolver = _habilidades.Count > 0
             ? new AbilityComboResolver<AbilityDefinition>(_habilidades, a => a.Sequence, a => a.DisplayName)
             : null;
@@ -268,6 +275,15 @@ public sealed partial class AbilityComponent : Node, ICharacterComponent
         CooldownStarted?.Invoke(ability.Id, ability.Cooldown);
 
         _contexto.Combat?.ApplyLock(SelfLockSource, ability.LocksDuringCast, ability.CastTime + ability.RecoveryTime);
+
+        ServiceLocator.Events.RaiseAbilityCast(new AbilityCastPresentationEvent(
+            ability.Id,
+            ability.CastVfxStyle,
+            corpo.GlobalPosition,
+            mira,
+            ability.CastVfxColor));
+        if (ability.CastSfx is { } sound)
+            ServiceLocator.Audio.PlayStream3D(sound, corpo.GlobalPosition);
 
         // Só ao ter sucesso -- ver o comentário de RequestConfirm sobre por
         // que um gate reprovado NÃO limpa o buffer.

@@ -5,6 +5,7 @@ using Contenda.Components.Abilities;
 using Contenda.Components.Combat;
 using Contenda.Components.Health;
 using Contenda.Components.Stats;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.Weapons;
@@ -133,6 +134,15 @@ public sealed class MeleeWeapon : IWeapon
         _janelaAberta = false;
 
         AttackStarted?.Invoke(combo.Step);
+
+        var corpo = _contexto.Body;
+        var frente = -corpo.GlobalTransform.Basis.Z;
+        var direcao = new Vector3(frente.X, 0f, frente.Z).Normalized();
+        ServiceLocator.Events.RaiseMeleeSwing(new MeleeSwingEvent(
+            corpo.GlobalPosition,
+            direcao,
+            combo.Step,
+            _emCombateAereo));
     }
 
     public void Cancel()

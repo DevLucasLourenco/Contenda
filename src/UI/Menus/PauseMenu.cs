@@ -73,15 +73,25 @@ public sealed partial class PauseMenu : CanvasLayer
 
         _painel.Visible = false;
 
-        _continuar.Pressed += Fechar;
-        _configuracoes.Pressed += AbrirConfiguracoes;
+        _continuar.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiBack);
+            Fechar();
+        };
+        _configuracoes.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiClick);
+            AbrirConfiguracoes();
+        };
         _reiniciar.Pressed += () =>
         {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiConfirm);
             Fechar();
             ServiceLocator.Router.Reload();
         };
         _sair.Pressed += () =>
         {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiBack);
             Fechar();
             ServiceLocator.Router.GoToAsync(MainMenuScenePath);
         };

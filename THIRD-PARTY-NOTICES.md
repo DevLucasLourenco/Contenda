@@ -37,6 +37,12 @@ Uso: SDK de build do projeto C#.
 | [Kenney City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) | Kenney | CC0 1.0 | 2026-10-02 | Fachadas modulares e prédios de fundo |
 | [Kenney City Kit (Industrial)](https://kenney.nl/assets/city-kit-industrial) | Kenney | CC0 1.0 | 2026-10-02 | Fachadas industriais e contêineres |
 | [Kenney Car Kit](https://kenney.nl/assets/car-kit) | Kenney | CC0 1.0 | 2026-10-02 | Sedan, SUV, caminhão e van |
+| [Kenney RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney | CC0 1.0 | 2026-10-03 | Passos, golpes de lâmina e saque de arma |
+| [Kenney Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney | CC0 1.0 | 2026-10-03 | Impactos normais, críticos, tiros e explosões |
+| [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds) | Kenney | CC0 1.0 | 2026-10-03 | Cliques, confirmações, retorno, aviso e spawn |
+| [Two Simple Game Music Loops](https://opengameart.org/content/two-simple-game-music-loops) | qubodup | CC0 1.0 | 2026-10-03 | Música de menu e combate |
+| [Basilisk Boss Battle Loop](https://opengameart.org/content/basilisk-boss-battle-loop) | beardalaxy | CC0 1.0 | 2026-10-03 | Música do encontro com o chefe |
+| [Scifi City - Ambient Loop](https://opengameart.org/content/scifi-city-ambient-loop) | TinyWorlds | CC0 | 2026-10-03 | Ambiência contínua da cidade |
 
 Os arquivos originais e as licenças também estão descritos nos `SOURCE.md` de
 cada pasta. Os packs Kenney incluem uma cópia de `License.txt` e o color map

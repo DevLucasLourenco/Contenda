@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+[ext_resource type="AudioStream" path="res://assets/audio/kenney/impact/impactMining_000.ogg" id="2_sfx"]
 
 [resource]
 script = ExtResource("1_hab")
@@ -15,3 +16,6 @@ Damage = 55.0
 Range = 18.0
 Radius = 3.0
 Knockback = 5.0
+CastSfx = ExtResource("2_sfx")
+CastVfxStyle = 7
+CastVfxColor = Color(1, 0.2, 0.04, 1)

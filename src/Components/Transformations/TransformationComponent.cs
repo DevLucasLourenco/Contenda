@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Contenda.Characters.Base;
 using Contenda.Components.Combat;
 using Contenda.Components.Stats;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.Components.Transformations;
@@ -22,6 +23,9 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
     private Node3D? _cannonVisual;
     private Material? _originalOverride;
     private StandardMaterial3D? _formMaterial;
+    private MeshInstance3D? _auraRing;
+    private StandardMaterial3D? _auraMaterial;
+    private float _auraElapsed;
 
     public IReadOnlyList<TransformationDefinition> Available => Forms;
     public int SelectedIndex => _state.SelectedIndex;
@@ -43,6 +47,7 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
 
         _originalOverride = _bodyMesh.MaterialOverride;
         _formMaterial = new StandardMaterial3D { Roughness = 0.6f };
+        SetProcess(false);
     }
 
     public void Bind(CharacterContext contexto)
@@ -51,6 +56,7 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
             _context.Health.BeforeDied -= AoMorrer;
 
         _context = contexto;
+        GarantirAura(contexto.Body);
         _context.BodyBaseMaterial = _originalOverride;
         if (_context.Health is not null)
             _context.Health.BeforeDied += AoMorrer;
@@ -89,6 +95,8 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
 
         if (_cannonVisual is not null)
             _cannonVisual.Visible = false;
+        if (_auraRing is not null)
+            _auraRing.Visible = false;
         SelectionChanged?.Invoke(0);
     }
 
@@ -172,7 +180,25 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
 
         _state.Revert();
         _activeRuntime = null;
+        if (_auraRing is not null)
+            _auraRing.Visible = false;
+        ServiceLocator.Events.RaiseTransformationChanged(new TransformationPresentationEvent(
+            forma.Id,
+            _context.Body.GlobalPosition,
+            forma.ThemeColor,
+            Activated: false));
         Reverted?.Invoke(forma, reason);
+        SetProcess(false);
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_auraRing is null || !_auraRing.Visible)
+            return;
+
+        _auraElapsed += (float)delta;
+        var pulse = 1f + (Mathf.Sin(_auraElapsed * 4.5f) * 0.12f);
+        _auraRing.Scale = new Vector3(pulse, pulse, pulse);
     }
 
     public void ResetForSpawn()
@@ -206,6 +232,45 @@ public sealed partial class TransformationComponent : Node, ICharacterComponent
             _bodyMesh.MaterialOverride = material;
         if (_cannonVisual is not null)
             _cannonVisual.Visible = false;
+
+        if (_auraRing is not null && _auraMaterial is not null)
+        {
+            _auraMaterial.AlbedoColor = new Color(forma.ThemeColor.R, forma.ThemeColor.G, forma.ThemeColor.B, 0.42f);
+            _auraMaterial.Emission = forma.ThemeColor;
+            _auraRing.Visible = true;
+            SetProcess(true);
+        }
+
+        ServiceLocator.Events.RaiseTransformationChanged(new TransformationPresentationEvent(
+            forma.Id,
+            contexto.Body.GlobalPosition,
+            forma.ThemeColor,
+            Activated: true));
+    }
+
+    private void GarantirAura(Node3D body)
+    {
+        if (_auraRing is not null)
+            return;
+
+        _auraMaterial = new StandardMaterial3D
+        {
+            AlbedoColor = new Color(Colors.Cyan.R, Colors.Cyan.G, Colors.Cyan.B, 0.42f),
+            EmissionEnabled = true,
+            Emission = Colors.Cyan,
+            EmissionEnergyMultiplier = 1.6f,
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+        };
+        _auraRing = new MeshInstance3D
+        {
+            Name = "AuraDaForma",
+            Mesh = new TorusMesh { InnerRadius = 0.68f, OuterRadius = 0.88f, RingSegments = 24, Rings = 8 },
+            MaterialOverride = _auraMaterial,
+            Position = new Vector3(0f, 0.8f, 0f),
+            Visible = false,
+        };
+        body.AddChild(_auraRing);
     }
 
     private void AoMorrer(Contenda.Components.Health.DamageInfo _) => Revert(RevertReason.Death);

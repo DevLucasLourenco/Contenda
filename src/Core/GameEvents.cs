@@ -1,4 +1,6 @@
 using System;
+using Contenda.Components.Abilities;
+using Contenda.Components.Health;
 using Godot;
 
 namespace Contenda.Core;
@@ -98,6 +100,36 @@ public readonly record struct WaveAnnouncedEvent(string DisplayName);
 /// <param name="Duration">Quanto tempo o marcador fica visível antes do inimigo aparecer.</param>
 public readonly record struct SpawnMarkerEvent(Vector3 Position, float Duration);
 
+/// <summary>Uma arma corpo a corpo começou um golpe visível.</summary>
+public readonly record struct MeleeSwingEvent(Vector3 Position, Vector3 Direction, int ComboStep, bool IsAerial);
+
+/// <summary>Um tiro foi disparado, para traçador, clarão e som da arma.</summary>
+public readonly record struct ShotFiredEvent(Vector3 Origin, Vector3 Destination, StringName WeaponId);
+
+/// <summary>Uma arma começou a recarregar.</summary>
+public readonly record struct WeaponReloadEvent(Vector3 Position, StringName WeaponId);
+
+/// <summary>Um golpe foi aplicado, com os dados que definem o efeito de impacto.</summary>
+public readonly record struct DamageImpactEvent(Vector3 Position, DamageType Type, bool IsCritical, string SourceTag);
+
+/// <summary>Uma habilidade começou a ser executada.</summary>
+public readonly record struct AbilityCastPresentationEvent(StringName AbilityId, AbilityVfxStyle Style, Vector3 Position, Vector3 Direction, Color Tint);
+
+/// <summary>Uma forma foi ativada ou revertida.</summary>
+public readonly record struct TransformationPresentationEvent(StringName FormId, Vector3 Position, Color Tint, bool Activated);
+
+/// <summary>Um inimigo materializou-se após o aviso de spawn.</summary>
+public readonly record struct EnemySpawnedPresentationEvent(Vector3 Position, bool IsBoss);
+
+/// <summary>Um inimigo começou a morrer.</summary>
+public readonly record struct EnemyDiedPresentationEvent(Vector3 Position, bool IsBoss);
+
+/// <summary>Um inimigo iniciou o wind-up de um golpe telegrafado.</summary>
+public readonly record struct EnemyAttackWarningEvent(Vector3 Position);
+
+/// <summary>O personagem do jogador sofreu dano.</summary>
+public readonly record struct PlayerDamagedEvent(Vector3 Position);
+
 /// <summary>
 /// Barramento para eventos entre sistemas sem relação direta — o abate de um
 /// inimigo chegando ao placar, por exemplo.
@@ -133,6 +165,36 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Avisa que um marcador de nascimento precisa aparecer no chão. Ticket 27.</summary>
     public event Action<SpawnMarkerEvent>? SpawnMarkerRequested;
+
+    /// <summary>Avisa que um golpe corpo a corpo começou.</summary>
+    public event Action<MeleeSwingEvent>? MeleeSwingRequested;
+
+    /// <summary>Avisa que um tiro precisa de apresentação.</summary>
+    public event Action<ShotFiredEvent>? ShotFired;
+
+    /// <summary>Avisa que uma arma começou a recarregar.</summary>
+    public event Action<WeaponReloadEvent>? WeaponReloadRequested;
+
+    /// <summary>Avisa que dano aplicado precisa de impacto visual e sonoro.</summary>
+    public event Action<DamageImpactEvent>? DamageImpactRequested;
+
+    /// <summary>Avisa que uma habilidade começou.</summary>
+    public event Action<AbilityCastPresentationEvent>? AbilityCastRequested;
+
+    /// <summary>Avisa que a apresentação de uma forma mudou.</summary>
+    public event Action<TransformationPresentationEvent>? TransformationChanged;
+
+    /// <summary>Avisa que um inimigo apareceu.</summary>
+    public event Action<EnemySpawnedPresentationEvent>? EnemySpawned;
+
+    /// <summary>Avisa que um inimigo começou a morrer.</summary>
+    public event Action<EnemyDiedPresentationEvent>? EnemyDied;
+
+    /// <summary>Avisa que um inimigo iniciou um ataque telegrafado.</summary>
+    public event Action<EnemyAttackWarningEvent>? EnemyAttackWarning;
+
+    /// <summary>Avisa que o personagem do jogador recebeu dano.</summary>
+    public event Action<PlayerDamagedEvent>? PlayerDamaged;
 
     /// <summary>Avisa que as configurações foram aplicadas. Ticket 32.</summary>
     public event Action<SettingsChangedEvent>? SettingsChanged;
@@ -184,4 +246,34 @@ public sealed partial class GameEvents : Node
 
     /// <summary>Dispara <see cref="SpawnMarkerRequested"/>.</summary>
     public void RaiseSpawnMarker(in SpawnMarkerEvent evento) => SpawnMarkerRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="MeleeSwingRequested"/>.</summary>
+    public void RaiseMeleeSwing(in MeleeSwingEvent evento) => MeleeSwingRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="ShotFired"/>.</summary>
+    public void RaiseShotFired(in ShotFiredEvent evento) => ShotFired?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="WeaponReloadRequested"/>.</summary>
+    public void RaiseWeaponReload(in WeaponReloadEvent evento) => WeaponReloadRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="DamageImpactRequested"/>.</summary>
+    public void RaiseDamageImpact(in DamageImpactEvent evento) => DamageImpactRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="AbilityCastRequested"/>.</summary>
+    public void RaiseAbilityCast(in AbilityCastPresentationEvent evento) => AbilityCastRequested?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="TransformationChanged"/>.</summary>
+    public void RaiseTransformationChanged(in TransformationPresentationEvent evento) => TransformationChanged?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="EnemySpawned"/>.</summary>
+    public void RaiseEnemySpawned(in EnemySpawnedPresentationEvent evento) => EnemySpawned?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="EnemyDied"/>.</summary>
+    public void RaiseEnemyDied(in EnemyDiedPresentationEvent evento) => EnemyDied?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="EnemyAttackWarning"/>.</summary>
+    public void RaiseEnemyAttackWarning(in EnemyAttackWarningEvent evento) => EnemyAttackWarning?.Invoke(evento);
+
+    /// <summary>Dispara <see cref="PlayerDamaged"/>.</summary>
+    public void RaisePlayerDamaged(in PlayerDamagedEvent evento) => PlayerDamaged?.Invoke(evento);
 }

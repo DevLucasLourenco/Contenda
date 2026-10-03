@@ -14,6 +14,9 @@ namespace Contenda.Weapons;
 [GlobalClass]
 public sealed partial class WeaponDefinition : Resource
 {
+    /// <summary>ID usado pelo recurso do braço-canhão e sua apresentação de disparo.</summary>
+    public static readonly StringName ArmCannonId = new("weapon.arm_cannon");
+
     /// <summary>Identificador estável.</summary>
     [Export] public StringName Id { get; set; } = new("sem_arma");
 

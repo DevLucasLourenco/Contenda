@@ -25,9 +25,6 @@ public sealed class HitscanWeapon : IWeapon, IDisposable
     /// <summary>Tolerância lateral para contar como acerto — raio da cápsula do personagem mais folga.</summary>
     private const float HitRadius = 0.5f;
 
-    private const float TracerLifetime = 0.06f;
-    private const float TracerThickness = 0.02f;
-
     private readonly WeaponDefinition _arma;
     private readonly CharacterContext _contexto;
     private readonly Node _dono;
@@ -143,6 +140,7 @@ public sealed class HitscanWeapon : IWeapon, IDisposable
         if (_arma.ExplosionRadius > 0f)
         {
             DispararProjetil(origem, direcao, aimPoint);
+            ServiceLocator.Events.RaiseShotFired(new ShotFiredEvent(origem, aimPoint, _arma.Id));
             return;
         }
 
@@ -188,7 +186,7 @@ public sealed class HitscanWeapon : IWeapon, IDisposable
             HitLanded?.Invoke(alvo);
         }
 
-        DesenharRastro(origem, destino);
+        ServiceLocator.Events.RaiseShotFired(new ShotFiredEvent(origem, destino, _arma.Id));
     }
 
     private void DispararProjetil(Vector3 origem, Vector3 direcao, Vector3 pontoDeMira)
@@ -295,31 +293,4 @@ public sealed class HitscanWeapon : IWeapon, IDisposable
         return melhor;
     }
 
-    /// <remarks>
-    /// Placeholder deliberado: VFX pooled é o ticket 36. Um <c>MeshInstance3D</c>
-    /// novo por tiro é aceitável na cadência de um revólver (mínimo 0,05 s
-    /// entre disparos); não seria numa metralhadora automática.
-    /// </remarks>
-    private void DesenharRastro(Vector3 origem, Vector3 destino)
-    {
-        var comprimento = origem.DistanceTo(destino);
-        if (comprimento < 0.01f)
-            return;
-
-        var rastro = new MeshInstance3D
-        {
-            Mesh = new BoxMesh { Size = new Vector3(TracerThickness, TracerThickness, comprimento) },
-        };
-
-        var meio = origem.Lerp(destino, 0.5f);
-
-        // -Z do basis aponta de volta para a origem, então +Z -- o eixo do
-        // comprimento do BoxMesh -- aponta para o destino.
-        var basis = Basis.LookingAt(origem - destino, Vector3.Up);
-        rastro.GlobalTransform = new Transform3D(basis, meio);
-
-        var arvore = _dono.GetTree();
-        arvore.Root.AddChild(rastro);
-        arvore.CreateTimer(TracerLifetime).Timeout += rastro.QueueFree;
-    }
 }

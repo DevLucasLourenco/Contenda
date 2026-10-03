@@ -3,6 +3,7 @@ using Contenda.Camera;
 using Contenda.Characters.Base;
 using Contenda.Components.Combat;
 using Contenda.Components.Stats;
+using Contenda.Core;
 using Contenda.Input;
 using Godot;
 
@@ -57,6 +58,8 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     private bool _dashUsadoNoAr;
     private bool _falling;
     private int _extraAirJumps;
+    private Vector3 _lastFootstepPosition;
+    private float _distanceSinceFootstep;
 
     /// <summary>Velocidade atual, para quem precisar consultar.</summary>
     public Vector3 Velocity { get; private set; }
@@ -140,7 +143,11 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
     public event Action? Landed;
     public event Action? DashStarted;
 
-    public void Bind(CharacterContext contexto) => _contexto = contexto;
+    public void Bind(CharacterContext contexto)
+    {
+        _contexto = contexto;
+        _lastFootstepPosition = contexto.Body.GlobalPosition;
+    }
 
     /// <summary>
     /// Empurra o personagem, somando ao movimento próprio.
@@ -190,6 +197,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         _dashCooldownRestante = 0f;
         _dashUsadoNoAr = false;
         _falling = false;
+        _distanceSinceFootstep = 0f;
         ExternalGravityScale = 1f;
         IsGrounded = true;
 
@@ -305,6 +313,7 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         corpo.Velocity = velocidade;
         corpo.MoveAndSlide();
         Velocity = corpo.Velocity;
+        AtualizarPassos(corpo);
 
         if (!corpo.IsOnFloor() && corpo.Velocity.Y < 0f && !_falling)
         {
@@ -320,6 +329,27 @@ public sealed partial class MovementComponent : Node, ICharacterComponent
         var travasAtuais = _contexto.Combat?.ActiveLocks ?? ActionLock.None;
         if ((travasAtuais & ActionLock.Rotation) == 0)
             Girar(intencao, direcao, delta);
+    }
+
+    private void AtualizarPassos(CharacterBody3D corpo)
+    {
+        var atual = corpo.GlobalPosition;
+        if (corpo.IsOnFloor())
+        {
+            var movimento = atual - _lastFootstepPosition;
+            movimento.Y = 0f;
+            if (movimento.LengthSquared() > 0.0001f)
+            {
+                _distanceSinceFootstep += movimento.Length();
+                if (_distanceSinceFootstep >= 1.9f)
+                {
+                    _distanceSinceFootstep %= 1.9f;
+                    ServiceLocator.Audio.Play3D(AudioDirector.CueIds.CombatFootstep, atual);
+                }
+            }
+        }
+
+        _lastFootstepPosition = atual;
     }
 
     /// <remarks>

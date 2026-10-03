@@ -264,6 +264,15 @@ public sealed partial class HealthComponent : Node, ICharacterComponent, IDamage
     private void RepassarDano(DamageInfo golpe)
     {
         Damaged?.Invoke(golpe);
+        ServiceLocator.Events.RaiseDamageImpact(new DamageImpactEvent(
+            golpe.HitPoint,
+            golpe.Type,
+            golpe.IsCritical,
+            golpe.SourceTag));
+
+        if (_contexto?.Body == ServiceLocator.Session.PlayerBody)
+            ServiceLocator.Events.RaisePlayerDamaged(new PlayerDamagedEvent(golpe.HitPoint));
+
         ServiceLocator.Events.RaiseDamageNumber(new DamageNumberEvent(golpe.HitPoint, golpe.Amount, golpe.IsCritical));
     }
 

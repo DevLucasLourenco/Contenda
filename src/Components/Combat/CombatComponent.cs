@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Contenda.Characters.Base;
+using Contenda.Core;
 using Contenda.Weapons;
 using Godot;
 
@@ -190,6 +191,11 @@ public sealed partial class CombatComponent : Node, ICharacterComponent
     private void RepassarInicio(int passo) => AttackStarted?.Invoke(passo);
 
     private void RepassarAcerto(Node3D alvo) => HitLanded?.Invoke(alvo);
-    private void RepassarRecarga() => ReloadStarted?.Invoke();
+    private void RepassarRecarga()
+    {
+        ReloadStarted?.Invoke();
+        if (_contexto is not null)
+            ServiceLocator.Events.RaiseWeaponReload(new WeaponReloadEvent(_contexto.Body.GlobalPosition, EquippedWeapon.Id));
+    }
     private void RepassarMergulho() => DiveStarted?.Invoke();
 }

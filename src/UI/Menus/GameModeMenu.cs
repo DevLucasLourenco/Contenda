@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.UI.Menus;
@@ -65,8 +66,16 @@ public sealed partial class GameModeMenu : Control
                 ComingSoon.Apply(cartao);
         }
 
-        _horda.Pressed += () => ModeChosen?.Invoke(HordeModeId);
-        _voltar.Pressed += () => BackRequested?.Invoke();
+        _horda.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiConfirm);
+            ModeChosen?.Invoke(HordeModeId);
+        };
+        _voltar.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiBack);
+            BackRequested?.Invoke();
+        };
 
         // "Foco inicial no Horde" (spec 11 §3.2) -- e é o que faz o teclado funcionar sem mouse.
         _horda.GrabFocus();

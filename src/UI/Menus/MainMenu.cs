@@ -70,6 +70,9 @@ public sealed partial class MainMenu : Node
 
     public override void _Ready()
     {
+        ServiceLocator.Audio.PlayMusic(AudioDirector.CueIds.MusicMenu);
+        ServiceLocator.Audio.SetCityAmbience(false);
+
         _painel = GetNodeOrNull<Control>(MainPanelPath);
         _iniciar = GetNodeOrNull<Button>(StartButtonPath);
         _configuracoes = GetNodeOrNull<Button>(SettingsButtonPath);
@@ -86,9 +89,21 @@ public sealed partial class MainMenu : Node
         // Voltar ao menu descarta o estado da partida anterior (spec 14 §4).
         ServiceLocator.Session.ResetToMenu();
 
-        _iniciar.Pressed += AbrirModos;
-        _configuracoes.Pressed += AbrirConfiguracoes;
-        _sair.Pressed += () => GetTree().Quit();
+        _iniciar.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiClick);
+            AbrirModos();
+        };
+        _configuracoes.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiClick);
+            AbrirConfiguracoes();
+        };
+        _sair.Pressed += () =>
+        {
+            ServiceLocator.Audio.PlayUi(AudioDirector.CueIds.UiConfirm);
+            GetTree().Quit();
+        };
 
         // Visível e desabilitado até a tela de destino existir.
         if (!ResourceLoader.Exists(SettingsScenePath))

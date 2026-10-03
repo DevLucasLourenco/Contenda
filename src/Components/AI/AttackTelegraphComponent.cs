@@ -1,4 +1,5 @@
 using Contenda.Characters.Base;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.Components.AI;
@@ -19,9 +20,9 @@ namespace Contenda.Components.AI;
 /// que só o cérebro do inimigo tem. Ver spec 09 §7 — "todo ataque precisa
 /// ser legível antes de acertar".
 ///
-/// Sem som: o projeto ainda não tem nenhum sistema de áudio (`AudioDirector`
-/// é um autoload vazio) -- fica para o ticket 36 (M8), que já lista telegrafia
-/// sonora na própria spec.
+/// A apresentação sonora fica no <c>AudioDirector</c>: o <c>EnemyBrain</c>
+/// publica <c>EnemyAttackWarningEvent</c> quando inicia o windup, e o áudio
+/// responde a esse evento sem acoplar este componente visual ao serviço.
 /// </remarks>
 public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
 {
@@ -31,10 +32,13 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     /// <summary>Cor emissiva da telegrafia.</summary>
     [Export] public Color TelegraphColor { get; set; } = new(1f, 0.35f, 0.1f);
 
+    [Export(PropertyHint.Range, "0.5,6,0.1")] public float TelegraphRadius { get; set; } = 1.45f;
+
     private CharacterContext? _contexto;
     private MeshInstance3D? _malha;
     private MeshInstance3D? _placeholder;
     private StandardMaterial3D? _materialAviso;
+    private MeshInstance3D? _decalAviso;
 
     /// <summary>Se o aviso está aceso agora. Para o probe/depuração.</summary>
     public bool IsWarning { get; private set; }
@@ -57,6 +61,34 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     public void Bind(CharacterContext contexto)
     {
         _contexto = contexto;
+
+        if (_decalAviso is null)
+        {
+            var material = new StandardMaterial3D
+            {
+                AlbedoColor = new Color(TelegraphColor.R, TelegraphColor.G, TelegraphColor.B, 0.62f),
+                EmissionEnabled = true,
+                Emission = TelegraphColor,
+                EmissionEnergyMultiplier = 1.8f,
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+            };
+            _decalAviso = new MeshInstance3D
+            {
+                Name = "AvisoNoChao",
+                Mesh = new TorusMesh
+                {
+                    InnerRadius = Mathf.Max(0.1f, TelegraphRadius - 0.12f),
+                    OuterRadius = TelegraphRadius,
+                    RingSegments = 28,
+                    Rings = 8,
+                },
+                MaterialOverride = material,
+                Position = new Vector3(0f, 0.035f, 0f),
+                Visible = false,
+            };
+            contexto.Body.AddChild(_decalAviso);
+        }
     }
 
     public void Configure(CharacterDefinition definicao)
@@ -67,7 +99,14 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
     /// <summary>Acende o aviso. Chamado ao entrar no windup do golpe.</summary>
     public void LigarAviso()
     {
+        if (IsWarning)
+            return;
+
         IsWarning = true;
+        if (_decalAviso is not null)
+            _decalAviso.Visible = true;
+        if (_contexto is not null)
+            ServiceLocator.Events.RaiseEnemyAttackWarning(new EnemyAttackWarningEvent(_contexto.Body.GlobalPosition));
 
         if (_malha is null)
             return;
@@ -101,6 +140,8 @@ public sealed partial class AttackTelegraphComponent : Node, ICharacterComponent
             return;
 
         IsWarning = false;
+        if (_decalAviso is not null)
+            _decalAviso.Visible = false;
         _contexto?.RestaurarMaterialDaMalha(_malha);
     }
 

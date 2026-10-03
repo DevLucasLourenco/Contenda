@@ -91,23 +91,22 @@ medição final de desempenho também aguardam validação em máquina de refer�
 
 ### 8. VFX
 
-- [ ] Trail de espada (`GPUParticles3D` ou mesh de trail)
-- [ ] Muzzle flash + tracer do revólver
-- [ ] Impacto por tipo de dano
-- [ ] VFX por habilidade (8)
-- [ ] Ativação e aura persistente de cada forma
-- [ ] Marcador de spawn e dissolve de morte
-- [ ] Decal de área para ataques telegrafados
+- [x] Trail mesh de espada, clarão de boca e tracer em pools reutilizados
+- [x] Impacto por tipo de dano; crítico tem forma, cor e som exclusivos
+- [x] VFX por habilidade (8 estilos e cores configurados no catálogo)
+- [x] Ativação e aura persistente de cada forma
+- [x] Efeito de materialização de spawn e impacto visual na morte
+- [x] Decal circular de área para ataques telegrafados
 
 ### 9. Áudio
 
-- [ ] Buses Master → Music, SFX, UI, Ambience
-- [ ] `AudioStreamPlayer3D` pooled; limite de 3 instâncias por som, pitch ±8%
-- [ ] SFX: passos, golpes, impactos, tiro, recarga, habilidades, transformação,
-      dano recebido, morte, UI
-- [ ] Música: menu, combate, boss
-- [ ] Ambiência da arena
-- [ ] Fontes CC0 (Kenney Audio, freesound CC0) com `SOURCE.md`
+- [x] Buses Master → Music, SFX, UI, Ambience (aplicados por `SettingsStore`)
+- [x] `AudioStreamPlayer3D` pooled; limite de 3 instâncias por arquivo, pitch ±8%
+- [x] SFX: passos, golpes, impactos, tiros, recarga, habilidades, transformação,
+      dano recebido, morte, aviso de ataque e UI
+- [x] Música de menu, combate e chefe com crossfade
+- [x] Ambiência contínua da cidade
+- [x] Fontes CC0 com `SOURCE.md` por pasta e registro em `THIRD-PARTY-NOTICES.md`
 
 ### 10. Cenário
 

@@ -4,6 +4,19 @@ using Godot;
 
 namespace Contenda.Components.Abilities;
 
+/// <summary>Assinatura visual própria de cada habilidade de catálogo.</summary>
+public enum AbilityVfxStyle : byte
+{
+    DashSlash,
+    Deadeye,
+    SpinSlash,
+    RisingSlash,
+    QuickStepShot,
+    HeavyLunge,
+    FanTheHammer,
+    ExplosiveShot,
+}
+
 /// <summary>
 /// Uma habilidade: sequência, custo, recarga e efeito — tudo dado, nada em código.
 /// </summary>
@@ -11,10 +24,9 @@ namespace Contenda.Components.Abilities;
 /// Meta arquitetural da spec 05: adicionar uma habilidade nova é criar um
 /// `.tres`, nunca mexer em `AbilityComponent`. Ver ticket 14/15.
 ///
-/// Alguns campos (`Icon`, `CastVfx`, `HitVfx`, `CastSfx`, `ProjectileScene`)
-/// ainda não têm consumidor — nenhum comportamento do ticket 14 os lê. Ficam
-/// declarados porque a spec 05 §1 já fixa o esquema completo, e os tickets
-/// 15/16/M8 vão precisar deles sem reabrir esta classe.
+/// O cast usa o estilo, a cor e o som configurados no recurso. `CastVfx` e
+/// `HitVfx` continuam como pontos de extensão para cenas customizadas; a
+/// apresentação procedural deste ticket não depende deles.
 /// </remarks>
 [GlobalClass]
 public sealed partial class AbilityDefinition : Resource
@@ -110,13 +122,19 @@ public sealed partial class AbilityDefinition : Resource
     /// <summary>Nome da animação. Sem consumidor até o M8 ter animações.</summary>
     [Export] public StringName AnimationName { get; set; } = new("");
 
-    /// <summary>VFX do cast. Sem consumidor ainda.</summary>
+    /// <summary>Cena opcional para uma futura composição de VFX criada pelo artista.</summary>
     [Export] public PackedScene? CastVfx { get; set; }
+
+    /// <summary>Variação mesh procedural do cast.</summary>
+    [Export] public AbilityVfxStyle CastVfxStyle { get; set; }
+
+    /// <summary>Cor de assinatura deste VFX.</summary>
+    [Export] public Color CastVfxColor { get; set; } = Colors.White;
 
     /// <summary>VFX do acerto. Sem consumidor ainda.</summary>
     [Export] public PackedScene? HitVfx { get; set; }
 
-    /// <summary>Som do cast. Sem consumidor ainda.</summary>
+    /// <summary>Som posicional do cast, tocado pelo pool do AudioDirector.</summary>
     [Export] public AudioStream? CastSfx { get; set; }
 
     /// <summary>Intensidade do screen shake ao executar. Sem consumidor ainda.</summary>

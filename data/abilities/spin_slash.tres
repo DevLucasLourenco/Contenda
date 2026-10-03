@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/Components/Abilities/AbilityDefinition.cs" id="1_hab"]
+[ext_resource type="AudioStream" path="res://assets/audio/kenney/rpg/knifeSlice2.ogg" id="2_sfx"]
 
 [resource]
 script = ExtResource("1_hab")
@@ -16,3 +17,6 @@ Range = 3.0
 Angle = 180.0
 Knockback = 5.0
 LocksDuringCast = 11
+CastSfx = ExtResource("2_sfx")
+CastVfxStyle = 2
+CastVfxColor = Color(0.85, 0.45, 1, 1)

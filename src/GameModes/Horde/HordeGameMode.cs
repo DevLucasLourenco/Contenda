@@ -208,6 +208,8 @@ public sealed partial class HordeGameMode : Node, IGameMode
         _duracao = 0f;
         _segundoExibido = 0;
 
+        ServiceLocator.Audio.PlayMusic(AudioDirector.CueIds.MusicCombat);
+        ServiceLocator.Audio.SetCityAmbience(true);
         Mudar(GameModeState.Playing);
         AvisarPlacar();
         _waveDirector.Begin(WaveSet);
