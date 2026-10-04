@@ -1,0 +1,136 @@
+name: Builds de release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  exportar:
+    name: Exportar e empacotar
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Validar versão da tag
+        run: python tools/release.py validate --tag "$GITHUB_REF_NAME"
+
+      - name: Instalar Godot .NET e templates de export
+        env:
+          GODOT_INSTALL_EXPORT_TEMPLATES: 'true'
+        run: bash tools/setup-godot-mono.sh
+
+      - name: Obter avisos de copyright da mesma versão do Godot
+        run: |
+          mkdir -p build
+          curl --fail --location --retry 3 \
+            "https://raw.githubusercontent.com/godotengine/godot/${GODOT_VERSION}-stable/COPYRIGHT.txt" \
+            --output build/GODOT_COPYRIGHT.txt
+
+      - name: Restaurar, compilar e testar
+        run: |
+          dotnet restore Contenda.sln
+          dotnet build Contenda.sln -c ExportRelease --no-restore
+          dotnet test tests/Contenda.Tests/Contenda.Tests.csproj -c ExportRelease --no-build --no-restore --verbosity normal
+
+      - name: Importar assets
+        run: "$GODOT_BIN --headless --editor --path . --import"
+
+      - name: Criar diretórios de export
+        run: mkdir -p build/raw/windows build/raw/linux build/raw/macos
+
+      - name: Exportar Windows x86_64
+        run: "$GODOT_BIN --headless --path . --export-release 'Windows Desktop' build/raw/windows/Contenda.exe"
+
+      - name: Exportar Linux x86_64
+        run: "$GODOT_BIN --headless --path . --export-release 'Linux' build/raw/linux/Contenda.x86_64"
+
+      - name: Exportar macOS universal
+        run: "$GODOT_BIN --headless --path . --export-release 'macOS Universal' build/raw/macos/Contenda.app"
+
+      - name: Empacotar builds
+        run: python tools/release.py package --tag "$GITHUB_REF_NAME"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Contenda-${{ github.ref_name }}
+          path: build/packages/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  smoke-test:
+    name: Inicializar build em ${{ matrix.os }}
+    needs: exportar
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            package: win64
+            executable: Contenda.exe
+          - os: ubuntu-latest
+            package: linux-x86_64
+            executable: Contenda.x86_64
+          - os: macos-latest
+            package: macos-universal
+            executable: Contenda.app/Contents/MacOS/Contenda
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Contenda-${{ github.ref_name }}
+          path: build/packages
+
+      - name: Descompactar build ${{ matrix.package }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="build/packages/Contenda-${GITHUB_REF_NAME#v}-${{ matrix.package }}.zip"
+          mkdir -p "build/smoke/${{ matrix.package }}"
+          unzip -q "$archive" -d "build/smoke/${{ matrix.package }}"
+
+      - name: Verificar arquivos legais do pacote
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="build/smoke/${{ matrix.package }}"
+          test -s "$package_dir/LICENSE"
+          test -s "$package_dir/THIRD-PARTY-NOTICES.md"
+          test -s "$package_dir/GODOT_COPYRIGHT.txt"
+          test -s "$package_dir/README.txt"
+          test -f "$package_dir/${{ matrix.executable }}"
+
+      - name: Iniciar build de release sem instalar Godot ou SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          executable="build/smoke/${{ matrix.package }}/${{ matrix.executable }}"
+          output="$RUNNER_TEMP/contenda-smoke.log"
+          "$executable" --headless --quit-after 20 -- --bench=40enemies >"$output" 2>&1
+          cat "$output"
+          if ! grep -F "[version] Contenda ${GITHUB_REF_NAME#v}" "$output"; then
+            echo "A versão impressa pela build não corresponde à tag." >&2
+            exit 1
+          fi
+          if grep -E '^\[boot\]|benchmark solicitado|PerformanceBench|scenes/debug' "$output"; then
+            echo "A build de release aceitou um caminho de debug." >&2
+            exit 1
+          fi

@@ -59,22 +59,22 @@ jobs:
         run: bash tools/check-no-2d.sh
 
   godot-import:
-    name: Import do Godot (não bloqueante)
+    name: Import do Godot .NET
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      # Vira bloqueante no M9, junto com o ContentValidator e os testes de cena.
-      # Ver docs/specs/14-configuracoes-persistencia-e-build.md §8.
-      #
-      # Quando este job for real, ele DEVE rodar as sondas headless abaixo. Elas
-      # verificam fiação que teste unitário não alcança — a sonda de dano já
-      # pegou um bug de i-frames bloqueando o segundo golpe do mesmo quadro:
-      #
-      #   godot --headless --path . --import
-      #   godot --headless --path . --scene res://scenes/debug/DamageProbe.tscn
-      #   godot --headless --path . --scene res://scenes/debug/CombatProbe.tscn
-      #   godot --headless --path . --scene res://scenes/debug/BakeNavmesh.tscn
-      #
-      - name: Pendente
-        run: echo "::notice::Import e sondas headless do Godot entram no M9."
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Baixar Godot .NET 4.7.2
+        run: bash tools/setup-godot-mono.sh
+
+      - name: Restaurar e compilar projeto C# para o editor
+        run: |
+          dotnet restore Contenda.sln
+          dotnet build Contenda.csproj -c Debug --no-restore
+
+      - name: Importar assets no Godot (bloqueante)
+        run: "$GODOT_BIN --headless --editor --path . --import"
