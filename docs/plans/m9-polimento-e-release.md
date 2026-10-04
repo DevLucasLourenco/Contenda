@@ -52,6 +52,12 @@ estão registrados no
 A execução final de 60 s atribuiu 0 bytes gerenciados ao fader em 3.603 ticks;
 as alocações do restante do jogo continuam pendentes de análise.
 
+**Decisão do usuário em 2026-10-04:** encerrar o ticket 38 para priorizar as
+builds do ticket 39 e adiar foco adicional em desempenho. O benchmark local
+reprovou 60 fps e p99; a medição no hardware de referência, a sessão de 30 min
+e os testes manuais seguem sem aprovação. Estes itens ficam como limitações
+aceitas da versão 0.1.0, não como critérios tecnicamente aprovados.
+
 ### 3. Estabilidade
 
 - [ ] Sessão de 30 minutos sem crash nem vazamento
@@ -78,24 +84,24 @@ as alocações do restante do jogo continuam pendentes de análise.
 
 ### 6. Build
 
-- [ ] Presets de export para Windows x86_64, Linux x86_64 e macOS universal
+- [x] Presets de export para Windows x86_64, Linux x86_64 e macOS universal (`export_presets.cfg`)
 - [ ] Ícone, nome e versão `0.1.0` em `project.godot` e no `.csproj`
-- [ ] Excluir `docs/`, `tests/` e `tools/` do pacote
-- [ ] Export release, sem debug
+- [x] Excluir `docs/`, `tests/`, `tools/`, `src/Tools/` e `scenes/debug/` dos recursos exportados
+- [x] Export release, sem debug (sem wrapper de console nem símbolos; atalhos e logs de diagnóstico condicionados a build de debug)
 - [ ] Testar cada build numa máquina **sem SDK instalado**
-- [ ] Empacotar com `LICENSE`, `THIRD-PARTY-NOTICES.md` e `README.txt`
+- [ ] Empacotar com `LICENSE`, `THIRD-PARTY-NOTICES.md`, `GODOT_COPYRIGHT.txt` e `README.txt` (`LICENSE` ainda aguarda decisão do usuário)
 
 ### 7. CI de release
 
-- [ ] Job disparado por tag `v*` exportando os 3 presets
-- [ ] Upload dos artefatos
-- [ ] Godot headless na CI agora **bloqueante** (o job tolerante do M0 vira
+- [x] Job disparado por tag `v*` exportando os 3 presets e validando a versão da tag
+- [x] Upload dos três ZIPs como artifacts da execução de release
+- [x] Godot headless na CI agora **bloqueante** (o job tolerante do M0 vira
       obrigatório aqui)
 
 ### 8. Documentação
 
 - [ ] `README.md` com screenshots e instruções
-- [ ] `CHANGELOG.md` da 0.1.0
+- [x] `CHANGELOG.md` da 0.1.0 com escopo e limitações conhecidas, incluindo ausência de versão Web
 - [ ] Specs refletindo o que foi realmente construído
 - [ ] `docs/plans/backlog-pos-mvp.md` priorizado com o que se aprendeu
 

@@ -5,7 +5,7 @@ liso, e uma sessão longa não degrada nem trava.
 
 **Blocked by:** 37 (implementação iniciada com dispensa explícita do registro de dez partidas; a validação de balanceamento do 37 continua em aberto)
 
-**Status:** ready-for-human — a execução gráfica local ficou abaixo do orçamento em hardware inferior ao de referência; falta medir na máquina de referência e concluir os testes manuais e de sessão longa
+**Status:** concluído por decisão de escopo do usuário em 2026-10-04 — os limites de desempenho restantes foram aceitos e adiados para depois do foco atual de release; os resultados reprovados continuam registrados abaixo
 
 - [ ] Quarenta inimigos na cidade com arte e efeitos: **60 quadros por segundo**
       na máquina de referência
@@ -84,9 +84,13 @@ rajada do pool, concluiu 500 ciclos, verificou o estoque cheio, devolveu todos
 os inimigos e encerrou sem avisos. O critério dos 500 ciclos está aprovado; a
 sessão longa de 30 min continua pendente para validar estabilidade prolongada.
 
-Continuam pendentes: sessão de 30 min, execução gráfica/profiler na máquina de
-referência (e otimização adicional para o orçamento de 60 fps), verificação
-manual de alt-tab/resolução/monitor, teste com arquivos de configuração
-corrompidos e eliminação/confirmação das alocações gerenciadas restantes no
-caminho crítico. O usuário dispensou apenas a espera dos registros do ticket 37
-para iniciar o trabalho; isso não registra nem aprova aqueles playtests.
+**Decisão de escopo do usuário, 2026-10-04:** considerar este ticket concluído
+para avançar às builds do ticket 39, sem priorizar agora otimização adicional
+de desempenho. Os critérios que ficaram sem validação ou foram reprovados
+permanecem desmarcados e são limitações aceitas, não resultados aprovados:
+sessão de 30 min, 60 fps e p99 no hardware de referência, alt-tab/resolução/
+monitor, arquivos de configuração corrompidos e alocações gerenciadas fora do
+fader. A medição na GeForce MX110 falhou o orçamento de 60 fps; o desempenho
+alvo segue sem validação. O ticket 37 também continua com seus playtests de
+balanceamento em aberto; a dispensa anterior permitiu prosseguir sem os dez
+registros, mas não os registrou nem aprovou.
