@@ -27,6 +27,12 @@ Uso: SDK de build do projeto C#.
 
 ---
 
+As builds de distribuição também incluem `GODOT_COPYRIGHT.txt`, baixado do
+repositório oficial do Godot na mesma versão dos templates de exportação. Ele
+traz os avisos e textos de licença das bibliotecas de terceiros distribuídas
+com o motor, conforme a recomendação da
+[documentação de licenças do Godot](https://docs.godotengine.org/en/4.7/about/complying_with_licenses.html#third-party-licenses).
+
 ## Assets incorporados
 
 | Fonte | Autor | Licença | Obtido em | Uso |

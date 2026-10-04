@@ -35,4 +35,9 @@
     <Compile Remove="tools/**" />
   </ItemGroup>
 
+  <!-- As ferramentas de cena servem aos probes e não pertencem à build distribuída. -->
+  <ItemGroup Condition="'$(Configuration)' == 'ExportRelease'">
+    <Compile Remove="src/Tools/**/*.cs" />
+  </ItemGroup>
+
 </Project>
