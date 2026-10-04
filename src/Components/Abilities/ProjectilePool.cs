@@ -128,7 +128,7 @@ public sealed partial class ProjectilePool : Node
         }
 
         ServiceLocator.Events.ProjectileFireRequested += AoPedirDisparo;
-        GD.Print($"[boot] ProjectilePool pronto ({PoolSize} projéteis)");
+        GameLog.Debug($"[boot] ProjectilePool pronto ({PoolSize} projéteis)");
     }
 
     public override void _ExitTree()

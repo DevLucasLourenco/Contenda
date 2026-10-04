@@ -68,7 +68,7 @@ public sealed partial class GameSession : Node
     public override void _Ready()
     {
         ServiceLocator.Register(this);
-        GD.Print("[boot] GameSession pronto");
+        GameLog.Debug("[boot] GameSession pronto");
     }
 
     /// <summary>Descarta o estado da partida ao voltar para o menu.</summary>

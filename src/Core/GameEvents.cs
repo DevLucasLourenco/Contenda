@@ -214,7 +214,7 @@ public sealed partial class GameEvents : Node
     public override void _Ready()
     {
         ServiceLocator.Register(this);
-        GD.Print("[boot] GameEvents pronto");
+        GameLog.Debug("[boot] GameEvents pronto");
     }
 
     /// <summary>Dispara <see cref="DamageNumberRequested"/>.</summary>

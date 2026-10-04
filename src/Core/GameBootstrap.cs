@@ -39,7 +39,7 @@ public sealed partial class GameBootstrap : Node
 
     public override void _Ready()
     {
-        GD.Print($"[boot] {ProjectInfo.Describe()}");
+        GD.Print($"[version] {ProjectInfo.Describe()}");
 
         // As configurações valem ANTES da primeira cena (spec 14 §2): sem arquivo, são os padrões.
         SettingsStore.LoadAndApply(ServiceLocator.Session, GetTree());
@@ -80,11 +80,16 @@ public sealed partial class GameBootstrap : Node
         if (BenchmarkSolicitado())
             CallDeferred(nameof(IniciarBenchmark));
 
-        GD.Print("[boot] GameBootstrap pronto — todos os serviços no ar");
+        GameLog.Debug("[boot] GameBootstrap pronto — todos os serviços no ar");
     }
 
     private static bool BenchmarkSolicitado()
     {
+        // O benchmark é uma ferramenta interna. A build de distribuição não
+        // deve procurar uma cena em scenes/debug nem aceitar este atalho.
+        if (!OS.IsDebugBuild())
+            return false;
+
         var argumentos = OS.GetCmdlineUserArgs();
         foreach (var argumento in argumentos)
         {

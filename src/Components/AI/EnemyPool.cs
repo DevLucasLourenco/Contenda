@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Contenda.Characters.Base;
+using Contenda.Core;
 using Godot;
 
 namespace Contenda.Components.AI;
@@ -157,7 +158,7 @@ public sealed partial class EnemyPool : Node
 
         Prewarm(cena, definicao, GruntPoolSize);
         IsReady = true;
-        GD.Print($"[boot] EnemyPool pronto ({GruntPoolSize} grunts pré-alocados)");
+        GameLog.Debug($"[boot] EnemyPool pronto ({GruntPoolSize} grunts pré-alocados)");
     }
 
     /// <summary>Se esta espécie já foi prewarmada. Ver <see cref="Prewarm"/>.</summary>

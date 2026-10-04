@@ -99,7 +99,7 @@ public sealed partial class SpawnMarkerPool : Node
         }
 
         ServiceLocator.Events.SpawnMarkerRequested += AoPedirMarcador;
-        GD.Print($"[boot] SpawnMarkerPool pronto ({PoolSize} marcadores)");
+        GameLog.Debug($"[boot] SpawnMarkerPool pronto ({PoolSize} marcadores)");
     }
 
     public override void _ExitTree()

@@ -69,7 +69,7 @@ public sealed partial class CombatVfxDirector : Node
         ServiceLocator.Events.TransformationChanged += AoTransformar;
         ServiceLocator.Events.EnemySpawned += AoNascerInimigo;
         ServiceLocator.Events.EnemyDied += AoMorrerInimigo;
-        GD.Print("[boot] CombatVfxDirector pronto (pools pré-alocados)");
+        GameLog.Debug("[boot] CombatVfxDirector pronto (pools pré-alocados)");
     }
 
     public override void _ExitTree()

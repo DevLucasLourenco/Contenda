@@ -156,7 +156,7 @@ public sealed partial class AudioDirector : Node
         ServiceLocator.Events.EnemyKilled += AoAbaterInimigo;
         ServiceLocator.Events.MatchEnded += AoTerminarPartida;
         ServiceLocator.Events.WaveAnnounced += AoAnunciarOnda;
-        GD.Print("[boot] AudioDirector pronto (pools de três vozes por som)");
+        GameLog.Debug("[boot] AudioDirector pronto (pools de três vozes por som)");
     }
 
     public override void _ExitTree()

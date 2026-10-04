@@ -25,7 +25,7 @@ public sealed partial class SceneRouter : Node
     public override void _Ready()
     {
         ServiceLocator.Register(this);
-        GD.Print("[boot] SceneRouter pronto");
+        GameLog.Debug("[boot] SceneRouter pronto");
     }
 
     /// <summary>Troca a cena corrente na hora, garantindo que a árvore não fique pausada.</summary>

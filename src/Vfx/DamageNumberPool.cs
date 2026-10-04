@@ -116,7 +116,7 @@ public sealed partial class DamageNumberPool : Node
         }
 
         ServiceLocator.Events.DamageNumberRequested += AoPedirNumero;
-        GD.Print($"[boot] DamageNumberPool pronto ({PoolSize} números)");
+        GameLog.Debug($"[boot] DamageNumberPool pronto ({PoolSize} números)");
     }
 
     public override void _ExitTree()
