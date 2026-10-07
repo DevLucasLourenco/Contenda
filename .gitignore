@@ -8,6 +8,19 @@ data_*/
 build/
 export/
 
+# Downloads, traces e sondas locais usados durante investigação e validação.
+# Os tickets em .scratch/contenda-m0-m9/issues continuam versionados.
+/.scratch/assets-download/
+/.scratch/dotnet-tools/
+/.scratch/**/*.log
+/.scratch/inspect_assets.gd
+/.scratch/inspect_assets.gd.uid
+/asset_inspect.gd
+/asset_inspect.gd.uid
+/scenes/debug/TempAssetProbe.tscn
+/src/Tools/TempAssetProbe.cs
+/src/Tools/TempAssetProbe.cs.uid
+
 # .NET
 bin/
 obj/
